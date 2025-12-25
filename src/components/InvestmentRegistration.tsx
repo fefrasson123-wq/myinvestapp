@@ -1,0 +1,106 @@
+import { useState } from 'react';
+import { 
+  Bitcoin, 
+  TrendingUp, 
+  Building2, 
+  Banknote, 
+  Landmark, 
+  PiggyBank,
+  X
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Investment, InvestmentCategory, categoryLabels } from '@/types/investment';
+import { CryptoForm } from './forms/CryptoForm';
+import { StockForm } from './forms/StockForm';
+import { FIIForm } from './forms/FIIForm';
+import { FixedIncomeForm } from './forms/FixedIncomeForm';
+
+interface InvestmentRegistrationProps {
+  onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
+  onClose: () => void;
+}
+
+type FormType = 'menu' | 'crypto' | 'stocks' | 'fii' | 'cdb' | 'cdi' | 'treasury' | 'savings';
+
+const investmentTypes = [
+  { id: 'crypto' as const, label: 'Criptomoedas', icon: Bitcoin, color: 'hsl(45, 100%, 50%)' },
+  { id: 'stocks' as const, label: 'Ações', icon: TrendingUp, color: 'hsl(200, 100%, 50%)' },
+  { id: 'fii' as const, label: 'Fundos Imobiliários', icon: Building2, color: 'hsl(280, 100%, 60%)' },
+  { id: 'cdb' as const, label: 'CDB', icon: Banknote, color: 'hsl(140, 100%, 50%)' },
+  { id: 'treasury' as const, label: 'Tesouro Direto', icon: Landmark, color: 'hsl(30, 100%, 50%)' },
+  { id: 'savings' as const, label: 'Poupança', icon: PiggyBank, color: 'hsl(180, 100%, 40%)' },
+];
+
+export function InvestmentRegistration({ onSubmit, onClose }: InvestmentRegistrationProps) {
+  const [currentForm, setCurrentForm] = useState<FormType>('menu');
+
+  const handleSubmit = (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
+    onSubmit(data);
+    onClose();
+  };
+
+  const renderForm = () => {
+    switch (currentForm) {
+      case 'crypto':
+        return <CryptoForm onSubmit={handleSubmit} onBack={() => setCurrentForm('menu')} />;
+      case 'stocks':
+        return <StockForm onSubmit={handleSubmit} onBack={() => setCurrentForm('menu')} />;
+      case 'fii':
+        return <FIIForm onSubmit={handleSubmit} onBack={() => setCurrentForm('menu')} />;
+      case 'cdb':
+      case 'cdi':
+      case 'treasury':
+      case 'savings':
+        return <FixedIncomeForm category={currentForm} onSubmit={handleSubmit} onBack={() => setCurrentForm('menu')} />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+      <div className="bg-card border border-border/50 rounded-xl w-full max-w-lg shadow-xl animate-scale-in max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-border/50 sticky top-0 bg-card z-10">
+          <h2 className="text-lg font-semibold text-card-foreground">
+            {currentForm === 'menu' ? 'Novo Investimento' : 'Cadastrar'}
+          </h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        <div className="p-4">
+          {currentForm === 'menu' ? (
+            <div className="grid grid-cols-2 gap-3">
+              {investmentTypes.map((type) => {
+                const Icon = type.icon;
+                return (
+                  <button
+                    key={type.id}
+                    onClick={() => setCurrentForm(type.id)}
+                    className="flex flex-col items-center justify-center p-5 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all group"
+                  >
+                    <div 
+                      className="p-3 rounded-lg mb-3 transition-all group-hover:scale-110"
+                      style={{ backgroundColor: `${type.color}20` }}
+                    >
+                      <Icon 
+                        className="w-6 h-6" 
+                        style={{ color: type.color }}
+                      />
+                    </div>
+                    <span className="font-medium text-card-foreground text-sm text-center">
+                      {type.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            renderForm()
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,16 +1,22 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { LayoutDashboard, PlusCircle, TrendingUp } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { PortfolioStats } from '@/components/PortfolioStats';
 import { CategoryChart } from '@/components/CategoryChart';
 import { InvestmentList } from '@/components/InvestmentList';
-import { InvestmentForm } from '@/components/InvestmentForm';
+import { InvestmentRegistration } from '@/components/InvestmentRegistration';
+import { ResultsArea } from '@/components/ResultsArea';
 import { useInvestments } from '@/hooks/useInvestments';
 import { Investment } from '@/types/investment';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+
+type ActiveTab = 'dashboard' | 'register';
 
 const Index = () => {
-  const [showForm, setShowForm] = useState(false);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [showRegistration, setShowRegistration] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const { toast } = useToast();
 
@@ -27,13 +33,12 @@ const Index = () => {
   } = useInvestments();
 
   const handleAddClick = () => {
-    setEditingInvestment(null);
-    setShowForm(true);
+    setShowRegistration(true);
   };
 
   const handleEdit = (investment: Investment) => {
     setEditingInvestment(investment);
-    setShowForm(true);
+    // Para edição, ainda usa o formulário antigo por enquanto
   };
 
   const handleDelete = (id: string) => {
@@ -45,25 +50,16 @@ const Index = () => {
   };
 
   const handleSubmit = (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
-    if (editingInvestment) {
-      updateInvestment(editingInvestment.id, data);
-      toast({
-        title: 'Investimento atualizado',
-        description: 'As alterações foram salvas com sucesso.',
-      });
-    } else {
-      addInvestment(data);
-      toast({
-        title: 'Investimento adicionado',
-        description: 'O novo investimento foi cadastrado com sucesso.',
-      });
-    }
-    setShowForm(false);
-    setEditingInvestment(null);
+    addInvestment(data);
+    toast({
+      title: 'Investimento adicionado',
+      description: 'O novo investimento foi cadastrado com sucesso.',
+    });
+    setShowRegistration(false);
   };
 
   const handleClose = () => {
-    setShowForm(false);
+    setShowRegistration(false);
     setEditingInvestment(null);
   };
 
@@ -85,38 +81,95 @@ const Index = () => {
       <div className="min-h-screen bg-background">
         <Header onAddClick={handleAddClick} />
 
-        <main className="container mx-auto px-4 py-6 space-y-6">
-          <PortfolioStats
-            totalValue={getTotalValue()}
-            totalInvested={getTotalInvested()}
-            totalProfitLoss={getTotalProfitLoss()}
-          />
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <CategoryChart categoryTotals={getCategoryTotals()} />
-            </div>
-            <div className="lg:col-span-2">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold text-card-foreground">
-                  Seus Investimentos
-                  <span className="ml-2 text-sm text-muted-foreground font-normal">
-                    ({investments.length})
-                  </span>
-                </h2>
-              </div>
-              <InvestmentList
-                investments={investments}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
+        {/* Navigation Tabs */}
+        <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-[73px] z-30">
+          <div className="container mx-auto px-4">
+            <div className="flex gap-1">
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-3 font-medium transition-all border-b-2 -mb-px",
+                  activeTab === 'dashboard'
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-card-foreground"
+                )}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                Dashboard
+              </button>
+              <button
+                onClick={() => setActiveTab('register')}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-3 font-medium transition-all border-b-2 -mb-px",
+                  activeTab === 'register'
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-card-foreground"
+                )}
+              >
+                <PlusCircle className="w-4 h-4" />
+                Cadastrar
+              </button>
             </div>
           </div>
+        </div>
+
+        <main className="container mx-auto px-4 py-6 space-y-6">
+          {activeTab === 'dashboard' ? (
+            <>
+              <PortfolioStats
+                totalValue={getTotalValue()}
+                totalInvested={getTotalInvested()}
+                totalProfitLoss={getTotalProfitLoss()}
+              />
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1">
+                  <CategoryChart categoryTotals={getCategoryTotals()} />
+                </div>
+                <div className="lg:col-span-2">
+                  <ResultsArea
+                    investments={investments}
+                    totalValue={getTotalValue()}
+                    totalInvested={getTotalInvested()}
+                    totalProfitLoss={getTotalProfitLoss()}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold text-card-foreground">
+                    Seus Investimentos
+                    <span className="ml-2 text-sm text-muted-foreground font-normal">
+                      ({investments.length})
+                    </span>
+                  </h2>
+                </div>
+                <InvestmentList
+                  investments={investments}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="max-w-2xl mx-auto">
+              <div className="investment-card p-6">
+                <h2 className="text-xl font-semibold text-card-foreground mb-6 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  Cadastrar Novo Investimento
+                </h2>
+                <InvestmentRegistration
+                  onSubmit={handleSubmit}
+                  onClose={() => setActiveTab('dashboard')}
+                />
+              </div>
+            </div>
+          )}
         </main>
 
-        {showForm && (
-          <InvestmentForm
-            investment={editingInvestment}
+        {showRegistration && (
+          <InvestmentRegistration
             onSubmit={handleSubmit}
             onClose={handleClose}
           />
