@@ -1,0 +1,85 @@
+import { TrendingUp, TrendingDown, Wallet, PiggyBank } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface PortfolioStatsProps {
+  totalValue: number;
+  totalInvested: number;
+  totalProfitLoss: number;
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value);
+}
+
+function formatPercent(value: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'percent',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value / 100);
+}
+
+export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: PortfolioStatsProps) {
+  const profitLossPercent = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
+  const isPositive = totalProfitLoss >= 0;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up">
+      {/* Total Patrimônio */}
+      <div className="investment-card">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="p-2 rounded-lg bg-primary/20">
+            <Wallet className="w-5 h-5 text-primary" />
+          </div>
+          <span className="stat-label">Patrimônio Total</span>
+        </div>
+        <p className="stat-value">{formatCurrency(totalValue)}</p>
+      </div>
+
+      {/* Total Investido */}
+      <div className="investment-card">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="p-2 rounded-lg bg-secondary">
+            <PiggyBank className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <span className="stat-label">Total Investido</span>
+        </div>
+        <p className="text-2xl font-bold font-mono text-card-foreground">{formatCurrency(totalInvested)}</p>
+      </div>
+
+      {/* Lucro/Prejuízo */}
+      <div className="investment-card">
+        <div className="flex items-center gap-3 mb-3">
+          <div className={cn(
+            "p-2 rounded-lg",
+            isPositive ? "bg-success/20" : "bg-destructive/20"
+          )}>
+            {isPositive ? (
+              <TrendingUp className="w-5 h-5 text-success" />
+            ) : (
+              <TrendingDown className="w-5 h-5 text-destructive" />
+            )}
+          </div>
+          <span className="stat-label">Lucro / Prejuízo</span>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <p className={cn(
+            "text-2xl font-bold font-mono",
+            isPositive ? "text-success text-glow" : "text-destructive"
+          )}>
+            {formatCurrency(totalProfitLoss)}
+          </p>
+          <span className={cn(
+            "text-sm font-mono",
+            isPositive ? "text-success/70" : "text-destructive/70"
+          )}>
+            ({isPositive ? '+' : ''}{formatPercent(profitLossPercent)})
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
