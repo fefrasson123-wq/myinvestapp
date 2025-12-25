@@ -8,6 +8,8 @@ export type InvestmentCategory =
   | 'savings'
   | 'other';
 
+export type FixedIncomeType = 'pos' | 'pre' | 'ipca' | 'cdi';
+
 export interface Investment {
   id: string;
   name: string;
@@ -21,8 +23,18 @@ export interface Investment {
   profitLoss: number;
   profitLossPercent: number;
   notes?: string;
+  purchaseDate?: string;
+  maturityDate?: string;
+  fixedIncomeType?: FixedIncomeType;
+  interestRate?: number;
+  dividends?: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface PriceHistory {
+  date: string;
+  value: number;
 }
 
 export const categoryLabels: Record<InvestmentCategory, string> = {
@@ -45,4 +57,11 @@ export const categoryColors: Record<InvestmentCategory, string> = {
   treasury: 'hsl(30, 100%, 50%)',
   savings: 'hsl(180, 100%, 40%)',
   other: 'hsl(0, 0%, 50%)',
+};
+
+export const fixedIncomeLabels: Record<FixedIncomeType, string> = {
+  pos: 'Pós-fixado',
+  pre: 'Pré-fixado',
+  ipca: 'IPCA+',
+  cdi: 'CDI',
 };
