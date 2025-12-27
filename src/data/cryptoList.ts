@@ -5,29 +5,29 @@ export interface CryptoAsset {
   price: number; // USD
 }
 
-// Lista de criptomoedas com preços em USD (inspirada no BingX)
+// Lista de criptomoedas com preços em USD (inspirada no BingX) - Atualizado Dez/2025
 export const cryptoList: CryptoAsset[] = [
   // Top 20 por market cap
-  { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', price: 67500 },
-  { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', price: 3650 },
+  { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', price: 96500 },
+  { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', price: 3450 },
   { id: 'tether', name: 'Tether', symbol: 'USDT', price: 1.00 },
-  { id: 'binancecoin', name: 'BNB', symbol: 'BNB', price: 580 },
-  { id: 'solana', name: 'Solana', symbol: 'SOL', price: 175 },
+  { id: 'binancecoin', name: 'BNB', symbol: 'BNB', price: 695 },
+  { id: 'solana', name: 'Solana', symbol: 'SOL', price: 188 },
   { id: 'usd-coin', name: 'USD Coin', symbol: 'USDC', price: 1.00 },
-  { id: 'xrp', name: 'XRP', symbol: 'XRP', price: 0.62 },
-  { id: 'dogecoin', name: 'Dogecoin', symbol: 'DOGE', price: 0.145 },
-  { id: 'cardano', name: 'Cardano', symbol: 'ADA', price: 0.68 },
-  { id: 'tron', name: 'TRON', symbol: 'TRX', price: 0.115 },
-  { id: 'avalanche', name: 'Avalanche', symbol: 'AVAX', price: 42 },
-  { id: 'chainlink', name: 'Chainlink', symbol: 'LINK', price: 18.5 },
-  { id: 'polkadot', name: 'Polkadot', symbol: 'DOT', price: 8.2 },
-  { id: 'polygon', name: 'Polygon', symbol: 'MATIC', price: 0.72 },
-  { id: 'litecoin', name: 'Litecoin', symbol: 'LTC', price: 85 },
-  { id: 'shiba', name: 'Shiba Inu', symbol: 'SHIB', price: 0.0000245 },
-  { id: 'bitcoin-cash', name: 'Bitcoin Cash', symbol: 'BCH', price: 485 },
-  { id: 'uniswap', name: 'Uniswap', symbol: 'UNI', price: 12.5 },
-  { id: 'stellar', name: 'Stellar', symbol: 'XLM', price: 0.125 },
-  { id: 'near', name: 'NEAR Protocol', symbol: 'NEAR', price: 7.8 },
+  { id: 'xrp', name: 'XRP', symbol: 'XRP', price: 2.18 },
+  { id: 'dogecoin', name: 'Dogecoin', symbol: 'DOGE', price: 0.315 },
+  { id: 'cardano', name: 'Cardano', symbol: 'ADA', price: 0.89 },
+  { id: 'tron', name: 'TRON', symbol: 'TRX', price: 0.255 },
+  { id: 'avalanche', name: 'Avalanche', symbol: 'AVAX', price: 38.5 },
+  { id: 'chainlink', name: 'Chainlink', symbol: 'LINK', price: 22.8 },
+  { id: 'polkadot', name: 'Polkadot', symbol: 'DOT', price: 7.15 },
+  { id: 'polygon', name: 'Polygon', symbol: 'MATIC', price: 0.485 },
+  { id: 'litecoin', name: 'Litecoin', symbol: 'LTC', price: 104 },
+  { id: 'shiba', name: 'Shiba Inu', symbol: 'SHIB', price: 0.0000218 },
+  { id: 'bitcoin-cash', name: 'Bitcoin Cash', symbol: 'BCH', price: 445 },
+  { id: 'uniswap', name: 'Uniswap', symbol: 'UNI', price: 13.8 },
+  { id: 'stellar', name: 'Stellar', symbol: 'XLM', price: 0.355 },
+  { id: 'near', name: 'NEAR Protocol', symbol: 'NEAR', price: 5.25 },
   
   // Layer 2 & Scaling
   { id: 'arbitrum', name: 'Arbitrum', symbol: 'ARB', price: 1.15 },

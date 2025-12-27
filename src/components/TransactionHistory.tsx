@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight, History, Trash2 } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, History, Trash2, Edit } from 'lucide-react';
 import { Transaction, transactionLabels } from '@/types/investment';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 interface TransactionHistoryProps {
   transactions: Transaction[];
   onDelete?: (id: string) => void;
+  onEdit?: (transaction: Transaction) => void;
 }
 
 function formatCurrency(value: number, isCrypto: boolean = false): string {
@@ -27,7 +28,7 @@ function formatDate(date: Date): string {
   }).format(date);
 }
 
-export function TransactionHistory({ transactions, onDelete }: TransactionHistoryProps) {
+export function TransactionHistory({ transactions, onDelete, onEdit }: TransactionHistoryProps) {
   if (transactions.length === 0) {
     return (
       <div className="investment-card text-center py-12 animate-smooth-appear">
@@ -109,17 +110,30 @@ export function TransactionHistory({ transactions, onDelete }: TransactionHistor
                 </p>
               </div>
 
-              {onDelete && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onDelete(tx.id)}
-                  className="hover:text-destructive hover:bg-destructive/10 shrink-0"
-                  title="Excluir transação"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              )}
+              <div className="flex gap-1 shrink-0">
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEdit(tx)}
+                    className="hover:text-primary hover:bg-primary/10"
+                    title="Editar transação"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDelete(tx.id)}
+                    className="hover:text-destructive hover:bg-destructive/10"
+                    title="Excluir transação"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         );

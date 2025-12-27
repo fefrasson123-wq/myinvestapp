@@ -82,16 +82,31 @@ export function useInvestments() {
     });
   }, [saveToStorage]);
 
+  // Taxa de conversão USD -> BRL (aproximada)
+  const USD_TO_BRL = 6.15;
+
   const getTotalValue = useCallback(() => {
-    return investments.reduce((sum, inv) => sum + inv.currentValue, 0);
+    return investments.reduce((sum, inv) => {
+      const value = inv.currentValue;
+      // Converte criptos de USD para BRL
+      return sum + (inv.category === 'crypto' ? value * USD_TO_BRL : value);
+    }, 0);
   }, [investments]);
 
   const getTotalInvested = useCallback(() => {
-    return investments.reduce((sum, inv) => sum + inv.investedAmount, 0);
+    return investments.reduce((sum, inv) => {
+      const value = inv.investedAmount;
+      // Converte criptos de USD para BRL
+      return sum + (inv.category === 'crypto' ? value * USD_TO_BRL : value);
+    }, 0);
   }, [investments]);
 
   const getTotalProfitLoss = useCallback(() => {
-    return investments.reduce((sum, inv) => sum + inv.profitLoss, 0);
+    return investments.reduce((sum, inv) => {
+      const value = inv.profitLoss;
+      // Converte criptos de USD para BRL
+      return sum + (inv.category === 'crypto' ? value * USD_TO_BRL : value);
+    }, 0);
   }, [investments]);
 
   const getByCategory = useCallback((category: InvestmentCategory) => {
@@ -111,7 +126,9 @@ export function useInvestments() {
     };
 
     investments.forEach(inv => {
-      totals[inv.category] += inv.currentValue;
+      // Para o gráfico de categorias, converte tudo para BRL
+      const value = inv.category === 'crypto' ? inv.currentValue * USD_TO_BRL : inv.currentValue;
+      totals[inv.category] += value;
     });
 
     return totals;
