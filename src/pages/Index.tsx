@@ -127,12 +127,7 @@ const Index = () => {
                   <CategoryChart categoryTotals={getCategoryTotals()} />
                 </div>
                 <div className="lg:col-span-2">
-                  <ResultsArea
-                    investments={investments}
-                    totalValue={getTotalValue()}
-                    totalInvested={getTotalInvested()}
-                    totalProfitLoss={getTotalProfitLoss()}
-                  />
+                  <ResultsArea investments={investments} />
                 </div>
               </div>
 

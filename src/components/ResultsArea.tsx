@@ -1,14 +1,11 @@
 import { useState } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, Percent, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Investment, categoryLabels, categoryColors } from '@/types/investment';
 import { PerformanceChart } from './PerformanceChart';
 import { cn } from '@/lib/utils';
 
 interface ResultsAreaProps {
   investments: Investment[];
-  totalValue: number;
-  totalInvested: number;
-  totalProfitLoss: number;
 }
 
 type Period = '1d' | '1w' | '1m' | '6m' | '1y';
@@ -36,61 +33,14 @@ function formatPercent(value: number): string {
   }).format(value / 100);
 }
 
-export function ResultsArea({ investments, totalValue, totalInvested, totalProfitLoss }: ResultsAreaProps) {
+export function ResultsArea({ investments }: ResultsAreaProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('1m');
-  const profitLossPercent = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
-  const isPositive = totalProfitLoss >= 0;
 
   // Ordena investimentos por lucro/prejuízo
   const sortedInvestments = [...investments].sort((a, b) => b.profitLoss - a.profitLoss);
 
   return (
     <div className="space-y-6">
-      {/* Cards de Resumo */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="investment-card">
-          <div className="flex items-center gap-2 mb-2">
-            <DollarSign className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Lucro Total</span>
-          </div>
-          <p className={cn(
-            "text-2xl font-bold font-mono",
-            isPositive ? "text-success text-glow" : "text-destructive"
-          )}>
-            {isPositive ? '+' : ''}{formatCurrency(totalProfitLoss)}
-          </p>
-        </div>
-
-        <div className="investment-card">
-          <div className="flex items-center gap-2 mb-2">
-            <BarChart3 className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Total Investido</span>
-          </div>
-          <p className="text-2xl font-bold font-mono text-card-foreground">
-            {formatCurrency(totalInvested)}
-          </p>
-        </div>
-
-        <div className="investment-card">
-          <div className="flex items-center gap-2 mb-2">
-            <Percent className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Retorno</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {isPositive ? (
-              <TrendingUp className="w-5 h-5 text-success" />
-            ) : (
-              <TrendingDown className="w-5 h-5 text-destructive" />
-            )}
-            <p className={cn(
-              "text-2xl font-bold font-mono",
-              isPositive ? "text-success" : "text-destructive"
-            )}>
-              {isPositive ? '+' : ''}{formatPercent(profitLossPercent)}
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Gráfico de Evolução */}
       <div className="investment-card">

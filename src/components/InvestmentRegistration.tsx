@@ -58,9 +58,9 @@ export function InvestmentRegistration({ onSubmit, onClose }: InvestmentRegistra
   };
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-card border border-border/50 rounded-xl w-full max-w-lg shadow-xl animate-scale-in max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-border/50 sticky top-0 bg-card z-10">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto animate-fade-in">
+      <div className="bg-card border border-border/50 rounded-xl w-full max-w-md shadow-xl animate-scale-in my-8 mx-4">
+        <div className="flex items-center justify-between p-4 border-b border-border/50">
           <h2 className="text-lg font-semibold text-card-foreground">
             {currentForm === 'menu' ? 'Novo Investimento' : 'Cadastrar'}
           </h2>
@@ -78,18 +78,18 @@ export function InvestmentRegistration({ onSubmit, onClose }: InvestmentRegistra
                   <button
                     key={type.id}
                     onClick={() => setCurrentForm(type.id)}
-                    className="flex flex-col items-center justify-center p-5 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all group"
+                    className="flex flex-col items-center justify-center p-4 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all group"
                   >
                     <div 
-                      className="p-3 rounded-lg mb-3 transition-all group-hover:scale-110"
+                      className="p-2.5 rounded-lg mb-2 transition-all group-hover:scale-110"
                       style={{ backgroundColor: `${type.color}20` }}
                     >
                       <Icon 
-                        className="w-6 h-6" 
+                        className="w-5 h-5" 
                         style={{ color: type.color }}
                       />
                     </div>
-                    <span className="font-medium text-card-foreground text-sm text-center">
+                    <span className="font-medium text-card-foreground text-xs text-center">
                       {type.label}
                     </span>
                   </button>
