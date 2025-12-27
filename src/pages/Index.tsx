@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { LayoutDashboard, PlusCircle, TrendingUp, History } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, History, RefreshCw } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { PortfolioStats } from '@/components/PortfolioStats';
 import { CategoryChart } from '@/components/CategoryChart';
@@ -10,9 +10,11 @@ import { ResultsArea } from '@/components/ResultsArea';
 import { SellAssetModal } from '@/components/SellAssetModal';
 import { EditInvestmentModal } from '@/components/EditInvestmentModal';
 import { TransactionHistory } from '@/components/TransactionHistory';
+import { EditTransactionModal } from '@/components/EditTransactionModal';
 import { useInvestments } from '@/hooks/useInvestments';
 import { useTransactions } from '@/hooks/useTransactions';
-import { Investment } from '@/types/investment';
+import { useCryptoPrices } from '@/hooks/useCryptoPrices';
+import { Investment, Transaction } from '@/types/investment';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +25,7 @@ const Index = () => {
   const [showRegistration, setShowRegistration] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [sellingInvestment, setSellingInvestment] = useState<Investment | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const { toast } = useToast();
 
   const {
@@ -37,7 +40,22 @@ const Index = () => {
     getCategoryTotals,
   } = useInvestments();
 
-  const { transactions, addTransaction, deleteTransaction } = useTransactions();
+  const { transactions, addTransaction, deleteTransaction, updateTransaction } = useTransactions();
+  const { prices, getPrice, isLoading: pricesLoading, lastUpdate, fetchPrices } = useCryptoPrices();
+
+  // Atualiza os preços das criptomoedas em tempo real
+  useEffect(() => {
+    if (Object.keys(prices).length > 0) {
+      investments.forEach(inv => {
+        if (inv.category === 'crypto' && inv.ticker) {
+          const realTimePrice = getPrice(inv.ticker);
+          if (realTimePrice && Math.abs(realTimePrice - inv.currentPrice) > 0.01) {
+            updateInvestment(inv.id, { currentPrice: realTimePrice });
+          }
+        }
+      });
+    }
+  }, [prices, investments, getPrice, updateInvestment]);
 
   const handleAddClick = () => {
     setShowRegistration(true);
@@ -62,6 +80,19 @@ const Index = () => {
       title: 'Transação removida',
       description: 'A transação foi excluída do histórico.',
     });
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+  };
+
+  const handleSaveTransaction = (id: string, data: Partial<Transaction>) => {
+    updateTransaction(id, data);
+    toast({
+      title: 'Transação atualizada',
+      description: 'As alterações foram salvas com sucesso.',
+    });
+    setEditingTransaction(null);
   };
 
   const handleDelete = (id: string) => {
@@ -169,11 +200,11 @@ const Index = () => {
         {/* Navigation Tabs */}
         <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-[73px] z-30">
           <div className="container mx-auto px-4">
-            <div className="flex gap-1">
+            <div className="flex justify-center gap-1">
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-3 font-medium transition-all duration-200 border-b-2 -mb-px",
+                  "flex items-center gap-2 px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px whitespace-nowrap",
                   activeTab === 'dashboard'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-card-foreground"
@@ -185,7 +216,7 @@ const Index = () => {
               <button
                 onClick={() => setActiveTab('register')}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-3 font-medium transition-all duration-200 border-b-2 -mb-px",
+                  "flex items-center gap-2 px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px whitespace-nowrap",
                   activeTab === 'register'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-card-foreground"
@@ -197,7 +228,7 @@ const Index = () => {
               <button
                 onClick={() => setActiveTab('history')}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-3 font-medium transition-all duration-200 border-b-2 -mb-px",
+                  "flex items-center gap-2 px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px whitespace-nowrap",
                   activeTab === 'history'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-card-foreground"
@@ -268,7 +299,11 @@ const Index = () => {
                   Registro de todas as compras e vendas realizadas
                 </p>
               </div>
-              <TransactionHistory transactions={transactions} onDelete={handleDeleteTransaction} />
+              <TransactionHistory 
+                transactions={transactions} 
+                onDelete={handleDeleteTransaction} 
+                onEdit={handleEditTransaction}
+              />
             </div>
           )}
         </main>
@@ -293,6 +328,14 @@ const Index = () => {
             investment={editingInvestment}
             onSave={handleSaveEdit}
             onClose={() => setEditingInvestment(null)}
+          />
+        )}
+
+        {editingTransaction && (
+          <EditTransactionModal
+            transaction={editingTransaction}
+            onSave={handleSaveTransaction}
+            onClose={() => setEditingTransaction(null)}
           />
         )}
       </div>
