@@ -6,10 +6,11 @@ import {
   Banknote, 
   Landmark, 
   PiggyBank,
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Investment, InvestmentCategory, categoryLabels } from '@/types/investment';
+import { Investment } from '@/types/investment';
 import { CryptoForm } from './forms/CryptoForm';
 import { StockForm } from './forms/StockForm';
 import { FIIForm } from './forms/FIIForm';
@@ -18,6 +19,7 @@ import { FixedIncomeForm } from './forms/FixedIncomeForm';
 interface InvestmentRegistrationProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
   onClose: () => void;
+  isModal?: boolean;
 }
 
 type FormType = 'menu' | 'crypto' | 'stocks' | 'fii' | 'cdb' | 'cdi' | 'treasury' | 'savings';
@@ -31,76 +33,94 @@ const investmentTypes = [
   { id: 'savings' as const, label: 'Poupança', icon: PiggyBank, color: 'hsl(180, 100%, 40%)' },
 ];
 
-export function InvestmentRegistration({ onSubmit, onClose }: InvestmentRegistrationProps) {
+export function InvestmentRegistration({ onSubmit, onClose, isModal = true }: InvestmentRegistrationProps) {
   const [currentForm, setCurrentForm] = useState<FormType>('menu');
 
   const handleSubmit = (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
     onSubmit(data);
-    onClose();
+    setCurrentForm('menu');
+    if (isModal) {
+      onClose();
+    }
+  };
+
+  const handleBack = () => {
+    setCurrentForm('menu');
   };
 
   const renderForm = () => {
     switch (currentForm) {
       case 'crypto':
-        return <CryptoForm onSubmit={handleSubmit} onBack={() => setCurrentForm('menu')} />;
+        return <CryptoForm onSubmit={handleSubmit} onBack={handleBack} />;
       case 'stocks':
-        return <StockForm onSubmit={handleSubmit} onBack={() => setCurrentForm('menu')} />;
+        return <StockForm onSubmit={handleSubmit} onBack={handleBack} />;
       case 'fii':
-        return <FIIForm onSubmit={handleSubmit} onBack={() => setCurrentForm('menu')} />;
+        return <FIIForm onSubmit={handleSubmit} onBack={handleBack} />;
       case 'cdb':
       case 'cdi':
       case 'treasury':
       case 'savings':
-        return <FixedIncomeForm category={currentForm} onSubmit={handleSubmit} onBack={() => setCurrentForm('menu')} />;
+        return <FixedIncomeForm category={currentForm} onSubmit={handleSubmit} onBack={handleBack} />;
       default:
         return null;
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto animate-fade-in">
-      <div className="bg-card border border-border/50 rounded-xl w-full max-w-md shadow-xl animate-scale-in my-8 mx-4">
-        <div className="flex items-center justify-between p-4 border-b border-border/50">
-          <h2 className="text-lg font-semibold text-card-foreground">
-            {currentForm === 'menu' ? 'Novo Investimento' : 'Cadastrar'}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </Button>
+  const content = (
+    <>
+      {currentForm === 'menu' ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {investmentTypes.map((type) => {
+            const Icon = type.icon;
+            return (
+              <button
+                key={type.id}
+                onClick={() => setCurrentForm(type.id)}
+                className="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all group"
+              >
+                <div 
+                  className="p-3 rounded-lg mb-3 transition-all group-hover:scale-110"
+                  style={{ backgroundColor: `${type.color}20` }}
+                >
+                  <Icon 
+                    className="w-6 h-6" 
+                    style={{ color: type.color }}
+                  />
+                </div>
+                <span className="font-medium text-card-foreground text-sm text-center">
+                  {type.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
+      ) : (
+        renderForm()
+      )}
+    </>
+  );
 
-        <div className="p-4">
-          {currentForm === 'menu' ? (
-            <div className="grid grid-cols-2 gap-3">
-              {investmentTypes.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <button
-                    key={type.id}
-                    onClick={() => setCurrentForm(type.id)}
-                    className="flex flex-col items-center justify-center p-4 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all group"
-                  >
-                    <div 
-                      className="p-2.5 rounded-lg mb-2 transition-all group-hover:scale-110"
-                      style={{ backgroundColor: `${type.color}20` }}
-                    >
-                      <Icon 
-                        className="w-5 h-5" 
-                        style={{ color: type.color }}
-                      />
-                    </div>
-                    <span className="font-medium text-card-foreground text-xs text-center">
-                      {type.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            renderForm()
-          )}
+  // Modal version
+  if (isModal) {
+    return (
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto animate-fade-in">
+        <div className="bg-card border border-border/50 rounded-xl w-full max-w-md shadow-xl animate-scale-in my-8 mx-4">
+          <div className="flex items-center justify-between p-4 border-b border-border/50">
+            <h2 className="text-lg font-semibold text-card-foreground">
+              {currentForm === 'menu' ? 'Novo Investimento' : 'Cadastrar'}
+            </h2>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+          <div className="p-4">
+            {content}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Inline version (for register tab)
+  return content;
 }

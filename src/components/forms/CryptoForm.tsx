@@ -90,7 +90,7 @@ export function CryptoForm({ onSubmit, onBack }: CryptoFormProps) {
                 <span className="text-card-foreground">{crypto.name}</span>
               </div>
               <span className="font-mono text-muted-foreground">
-                R$ {crypto.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                $ {crypto.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
               </span>
             </button>
           ))}
@@ -111,7 +111,7 @@ export function CryptoForm({ onSubmit, onBack }: CryptoFormProps) {
             <span className="ml-2 text-primary font-mono text-sm">({selectedCrypto?.symbol})</span>
           </h3>
           <p className="text-sm text-muted-foreground">
-            Preço atual: R$ {selectedCrypto?.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            Preço atual: $ {selectedCrypto?.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
           </p>
         </div>
       </div>
@@ -131,7 +131,7 @@ export function CryptoForm({ onSubmit, onBack }: CryptoFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="averagePrice">Preço Médio (R$)</Label>
+          <Label htmlFor="averagePrice">Preço Médio (USD)</Label>
           <Input
             id="averagePrice"
             type="number"

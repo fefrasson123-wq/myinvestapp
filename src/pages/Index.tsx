@@ -8,6 +8,7 @@ import { InvestmentList } from '@/components/InvestmentList';
 import { InvestmentRegistration } from '@/components/InvestmentRegistration';
 import { ResultsArea } from '@/components/ResultsArea';
 import { SellAssetModal } from '@/components/SellAssetModal';
+import { EditInvestmentModal } from '@/components/EditInvestmentModal';
 import { TransactionHistory } from '@/components/TransactionHistory';
 import { useInvestments } from '@/hooks/useInvestments';
 import { useTransactions } from '@/hooks/useTransactions';
@@ -36,7 +37,7 @@ const Index = () => {
     getCategoryTotals,
   } = useInvestments();
 
-  const { transactions, addTransaction } = useTransactions();
+  const { transactions, addTransaction, deleteTransaction } = useTransactions();
 
   const handleAddClick = () => {
     setShowRegistration(true);
@@ -44,6 +45,23 @@ const Index = () => {
 
   const handleEdit = (investment: Investment) => {
     setEditingInvestment(investment);
+  };
+
+  const handleSaveEdit = (id: string, data: Partial<Omit<Investment, 'id' | 'createdAt' | 'updatedAt'>>) => {
+    updateInvestment(id, data);
+    toast({
+      title: 'Investimento atualizado',
+      description: 'As alterações foram salvas com sucesso.',
+    });
+    setEditingInvestment(null);
+  };
+
+  const handleDeleteTransaction = (id: string) => {
+    deleteTransaction(id);
+    toast({
+      title: 'Transação removida',
+      description: 'A transação foi excluída do histórico.',
+    });
   };
 
   const handleDelete = (id: string) => {
@@ -231,16 +249,11 @@ const Index = () => {
 
           {activeTab === 'register' && (
             <div className="max-w-2xl mx-auto animate-smooth-appear">
-              <div className="investment-card p-6">
-                <h2 className="text-xl font-semibold text-card-foreground mb-6 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  Cadastrar Novo Investimento
-                </h2>
-                <InvestmentRegistration
-                  onSubmit={handleSubmit}
-                  onClose={() => setActiveTab('dashboard')}
-                />
-              </div>
+              <InvestmentRegistration
+                onSubmit={handleSubmit}
+                onClose={() => setActiveTab('dashboard')}
+                isModal={false}
+              />
             </div>
           )}
 
@@ -255,7 +268,7 @@ const Index = () => {
                   Registro de todas as compras e vendas realizadas
                 </p>
               </div>
-              <TransactionHistory transactions={transactions} />
+              <TransactionHistory transactions={transactions} onDelete={handleDeleteTransaction} />
             </div>
           )}
         </main>
@@ -272,6 +285,14 @@ const Index = () => {
             investment={sellingInvestment}
             onSell={handleConfirmSell}
             onClose={() => setSellingInvestment(null)}
+          />
+        )}
+
+        {editingInvestment && (
+          <EditInvestmentModal
+            investment={editingInvestment}
+            onSave={handleSaveEdit}
+            onClose={() => setEditingInvestment(null)}
           />
         )}
       </div>
