@@ -1,15 +1,19 @@
-import { ArrowDownLeft, ArrowUpRight, History } from 'lucide-react';
-import { Transaction, categoryLabels, transactionLabels } from '@/types/investment';
+import { ArrowDownLeft, ArrowUpRight, History, Trash2 } from 'lucide-react';
+import { Transaction, transactionLabels } from '@/types/investment';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface TransactionHistoryProps {
   transactions: Transaction[];
+  onDelete?: (id: string) => void;
 }
 
 function formatCurrency(value: number, isCrypto: boolean = false): string {
   return new Intl.NumberFormat(isCrypto ? 'en-US' : 'pt-BR', {
     style: 'currency',
     currency: isCrypto ? 'USD' : 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: isCrypto ? 6 : 2,
   }).format(value);
 }
 
@@ -23,7 +27,7 @@ function formatDate(date: Date): string {
   }).format(date);
 }
 
-export function TransactionHistory({ transactions }: TransactionHistoryProps) {
+export function TransactionHistory({ transactions, onDelete }: TransactionHistoryProps) {
   if (transactions.length === 0) {
     return (
       <div className="investment-card text-center py-12 animate-smooth-appear">
@@ -52,7 +56,7 @@ export function TransactionHistory({ transactions }: TransactionHistoryProps) {
           >
             <div className="flex items-center gap-4">
               <div className={cn(
-                "p-2 rounded-lg transition-colors",
+                "p-2 rounded-lg transition-colors shrink-0",
                 isBuy ? "bg-success/20" : "bg-destructive/20"
               )}>
                 {isBuy ? (
@@ -65,7 +69,7 @@ export function TransactionHistory({ transactions }: TransactionHistoryProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className={cn(
-                    "text-xs font-medium px-2 py-0.5 rounded-full",
+                    "text-xs font-medium px-2 py-0.5 rounded-full shrink-0",
                     isBuy ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"
                   )}>
                     {transactionLabels[tx.type]}
@@ -74,15 +78,18 @@ export function TransactionHistory({ transactions }: TransactionHistoryProps) {
                     {tx.investmentName}
                   </span>
                   {tx.ticker && (
-                    <span className="text-primary text-sm font-mono">({tx.ticker})</span>
+                    <span className="text-primary text-sm font-mono shrink-0">({tx.ticker})</span>
+                  )}
+                  {isCrypto && (
+                    <span className="text-xs text-muted-foreground font-mono shrink-0">USD</span>
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {tx.quantity.toLocaleString('pt-BR')} × {formatCurrency(tx.price, isCrypto)}
+                  {tx.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 8 })} × {formatCurrency(tx.price, isCrypto)}
                 </p>
               </div>
 
-              <div className="text-right">
+              <div className="text-right shrink-0">
                 <p className="font-mono font-medium text-card-foreground">
                   {formatCurrency(tx.total, isCrypto)}
                 </p>
@@ -101,6 +108,18 @@ export function TransactionHistory({ transactions }: TransactionHistoryProps) {
                   {formatDate(tx.date)}
                 </p>
               </div>
+
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onDelete(tx.id)}
+                  className="hover:text-destructive hover:bg-destructive/10 shrink-0"
+                  title="Excluir transação"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
             </div>
           </div>
         );

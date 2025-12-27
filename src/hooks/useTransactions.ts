@@ -46,6 +46,14 @@ export function useTransactions() {
     return newTransaction;
   }, [saveToStorage]);
 
+  const deleteTransaction = useCallback((id: string) => {
+    setTransactions(prev => {
+      const updated = prev.filter(tx => tx.id !== id);
+      saveToStorage(updated);
+      return updated;
+    });
+  }, [saveToStorage]);
+
   const getRecentTransactions = useCallback((limit: number = 10) => {
     return transactions.slice(0, limit);
   }, [transactions]);
@@ -58,6 +66,7 @@ export function useTransactions() {
     transactions,
     isLoading,
     addTransaction,
+    deleteTransaction,
     getRecentTransactions,
     getTransactionsByInvestment,
   };
