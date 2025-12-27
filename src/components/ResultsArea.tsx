@@ -8,14 +8,15 @@ interface ResultsAreaProps {
   investments: Investment[];
 }
 
-type Period = '1d' | '1w' | '1m' | '6m' | '1y';
+type Period = '1d' | '1w' | '1m' | '6m' | '1y' | 'total';
 
 const periods: { id: Period; label: string }[] = [
-  { id: '1d', label: '1 Dia' },
-  { id: '1w', label: '1 Semana' },
-  { id: '1m', label: '1 Mês' },
-  { id: '6m', label: '6 Meses' },
-  { id: '1y', label: '1 Ano' },
+  { id: '1d', label: '1D' },
+  { id: '1w', label: '1S' },
+  { id: '1m', label: '1M' },
+  { id: '6m', label: '6M' },
+  { id: '1y', label: '1A' },
+  { id: 'total', label: 'Total' },
 ];
 
 function formatCurrency(value: number): string {

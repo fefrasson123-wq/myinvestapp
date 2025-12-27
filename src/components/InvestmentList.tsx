@@ -1,4 +1,4 @@
-import { Trash2, Edit, TrendingUp, TrendingDown } from 'lucide-react';
+import { Trash2, Edit, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { Investment, categoryLabels, categoryColors } from '@/types/investment';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -7,12 +7,13 @@ interface InvestmentListProps {
   investments: Investment[];
   onEdit: (investment: Investment) => void;
   onDelete: (id: string) => void;
+  onSell: (investment: Investment) => void;
 }
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
+function formatCurrency(value: number, currency: 'BRL' | 'USD' = 'BRL'): string {
+  return new Intl.NumberFormat(currency === 'BRL' ? 'pt-BR' : 'en-US', {
     style: 'currency',
-    currency: 'BRL',
+    currency,
   }).format(value);
 }
 
@@ -24,10 +25,10 @@ function formatPercent(value: number): string {
   }).format(value / 100);
 }
 
-export function InvestmentList({ investments, onEdit, onDelete }: InvestmentListProps) {
+export function InvestmentList({ investments, onEdit, onDelete, onSell }: InvestmentListProps) {
   if (investments.length === 0) {
     return (
-      <div className="investment-card text-center py-12 animate-fade-in">
+      <div className="investment-card text-center py-12 animate-smooth-appear">
         <p className="text-muted-foreground">Nenhum investimento cadastrado ainda.</p>
         <p className="text-muted-foreground text-sm mt-2">Clique em "Adicionar Investimento" para começar.</p>
       </div>
@@ -35,15 +36,17 @@ export function InvestmentList({ investments, onEdit, onDelete }: InvestmentList
   }
 
   return (
-    <div className="space-y-3 animate-slide-up">
+    <div className="space-y-3">
       {investments.map((investment, index) => {
         const isPositive = investment.profitLoss >= 0;
+        const isCrypto = investment.category === 'crypto';
+        const currency = isCrypto ? 'USD' : 'BRL';
         
         return (
           <div 
             key={investment.id} 
-            className="investment-card"
-            style={{ animationDelay: `${index * 50}ms` }}
+            className="investment-card animate-smooth-appear"
+            style={{ animationDelay: `${index * 30}ms` }}
           >
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               {/* Info principal */}
@@ -67,6 +70,9 @@ export function InvestmentList({ investments, onEdit, onDelete }: InvestmentList
                   >
                     {categoryLabels[investment.category]}
                   </span>
+                  {isCrypto && (
+                    <span className="text-xs text-muted-foreground font-mono">USD</span>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -76,15 +82,15 @@ export function InvestmentList({ investments, onEdit, onDelete }: InvestmentList
                   </div>
                   <div>
                     <span className="text-muted-foreground">Preço Médio</span>
-                    <p className="font-mono text-card-foreground">{formatCurrency(investment.averagePrice)}</p>
+                    <p className="font-mono text-card-foreground">{formatCurrency(investment.averagePrice, currency)}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Preço Atual</span>
-                    <p className="font-mono text-card-foreground">{formatCurrency(investment.currentPrice)}</p>
+                    <p className="font-mono text-card-foreground">{formatCurrency(investment.currentPrice, currency)}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Valor Atual</span>
-                    <p className="font-mono text-primary font-medium">{formatCurrency(investment.currentValue)}</p>
+                    <p className="font-mono text-primary font-medium">{formatCurrency(investment.currentValue, currency)}</p>
                   </div>
                 </div>
               </div>
@@ -102,7 +108,7 @@ export function InvestmentList({ investments, onEdit, onDelete }: InvestmentList
                       "font-mono font-medium",
                       isPositive ? "text-success" : "text-destructive"
                     )}>
-                      {formatCurrency(investment.profitLoss)}
+                      {formatCurrency(investment.profitLoss, currency)}
                     </span>
                   </div>
                   <span className={cn(
@@ -114,11 +120,21 @@ export function InvestmentList({ investments, onEdit, onDelete }: InvestmentList
                 </div>
 
                 {/* Ações */}
-                <div className="flex gap-2">
+                <div className="flex gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => onSell(investment)}
+                    className="hover:text-primary hover:bg-primary/10"
+                    title="Vender"
+                  >
+                    <DollarSign className="w-4 h-4" />
+                  </Button>
                   <Button 
                     variant="ghost" 
                     size="icon"
                     onClick={() => onEdit(investment)}
+                    title="Editar"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -127,6 +143,7 @@ export function InvestmentList({ investments, onEdit, onDelete }: InvestmentList
                     size="icon"
                     onClick={() => onDelete(investment.id)}
                     className="hover:text-destructive hover:bg-destructive/10"
+                    title="Excluir"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

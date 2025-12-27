@@ -114,7 +114,7 @@
 
 @layer components {
   .investment-card {
-    @apply glass-card rounded-xl p-4 transition-all duration-300 hover:border-primary/50 hover:glow-primary;
+    @apply glass-card rounded-xl p-4 transition-all duration-200 hover:border-primary/50 hover:glow-primary;
   }
 
   .stat-value {
@@ -126,6 +126,6 @@
   }
 
   .category-badge {
-    @apply px-3 py-1 rounded-full text-xs font-medium border;
+    @apply px-3 py-1 rounded-full text-xs font-medium border transition-colors duration-200;
   }
 }
