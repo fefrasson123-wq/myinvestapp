@@ -10,6 +10,24 @@ export type InvestmentCategory =
 
 export type FixedIncomeType = 'pos' | 'pre' | 'ipca' | 'cdi';
 
+export type TransactionType = 'buy' | 'sell';
+
+export interface Transaction {
+  id: string;
+  investmentId: string;
+  investmentName: string;
+  ticker?: string;
+  category: InvestmentCategory;
+  type: TransactionType;
+  quantity: number;
+  price: number;
+  total: number;
+  profitLoss?: number;
+  profitLossPercent?: number;
+  date: Date;
+  createdAt: Date;
+}
+
 export interface Investment {
   id: string;
   name: string;
@@ -64,4 +82,9 @@ export const fixedIncomeLabels: Record<FixedIncomeType, string> = {
   pre: 'Pré-fixado',
   ipca: 'IPCA+',
   cdi: 'CDI',
+};
+
+export const transactionLabels: Record<TransactionType, string> = {
+  buy: 'Compra',
+  sell: 'Venda',
 };

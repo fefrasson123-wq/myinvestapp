@@ -14,7 +14,7 @@ import { Investment, PriceHistory } from '@/types/investment';
 
 interface PerformanceChartProps {
   investments: Investment[];
-  period: '1d' | '1w' | '1m' | '6m' | '1y';
+  period: '1d' | '1w' | '1m' | '6m' | '1y' | 'total';
 }
 
 function formatCurrency(value: number): string {
@@ -42,23 +42,27 @@ function generateHistoricalData(investments: Investment[], period: string): Pric
   switch (period) {
     case '1d':
       points = 24;
-      interval = 60 * 60 * 1000; // 1 hora
+      interval = 60 * 60 * 1000;
       break;
     case '1w':
       points = 7;
-      interval = 24 * 60 * 60 * 1000; // 1 dia
+      interval = 24 * 60 * 60 * 1000;
       break;
     case '1m':
       points = 30;
-      interval = 24 * 60 * 60 * 1000; // 1 dia
+      interval = 24 * 60 * 60 * 1000;
       break;
     case '6m':
       points = 26;
-      interval = 7 * 24 * 60 * 60 * 1000; // 1 semana
+      interval = 7 * 24 * 60 * 60 * 1000;
       break;
     case '1y':
       points = 12;
-      interval = 30 * 24 * 60 * 60 * 1000; // 1 mês
+      interval = 30 * 24 * 60 * 60 * 1000;
+      break;
+    case 'total':
+      points = 24;
+      interval = 30 * 24 * 60 * 60 * 1000; // 2 anos de dados
       break;
     default:
       points = 30;
@@ -84,6 +88,8 @@ function generateHistoricalData(investments: Investment[], period: string): Pric
       dateStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     } else if (period === '1w' || period === '1m') {
       dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    } else if (period === 'total') {
+      dateStr = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
     } else {
       dateStr = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
     }
