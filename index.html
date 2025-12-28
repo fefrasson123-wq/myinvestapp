@@ -32,10 +32,17 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@Lovable" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    
+    <!-- Inline critical CSS for faster FCP -->
+    <style>
+      body { margin: 0; background-color: #0a0a0a; }
+      #root { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+      .initial-loader { color: #8b5cf6; font-family: system-ui, -apple-system, sans-serif; }
+    </style>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="initial-loader">Carregando...</div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
