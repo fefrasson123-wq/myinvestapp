@@ -1,18 +1,31 @@
 import { useState, useMemo } from 'react';
-import { Search, Check, ArrowLeft } from 'lucide-react';
+import { Search, Check, ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { searchStocks, StockAsset, stocksList } from '@/data/stocksList';
 import { Investment } from '@/types/investment';
+import { cn } from '@/lib/utils';
+
+type TransactionMode = 'buy' | 'sell';
 
 interface StockFormProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
+  onSell?: (data: {
+    name: string;
+    ticker: string;
+    category: 'stocks';
+    quantity: number;
+    price: number;
+    date: Date;
+    total: number;
+  }) => void;
   onBack: () => void;
 }
 
-export function StockForm({ onSubmit, onBack }: StockFormProps) {
+export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
+  const [mode, setMode] = useState<TransactionMode>('buy');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStock, setSelectedStock] = useState<StockAsset | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -44,21 +57,33 @@ export function StockForm({ onSubmit, onBack }: StockFormProps) {
     if (!selectedStock) return;
 
     const quantity = parseFloat(formData.quantity) || 0;
-    const averagePrice = parseFloat(formData.averagePrice) || selectedStock.price;
-    const investedAmount = quantity * averagePrice;
+    const price = parseFloat(formData.averagePrice) || selectedStock.price;
 
-    onSubmit({
-      name: selectedStock.name,
-      category: 'stocks',
-      ticker: selectedStock.ticker,
-      quantity,
-      averagePrice,
-      currentPrice: selectedStock.price,
-      investedAmount,
-      purchaseDate: formData.purchaseDate || undefined,
-      dividends: formData.dividends ? parseFloat(formData.dividends) : undefined,
-      notes: formData.notes.trim() || undefined,
-    });
+    if (mode === 'sell' && onSell) {
+      onSell({
+        name: selectedStock.name,
+        ticker: selectedStock.ticker,
+        category: 'stocks',
+        quantity,
+        price,
+        date: formData.purchaseDate ? new Date(formData.purchaseDate) : new Date(),
+        total: quantity * price,
+      });
+    } else {
+      const investedAmount = quantity * price;
+      onSubmit({
+        name: selectedStock.name,
+        category: 'stocks',
+        ticker: selectedStock.ticker,
+        quantity,
+        averagePrice: price,
+        currentPrice: selectedStock.price,
+        investedAmount,
+        purchaseDate: formData.purchaseDate || undefined,
+        dividends: formData.dividends ? parseFloat(formData.dividends) : undefined,
+        notes: formData.notes.trim() || undefined,
+      });
+    }
   };
 
   return (
@@ -67,7 +92,39 @@ export function StockForm({ onSubmit, onBack }: StockFormProps) {
         <Button variant="ghost" size="icon" type="button" onClick={onBack}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h3 className="text-lg font-semibold text-card-foreground">Adicionar Ação</h3>
+        <h3 className="text-lg font-semibold text-card-foreground">
+          {mode === 'buy' ? 'Adicionar Ação' : 'Vender Ação'}
+        </h3>
+      </div>
+
+      {/* Toggle Compra/Venda */}
+      <div className="flex gap-2 p-1 bg-secondary/50 rounded-lg">
+        <button
+          type="button"
+          onClick={() => setMode('buy')}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-all",
+            mode === 'buy'
+              ? "bg-success text-success-foreground shadow-sm"
+              : "text-muted-foreground hover:text-card-foreground"
+          )}
+        >
+          <TrendingUp className="w-4 h-4" />
+          Compra
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('sell')}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-all",
+            mode === 'sell'
+              ? "bg-destructive text-destructive-foreground shadow-sm"
+              : "text-muted-foreground hover:text-card-foreground"
+          )}
+        >
+          <TrendingDown className="w-4 h-4" />
+          Venda
+        </button>
       </div>
 
       <div className="relative">
@@ -139,7 +196,7 @@ export function StockForm({ onSubmit, onBack }: StockFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="averagePrice">Preço Médio (R$) *</Label>
+          <Label htmlFor="averagePrice">{mode === 'buy' ? 'Preço Médio (R$)' : 'Preço de Venda (R$)'} *</Label>
           <Input
             id="averagePrice"
             type="number"
@@ -152,7 +209,7 @@ export function StockForm({ onSubmit, onBack }: StockFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="purchaseDate">Data da Compra</Label>
+          <Label htmlFor="purchaseDate">{mode === 'buy' ? 'Data da Compra' : 'Data da Venda'}</Label>
           <Input
             id="purchaseDate"
             type="date"
@@ -161,17 +218,19 @@ export function StockForm({ onSubmit, onBack }: StockFormProps) {
           />
         </div>
 
-        <div>
-          <Label htmlFor="dividends">Dividendos Recebidos (R$)</Label>
-          <Input
-            id="dividends"
-            type="number"
-            step="any"
-            value={formData.dividends}
-            onChange={(e) => setFormData(prev => ({ ...prev, dividends: e.target.value }))}
-            placeholder="0.00"
-          />
-        </div>
+        {mode === 'buy' && (
+          <div>
+            <Label htmlFor="dividends">Dividendos Recebidos (R$)</Label>
+            <Input
+              id="dividends"
+              type="number"
+              step="any"
+              value={formData.dividends}
+              onChange={(e) => setFormData(prev => ({ ...prev, dividends: e.target.value }))}
+              placeholder="0.00"
+            />
+          </div>
+        )}
 
         <div className="col-span-2">
           <Label htmlFor="notes">Observações</Label>
@@ -189,9 +248,16 @@ export function StockForm({ onSubmit, onBack }: StockFormProps) {
         <Button type="button" variant="outline" className="flex-1" onClick={onBack}>
           Cancelar
         </Button>
-        <Button type="submit" className="flex-1 gap-2" disabled={!selectedStock}>
+        <Button 
+          type="submit" 
+          className={cn(
+            "flex-1 gap-2",
+            mode === 'sell' && "bg-destructive hover:bg-destructive/90"
+          )}
+          disabled={!selectedStock}
+        >
           <Check className="w-4 h-4" />
-          Adicionar
+          {mode === 'buy' ? 'Adicionar' : 'Registrar Venda'}
         </Button>
       </div>
     </form>

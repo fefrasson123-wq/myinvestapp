@@ -16,8 +16,19 @@ import { StockForm } from './forms/StockForm';
 import { FIIForm } from './forms/FIIForm';
 import { FixedIncomeForm } from './forms/FixedIncomeForm';
 
+interface SellData {
+  name: string;
+  ticker: string;
+  category: string;
+  quantity: number;
+  price: number;
+  date: Date;
+  total: number;
+}
+
 interface InvestmentRegistrationProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
+  onSell?: (data: SellData) => void;
   onClose: () => void;
   isModal?: boolean;
 }
@@ -33,7 +44,7 @@ const investmentTypes = [
   { id: 'savings' as const, label: 'Poupança', icon: PiggyBank, color: 'hsl(180, 100%, 40%)' },
 ];
 
-export function InvestmentRegistration({ onSubmit, onClose, isModal = true }: InvestmentRegistrationProps) {
+export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = true }: InvestmentRegistrationProps) {
   const [currentForm, setCurrentForm] = useState<FormType>('menu');
 
   const handleSubmit = (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
@@ -44,6 +55,16 @@ export function InvestmentRegistration({ onSubmit, onClose, isModal = true }: In
     }
   };
 
+  const handleSell = (data: SellData) => {
+    if (onSell) {
+      onSell(data);
+      setCurrentForm('menu');
+      if (isModal) {
+        onClose();
+      }
+    }
+  };
+
   const handleBack = () => {
     setCurrentForm('menu');
   };
@@ -51,9 +72,9 @@ export function InvestmentRegistration({ onSubmit, onClose, isModal = true }: In
   const renderForm = () => {
     switch (currentForm) {
       case 'crypto':
-        return <CryptoForm onSubmit={handleSubmit} onBack={handleBack} />;
+        return <CryptoForm onSubmit={handleSubmit} onSell={handleSell} onBack={handleBack} />;
       case 'stocks':
-        return <StockForm onSubmit={handleSubmit} onBack={handleBack} />;
+        return <StockForm onSubmit={handleSubmit} onSell={handleSell} onBack={handleBack} />;
       case 'fii':
         return <FIIForm onSubmit={handleSubmit} onBack={handleBack} />;
       case 'cdb':
