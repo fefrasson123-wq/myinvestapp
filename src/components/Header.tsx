@@ -7,22 +7,22 @@ interface HeaderProps {
 
 export function Header({ onAddClick }: HeaderProps) {
   return (
-    <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-      <div className="container mx-auto px-4 py-4">
+    <header className="border-b border-border/50 bg-card/80 backdrop-blur-md relative z-30">
+      <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/20 glow-primary">
-              <TrendingUp className="w-6 h-6 text-primary" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-1.5 sm:p-2 rounded-lg bg-primary/20 glow-primary">
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-primary text-glow tracking-tight">
+              <h1 className="text-lg sm:text-xl font-bold text-primary text-glow tracking-tight">
                 InvestTracker
               </h1>
-              <p className="text-xs text-muted-foreground">Gerencie seus investimentos</p>
+              <p className="text-xs text-muted-foreground hidden sm:block">Gerencie seus investimentos</p>
             </div>
           </div>
           
-          <Button onClick={onAddClick} className="gap-2">
+          <Button onClick={onAddClick} size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Adicionar Investimento</span>
             <span className="sm:hidden">Novo</span>
