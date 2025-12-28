@@ -322,7 +322,7 @@ const Index = () => {
         <meta name="description" content="Aplicativo para gerenciar e acompanhar todos os seus investimentos: criptomoedas, ações, fundos imobiliários, CDB, CDI e mais." />
       </Helmet>
 
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background overflow-x-hidden">
         <Header onAddClick={handleAddClick} />
 
         {/* Navigation Tabs */}
@@ -435,14 +435,14 @@ const Index = () => {
           )}
 
           {activeTab === 'history' && (
-            <div className="max-w-3xl mx-auto animate-smooth-appear">
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-card-foreground flex items-center gap-2">
-                  <History className="w-5 h-5 text-primary" />
+            <div className="max-w-3xl mx-auto animate-smooth-appear overflow-hidden">
+              <div className="mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold text-card-foreground flex items-center gap-2">
+                  <History className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                   Histórico de Transações
                 </h2>
-                <p className="text-muted-foreground text-sm mt-1">
-                  Registro de todas as compras e vendas realizadas
+                <p className="text-muted-foreground text-xs sm:text-sm mt-1">
+                  Registro de todas as compras e vendas
                 </p>
               </div>
               <Suspense fallback={<LoadingFallback />}>
