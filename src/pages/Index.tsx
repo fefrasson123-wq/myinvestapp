@@ -328,42 +328,45 @@ const Index = () => {
         {/* Navigation Tabs */}
         <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-[73px] z-30">
           <div className="container mx-auto px-4">
-            <div className="flex justify-center gap-1">
+            <div className="flex justify-between sm:justify-center gap-1">
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={cn(
-                  "flex items-center gap-2 px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px whitespace-nowrap",
+                  "flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px whitespace-nowrap text-sm sm:text-base",
                   activeTab === 'dashboard'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-card-foreground"
                 )}
               >
                 <LayoutDashboard className="w-4 h-4" />
-                Dashboard
+                <span className="hidden xs:inline">Dashboard</span>
+                <span className="xs:hidden">Início</span>
               </button>
               <button
                 onClick={() => setActiveTab('register')}
                 className={cn(
-                  "flex items-center gap-2 px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px whitespace-nowrap",
+                  "flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px whitespace-nowrap text-sm sm:text-base",
                   activeTab === 'register'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-card-foreground"
                 )}
               >
                 <PlusCircle className="w-4 h-4" />
-                Cadastrar
+                <span className="hidden xs:inline">Cadastrar</span>
+                <span className="xs:hidden">Novo</span>
               </button>
               <button
                 onClick={() => setActiveTab('history')}
                 className={cn(
-                  "flex items-center gap-2 px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px whitespace-nowrap",
+                  "flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px whitespace-nowrap text-sm sm:text-base",
                   activeTab === 'history'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-card-foreground"
                 )}
               >
                 <History className="w-4 h-4" />
-                Histórico
+                <span className="hidden xs:inline">Histórico</span>
+                <span className="xs:hidden">Hist.</span>
               </button>
             </div>
           </div>
