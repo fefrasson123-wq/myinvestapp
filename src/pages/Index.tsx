@@ -11,6 +11,7 @@ import { SellAssetModal } from '@/components/SellAssetModal';
 import { EditInvestmentModal } from '@/components/EditInvestmentModal';
 import { TransactionHistory } from '@/components/TransactionHistory';
 import { EditTransactionModal } from '@/components/EditTransactionModal';
+import { PriceUpdateIndicator } from '@/components/PriceUpdateIndicator';
 import { useInvestments } from '@/hooks/useInvestments';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
@@ -56,6 +57,35 @@ const Index = () => {
       });
     }
   }, [prices, investments, getPrice, updateInvestment]);
+
+  // Handler para venda direta do formulário de cadastro
+  const handleDirectSell = (data: {
+    name: string;
+    ticker: string;
+    category: string;
+    quantity: number;
+    price: number;
+    date: Date;
+    total: number;
+  }) => {
+    // Registra a transação de venda
+    addTransaction({
+      investmentId: '',
+      investmentName: data.name,
+      ticker: data.ticker,
+      category: data.category as Investment['category'],
+      type: 'sell',
+      quantity: data.quantity,
+      price: data.price,
+      total: data.total,
+      date: data.date,
+    });
+
+    toast({
+      title: 'Venda registrada',
+      description: `${data.quantity} unidades de ${data.name} vendidas com sucesso.`,
+    });
+  };
 
   const handleAddClick = () => {
     setShowRegistration(true);
@@ -244,6 +274,15 @@ const Index = () => {
         <main className="container mx-auto px-4 py-6 space-y-6">
           {activeTab === 'dashboard' && (
             <div className="animate-smooth-appear">
+              {/* Price Update Indicator */}
+              <div className="mb-4">
+                <PriceUpdateIndicator
+                  lastUpdate={lastUpdate}
+                  isLoading={pricesLoading}
+                  onRefresh={fetchPrices}
+                />
+              </div>
+
               <PortfolioStats
                 totalValue={getTotalValue()}
                 totalInvested={getTotalInvested()}
@@ -282,6 +321,7 @@ const Index = () => {
             <div className="max-w-2xl mx-auto animate-smooth-appear">
               <InvestmentRegistration
                 onSubmit={handleSubmit}
+                onSell={handleDirectSell}
                 onClose={() => setActiveTab('dashboard')}
                 isModal={false}
               />
@@ -311,6 +351,7 @@ const Index = () => {
         {showRegistration && (
           <InvestmentRegistration
             onSubmit={handleSubmit}
+            onSell={handleDirectSell}
             onClose={handleClose}
           />
         )}

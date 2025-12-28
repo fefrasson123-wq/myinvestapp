@@ -1,19 +1,32 @@
 import { useState, useMemo } from 'react';
-import { Search, Check, ArrowLeft } from 'lucide-react';
+import { Search, Check, ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cryptoList, searchCrypto, CryptoAsset } from '@/data/cryptoList';
 import { Investment } from '@/types/investment';
+import { cn } from '@/lib/utils';
+
+type TransactionMode = 'buy' | 'sell';
 
 interface CryptoFormProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
+  onSell?: (data: {
+    name: string;
+    ticker: string;
+    category: 'crypto';
+    quantity: number;
+    price: number;
+    date: Date;
+    total: number;
+  }) => void;
   onBack: () => void;
 }
 
-export function CryptoForm({ onSubmit, onBack }: CryptoFormProps) {
+export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
   const [step, setStep] = useState<'select' | 'form'>('select');
+  const [mode, setMode] = useState<TransactionMode>('buy');
   const [selectedCrypto, setSelectedCrypto] = useState<CryptoAsset | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
@@ -42,20 +55,32 @@ export function CryptoForm({ onSubmit, onBack }: CryptoFormProps) {
     if (!selectedCrypto) return;
 
     const quantity = parseFloat(formData.quantity) || 0;
-    const averagePrice = parseFloat(formData.averagePrice) || selectedCrypto.price;
-    const investedAmount = quantity * averagePrice;
+    const price = parseFloat(formData.averagePrice) || selectedCrypto.price;
 
-    onSubmit({
-      name: selectedCrypto.name,
-      category: 'crypto',
-      ticker: selectedCrypto.symbol,
-      quantity,
-      averagePrice,
-      currentPrice: selectedCrypto.price,
-      investedAmount,
-      purchaseDate: formData.purchaseDate || undefined,
-      notes: formData.notes.trim() || undefined,
-    });
+    if (mode === 'sell' && onSell) {
+      onSell({
+        name: selectedCrypto.name,
+        ticker: selectedCrypto.symbol,
+        category: 'crypto',
+        quantity,
+        price,
+        date: formData.purchaseDate ? new Date(formData.purchaseDate) : new Date(),
+        total: quantity * price,
+      });
+    } else {
+      const investedAmount = quantity * price;
+      onSubmit({
+        name: selectedCrypto.name,
+        category: 'crypto',
+        ticker: selectedCrypto.symbol,
+        quantity,
+        averagePrice: price,
+        currentPrice: selectedCrypto.price,
+        investedAmount,
+        purchaseDate: formData.purchaseDate || undefined,
+        notes: formData.notes.trim() || undefined,
+      });
+    }
   };
 
   if (step === 'select') {
@@ -66,6 +91,36 @@ export function CryptoForm({ onSubmit, onBack }: CryptoFormProps) {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h3 className="text-lg font-semibold text-card-foreground">Selecione a Criptomoeda</h3>
+        </div>
+
+        {/* Toggle Compra/Venda */}
+        <div className="flex gap-2 p-1 bg-secondary/50 rounded-lg">
+          <button
+            type="button"
+            onClick={() => setMode('buy')}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-all",
+              mode === 'buy'
+                ? "bg-success text-success-foreground shadow-sm"
+                : "text-muted-foreground hover:text-card-foreground"
+            )}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Compra
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('sell')}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-all",
+              mode === 'sell'
+                ? "bg-destructive text-destructive-foreground shadow-sm"
+                : "text-muted-foreground hover:text-card-foreground"
+            )}
+          >
+            <TrendingDown className="w-4 h-4" />
+            Venda
+          </button>
         </div>
 
         <div className="relative">
@@ -116,6 +171,36 @@ export function CryptoForm({ onSubmit, onBack }: CryptoFormProps) {
         </div>
       </div>
 
+      {/* Toggle Compra/Venda */}
+      <div className="flex gap-2 p-1 bg-secondary/50 rounded-lg">
+        <button
+          type="button"
+          onClick={() => setMode('buy')}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-all",
+            mode === 'buy'
+              ? "bg-success text-success-foreground shadow-sm"
+              : "text-muted-foreground hover:text-card-foreground"
+          )}
+        >
+          <TrendingUp className="w-4 h-4" />
+          Compra
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('sell')}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-all",
+            mode === 'sell'
+              ? "bg-destructive text-destructive-foreground shadow-sm"
+              : "text-muted-foreground hover:text-card-foreground"
+          )}
+        >
+          <TrendingDown className="w-4 h-4" />
+          Venda
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="quantity">Quantidade *</Label>
@@ -131,7 +216,7 @@ export function CryptoForm({ onSubmit, onBack }: CryptoFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="averagePrice">Preço Médio (USD)</Label>
+          <Label htmlFor="averagePrice">{mode === 'buy' ? 'Preço Médio (USD)' : 'Preço de Venda (USD)'}</Label>
           <Input
             id="averagePrice"
             type="number"
@@ -143,7 +228,7 @@ export function CryptoForm({ onSubmit, onBack }: CryptoFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="purchaseDate">Data da Compra</Label>
+          <Label htmlFor="purchaseDate">{mode === 'buy' ? 'Data da Compra' : 'Data da Venda'}</Label>
           <Input
             id="purchaseDate"
             type="date"
@@ -168,9 +253,15 @@ export function CryptoForm({ onSubmit, onBack }: CryptoFormProps) {
         <Button type="button" variant="outline" className="flex-1" onClick={onBack}>
           Cancelar
         </Button>
-        <Button type="submit" className="flex-1 gap-2">
+        <Button 
+          type="submit" 
+          className={cn(
+            "flex-1 gap-2",
+            mode === 'sell' && "bg-destructive hover:bg-destructive/90"
+          )}
+        >
           <Check className="w-4 h-4" />
-          Adicionar
+          {mode === 'buy' ? 'Adicionar' : 'Registrar Venda'}
         </Button>
       </div>
     </form>
