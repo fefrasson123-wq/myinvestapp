@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Search, Check, ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, Check, ArrowLeft, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { cryptoList, searchCrypto, CryptoAsset } from '@/data/cryptoList';
 import { Investment } from '@/types/investment';
 import { cn } from '@/lib/utils';
+import { useCryptoPrices } from '@/hooks/useCryptoPrices';
+import { AssetPriceChart } from '@/components/AssetPriceChart';
 
 type TransactionMode = 'buy' | 'sell';
 
@@ -36,19 +38,42 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
     notes: '',
   });
 
+  const { prices, isLoading: isPriceLoading, fetchPrices } = useCryptoPrices();
+
   const filteredCryptos = useMemo(() => {
     if (!searchQuery) return cryptoList;
     return searchCrypto(searchQuery);
   }, [searchQuery]);
 
+  // Busca preço em tempo real
+  const currentLivePrice = selectedCrypto ? prices[selectedCrypto.id] : null;
+
   const handleSelectCrypto = (crypto: CryptoAsset) => {
     setSelectedCrypto(crypto);
+    
+    // Usa preço em tempo real se disponível
+    const livePrice = prices[crypto.id];
+    const priceToUse = livePrice?.current_price ?? crypto.price;
+    
     setFormData(prev => ({
       ...prev,
-      averagePrice: crypto.price.toString(),
+      averagePrice: priceToUse.toString(),
     }));
     setStep('form');
+    
+    // Força atualização do preço
+    fetchPrices([crypto.id]);
   };
+
+  // Atualiza preço médio quando preço em tempo real chega
+  useEffect(() => {
+    if (currentLivePrice && selectedCrypto) {
+      setFormData(prev => ({
+        ...prev,
+        averagePrice: currentLivePrice.current_price.toString(),
+      }));
+    }
+  }, [currentLivePrice, selectedCrypto]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,16 +185,36 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
         <Button variant="ghost" size="icon" type="button" onClick={() => setStep('select')}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <div>
+        <div className="flex-1">
           <h3 className="text-lg font-semibold text-card-foreground">
             {selectedCrypto?.name}
             <span className="ml-2 text-primary font-mono text-sm">({selectedCrypto?.symbol})</span>
           </h3>
-          <p className="text-sm text-muted-foreground">
-            Preço atual: $ {selectedCrypto?.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
-          </p>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            {isPriceLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+            <span>Preço atual: $ {(currentLivePrice?.current_price ?? selectedCrypto?.price ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
+            {currentLivePrice && (
+              <span className={cn(
+                "font-mono",
+                currentLivePrice.price_change_percentage_24h >= 0 ? "text-success" : "text-destructive"
+              )}>
+                {currentLivePrice.price_change_percentage_24h >= 0 ? '+' : ''}{currentLivePrice.price_change_percentage_24h.toFixed(2)}%
+              </span>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Gráfico de variação 24h */}
+      {currentLivePrice && selectedCrypto && (
+        <AssetPriceChart
+          symbol={selectedCrypto.symbol}
+          currentPrice={currentLivePrice.current_price}
+          change24h={currentLivePrice.price_change_24h}
+          changePercent24h={currentLivePrice.price_change_percentage_24h}
+          currency="USD"
+        />
+      )}
 
       {/* Toggle Compra/Venda */}
       <div className="flex gap-2 p-1 bg-secondary/50 rounded-lg">
