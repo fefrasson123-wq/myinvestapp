@@ -76,12 +76,39 @@ const Index = () => {
     .filter(Boolean)
     .sort((a, b) => (b?.getTime() || 0) - (a?.getTime() || 0))[0] || null;
 
-  // Função para atualizar todos os preços
+  // Função para atualizar todos os preços - busca preços reais para ativos da carteira
   const refreshAllPrices = useCallback(() => {
-    fetchCryptoPrices();
-    fetchStockPrices();
-    fetchFIIPrices();
-  }, [fetchCryptoPrices, fetchStockPrices, fetchFIIPrices]);
+    // Busca preços de criptos
+    const cryptoIds = investments
+      .filter(inv => inv.category === 'crypto' && inv.ticker)
+      .map(inv => inv.ticker!.toLowerCase());
+    if (cryptoIds.length > 0) {
+      fetchCryptoPrices(cryptoIds);
+    }
+    
+    // Busca preços de ações da carteira via API
+    const stockTickers = investments
+      .filter(inv => inv.category === 'stocks' && inv.ticker)
+      .map(inv => inv.ticker!);
+    if (stockTickers.length > 0) {
+      fetchStockPrices(stockTickers);
+    }
+    
+    // Busca preços de FIIs da carteira via API
+    const fiiTickers = investments
+      .filter(inv => inv.category === 'fii' && inv.ticker)
+      .map(inv => inv.ticker!);
+    if (fiiTickers.length > 0) {
+      fetchFIIPrices(fiiTickers);
+    }
+  }, [investments, fetchCryptoPrices, fetchStockPrices, fetchFIIPrices]);
+
+  // Busca preços reais quando a carteira é carregada
+  useEffect(() => {
+    if (investments.length > 0) {
+      refreshAllPrices();
+    }
+  }, [investments.length]); // Só executa quando o número de investimentos muda
 
   // Atualiza os preços em tempo real para todos os tipos de ativos
   useEffect(() => {
