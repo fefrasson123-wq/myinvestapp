@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { LayoutDashboard, PlusCircle, History, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, History } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { PortfolioStats } from '@/components/PortfolioStats';
 import { CategoryChart } from '@/components/CategoryChart';
@@ -15,6 +15,8 @@ import { PriceUpdateIndicator } from '@/components/PriceUpdateIndicator';
 import { useInvestments } from '@/hooks/useInvestments';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
+import { useStockPrices } from '@/hooks/useStockPrices';
+import { useFIIPrices } from '@/hooks/useFIIPrices';
 import { Investment, Transaction } from '@/types/investment';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -42,21 +44,65 @@ const Index = () => {
   } = useInvestments();
 
   const { transactions, addTransaction, deleteTransaction, updateTransaction } = useTransactions();
-  const { prices, getPrice, isLoading: pricesLoading, lastUpdate, fetchPrices } = useCryptoPrices();
+  
+  // Hooks de preços em tempo real
+  const { 
+    prices: cryptoPrices, 
+    getPrice: getCryptoPrice, 
+    isLoading: cryptoLoading, 
+    lastUpdate: cryptoLastUpdate, 
+    fetchPrices: fetchCryptoPrices 
+  } = useCryptoPrices();
+  
+  const { 
+    getPrice: getStockPrice, 
+    isLoading: stocksLoading, 
+    lastUpdate: stocksLastUpdate, 
+    fetchPrices: fetchStockPrices 
+  } = useStockPrices();
+  
+  const { 
+    getPrice: getFIIPrice, 
+    isLoading: fiiLoading, 
+    lastUpdate: fiiLastUpdate, 
+    fetchPrices: fetchFIIPrices 
+  } = useFIIPrices();
 
-  // Atualiza os preços das criptomoedas em tempo real
+  // Combina o status de loading
+  const pricesLoading = cryptoLoading || stocksLoading || fiiLoading;
+  
+  // Usa a atualização mais recente
+  const lastUpdate = [cryptoLastUpdate, stocksLastUpdate, fiiLastUpdate]
+    .filter(Boolean)
+    .sort((a, b) => (b?.getTime() || 0) - (a?.getTime() || 0))[0] || null;
+
+  // Função para atualizar todos os preços
+  const refreshAllPrices = useCallback(() => {
+    fetchCryptoPrices();
+    fetchStockPrices();
+    fetchFIIPrices();
+  }, [fetchCryptoPrices, fetchStockPrices, fetchFIIPrices]);
+
+  // Atualiza os preços em tempo real para todos os tipos de ativos
   useEffect(() => {
-    if (Object.keys(prices).length > 0) {
-      investments.forEach(inv => {
-        if (inv.category === 'crypto' && inv.ticker) {
-          const realTimePrice = getPrice(inv.ticker);
-          if (realTimePrice && Math.abs(realTimePrice - inv.currentPrice) > 0.01) {
-            updateInvestment(inv.id, { currentPrice: realTimePrice });
-          }
-        }
-      });
-    }
-  }, [prices, investments, getPrice, updateInvestment]);
+    investments.forEach(inv => {
+      if (!inv.ticker) return;
+      
+      let realTimePrice: number | null = null;
+      
+      if (inv.category === 'crypto') {
+        realTimePrice = getCryptoPrice(inv.ticker);
+      } else if (inv.category === 'stocks') {
+        realTimePrice = getStockPrice(inv.ticker);
+      } else if (inv.category === 'fii') {
+        realTimePrice = getFIIPrice(inv.ticker);
+      }
+      
+      if (realTimePrice && Math.abs(realTimePrice - inv.currentPrice) > 0.01) {
+        updateInvestment(inv.id, { currentPrice: realTimePrice });
+      }
+    });
+  }, [cryptoPrices, investments, getCryptoPrice, getStockPrice, getFIIPrice, updateInvestment]);
 
   // Handler para venda direta do formulário de cadastro
   const handleDirectSell = (data: {
@@ -279,7 +325,7 @@ const Index = () => {
                 <PriceUpdateIndicator
                   lastUpdate={lastUpdate}
                   isLoading={pricesLoading}
-                  onRefresh={fetchPrices}
+                  onRefresh={refreshAllPrices}
                 />
               </div>
 

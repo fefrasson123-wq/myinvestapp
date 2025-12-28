@@ -110,11 +110,70 @@
   .gradient-border {
     background: linear-gradient(135deg, hsl(140 100% 50% / 0.3), transparent 50%);
   }
+
+  /* Animações suaves */
+  .animate-smooth-appear {
+    animation: smoothAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-smooth-fade {
+    animation: smoothFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-pulse-subtle {
+    animation: pulseSubtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .transition-smooth {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@keyframes smoothAppear {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes smoothFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
 @layer components {
   .investment-card {
-    @apply glass-card rounded-xl p-4 transition-all duration-200 hover:border-primary/50 hover:glow-primary;
+    @apply glass-card rounded-xl p-4 transition-all duration-300 ease-out hover:border-primary/50 hover:glow-primary hover:translate-y-[-2px];
   }
 
   .stat-value {
@@ -126,6 +185,16 @@
   }
 
   .category-badge {
-    @apply px-3 py-1 rounded-full text-xs font-medium border transition-colors duration-200;
+    @apply px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200;
+  }
+
+  /* Botões com animação suave */
+  .btn-smooth {
+    @apply transition-all duration-200 ease-out active:scale-95;
+  }
+
+  /* Cards com hover suave */
+  .card-hover {
+    @apply transition-all duration-300 ease-out hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30;
   }
 }
