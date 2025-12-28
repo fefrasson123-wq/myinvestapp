@@ -60,6 +60,7 @@ export function PriceUpdateIndicator({ lastUpdate, isLoading, onRefresh }: Price
         size="sm"
         onClick={onRefresh}
         disabled={isLoading}
+        aria-label={isLoading ? 'Atualizando preços' : 'Atualizar preços'}
         className={cn(
           "ml-auto gap-2 transition-all duration-300",
           "hover:bg-primary/10 hover:text-primary hover:shadow-md hover:shadow-primary/10",
