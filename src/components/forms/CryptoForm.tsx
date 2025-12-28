@@ -45,14 +45,14 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
     return searchCrypto(searchQuery);
   }, [searchQuery]);
 
-  // Busca preço em tempo real
-  const currentLivePrice = selectedCrypto ? prices[selectedCrypto.id] : null;
+  // Busca preço em tempo real pelo símbolo (BTC, ETH, etc)
+  const currentLivePrice = selectedCrypto ? prices[selectedCrypto.symbol.toUpperCase()] : null;
 
   const handleSelectCrypto = (crypto: CryptoAsset) => {
     setSelectedCrypto(crypto);
     
-    // Usa preço em tempo real se disponível
-    const livePrice = prices[crypto.id];
+    // Usa preço em tempo real se disponível (pelo símbolo)
+    const livePrice = prices[crypto.symbol.toUpperCase()];
     const priceToUse = livePrice?.current_price ?? crypto.price;
     
     setFormData(prev => ({
@@ -61,8 +61,8 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
     }));
     setStep('form');
     
-    // Força atualização do preço
-    fetchPrices([crypto.id]);
+    // Força atualização do preço pelo símbolo
+    fetchPrices([crypto.symbol.toUpperCase()]);
   };
 
   // Atualiza preço médio quando preço em tempo real chega
