@@ -30,8 +30,73 @@ export function useInvestments() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }, []);
 
+  // Calculate current value for fixed income based on elapsed time and interest rate
+  const calculateFixedIncomeValue = useCallback((investment: Investment) => {
+    const isFixedIncome = ['cdb', 'cdi', 'treasury', 'savings'].includes(investment.category);
+    
+    if (!isFixedIncome || !investment.interestRate || !investment.purchaseDate) {
+      return investment.quantity * investment.currentPrice;
+    }
+
+    const purchaseDate = new Date(investment.purchaseDate);
+    const now = new Date();
+    const yearsElapsed = (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+    
+    if (yearsElapsed <= 0) {
+      return investment.investedAmount;
+    }
+
+    return investment.investedAmount * Math.pow(1 + investment.interestRate / 100, yearsElapsed);
+  }, []);
+
+  // Recalculate fixed income values on load
+  useEffect(() => {
+    if (investments.length > 0) {
+      const needsUpdate = investments.some(inv => 
+        ['cdb', 'cdi', 'treasury', 'savings'].includes(inv.category) && 
+        inv.interestRate && 
+        inv.purchaseDate
+      );
+
+      if (needsUpdate) {
+        setInvestments(prev => {
+          const updated = prev.map(inv => {
+            const currentValue = calculateFixedIncomeValue(inv);
+            const profitLoss = currentValue - inv.investedAmount;
+            const profitLossPercent = inv.investedAmount > 0 
+              ? (profitLoss / inv.investedAmount) * 100 
+              : 0;
+            
+            return {
+              ...inv,
+              currentValue,
+              currentPrice: currentValue / inv.quantity,
+              profitLoss,
+              profitLossPercent,
+            };
+          });
+          saveToStorage(updated);
+          return updated;
+        });
+      }
+    }
+  }, [investments.length, calculateFixedIncomeValue, saveToStorage]);
+
   const addInvestment = useCallback((data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
-    const currentValue = data.quantity * data.currentPrice;
+    const isFixedIncome = ['cdb', 'cdi', 'treasury', 'savings'].includes(data.category);
+    let currentValue: number;
+
+    if (isFixedIncome && data.interestRate && data.purchaseDate) {
+      const purchaseDate = new Date(data.purchaseDate);
+      const now = new Date();
+      const yearsElapsed = (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+      currentValue = yearsElapsed > 0 
+        ? data.investedAmount * Math.pow(1 + data.interestRate / 100, yearsElapsed)
+        : data.investedAmount;
+    } else {
+      currentValue = data.quantity * data.currentPrice;
+    }
+
     const profitLoss = currentValue - data.investedAmount;
     const profitLossPercent = data.investedAmount > 0 ? (profitLoss / data.investedAmount) * 100 : 0;
 
@@ -39,6 +104,7 @@ export function useInvestments() {
       ...data,
       id: generateId(),
       currentValue,
+      currentPrice: currentValue / data.quantity,
       profitLoss,
       profitLossPercent,
       createdAt: new Date(),

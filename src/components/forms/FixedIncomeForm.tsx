@@ -38,6 +38,16 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     setStep('form');
   };
 
+  const calculateCurrentValue = (purchaseDateStr: string, rate: number, amount: number) => {
+    const purchaseDate = new Date(purchaseDateStr);
+    const now = new Date();
+    const yearsElapsed = (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+    
+    if (yearsElapsed <= 0 || rate === 0) return amount;
+    
+    return amount * Math.pow(1 + rate / 100, yearsElapsed);
+  };
+
   const calculateEstimatedReturn = () => {
     const amount = parseFloat(formData.investedAmount) || 0;
     const rate = parseFloat(formData.interestRate) || 0;
@@ -56,19 +66,22 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     e.preventDefault();
 
     const investedAmount = parseFloat(formData.investedAmount) || 0;
-    const estimatedReturn = calculateEstimatedReturn();
-    const currentPrice = estimatedReturn ? estimatedReturn / investedAmount : 1;
+    const rate = parseFloat(formData.interestRate) || 0;
+    const purchaseDate = formData.purchaseDate || new Date().toISOString().split('T')[0];
+    
+    // Calculate current value based on elapsed time
+    const currentValue = calculateCurrentValue(purchaseDate, rate, investedAmount);
 
     onSubmit({
       name: formData.name.trim() || `${categoryTitles[category]} ${selectedType ? fixedIncomeLabels[selectedType] : ''}`,
       category: category as InvestmentCategory,
       quantity: 1,
       averagePrice: investedAmount,
-      currentPrice: investedAmount,
+      currentPrice: currentValue,
       investedAmount,
       fixedIncomeType: selectedType || undefined,
       interestRate: parseFloat(formData.interestRate) || undefined,
-      purchaseDate: formData.purchaseDate || undefined,
+      purchaseDate: purchaseDate,
       maturityDate: formData.maturityDate || undefined,
       notes: formData.notes.trim() || undefined,
     });
