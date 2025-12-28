@@ -1,16 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { LayoutDashboard, PlusCircle, History } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { PortfolioStats } from '@/components/PortfolioStats';
-import { CategoryChart } from '@/components/CategoryChart';
-import { InvestmentList } from '@/components/InvestmentList';
-import { InvestmentRegistration } from '@/components/InvestmentRegistration';
-import { ResultsArea } from '@/components/ResultsArea';
-import { SellAssetModal } from '@/components/SellAssetModal';
-import { EditInvestmentModal } from '@/components/EditInvestmentModal';
-import { TransactionHistory } from '@/components/TransactionHistory';
-import { EditTransactionModal } from '@/components/EditTransactionModal';
 import { PriceUpdateIndicator } from '@/components/PriceUpdateIndicator';
 import { useInvestments } from '@/hooks/useInvestments';
 import { useTransactions } from '@/hooks/useTransactions';
@@ -21,6 +13,23 @@ import { useGoldPrice } from '@/hooks/useGoldPrice';
 import { Investment, Transaction } from '@/types/investment';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+
+// Lazy load heavy components to reduce initial bundle size
+const CategoryChart = lazy(() => import('@/components/CategoryChart').then(m => ({ default: m.CategoryChart })));
+const InvestmentList = lazy(() => import('@/components/InvestmentList').then(m => ({ default: m.InvestmentList })));
+const InvestmentRegistration = lazy(() => import('@/components/InvestmentRegistration').then(m => ({ default: m.InvestmentRegistration })));
+const ResultsArea = lazy(() => import('@/components/ResultsArea').then(m => ({ default: m.ResultsArea })));
+const SellAssetModal = lazy(() => import('@/components/SellAssetModal').then(m => ({ default: m.SellAssetModal })));
+const EditInvestmentModal = lazy(() => import('@/components/EditInvestmentModal').then(m => ({ default: m.EditInvestmentModal })));
+const TransactionHistory = lazy(() => import('@/components/TransactionHistory').then(m => ({ default: m.TransactionHistory })));
+const EditTransactionModal = lazy(() => import('@/components/EditTransactionModal').then(m => ({ default: m.EditTransactionModal })));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center p-8">
+    <div className="text-primary animate-pulse">Carregando...</div>
+  </div>
+);
 
 type ActiveTab = 'dashboard' | 'register' | 'history';
 
@@ -380,10 +389,14 @@ const Index = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
                 <div className="lg:col-span-1">
-                  <CategoryChart categoryTotals={getCategoryTotals()} />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <CategoryChart categoryTotals={getCategoryTotals()} />
+                  </Suspense>
                 </div>
                 <div className="lg:col-span-2">
-                  <ResultsArea investments={investments} />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <ResultsArea investments={investments} />
+                  </Suspense>
                 </div>
               </div>
 
@@ -396,24 +409,28 @@ const Index = () => {
                     </span>
                   </h2>
                 </div>
-                <InvestmentList
-                  investments={investments}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onSell={handleSell}
-                />
+                <Suspense fallback={<LoadingFallback />}>
+                  <InvestmentList
+                    investments={investments}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onSell={handleSell}
+                  />
+                </Suspense>
               </div>
             </div>
           )}
 
           {activeTab === 'register' && (
             <div className="max-w-2xl mx-auto animate-smooth-appear">
-              <InvestmentRegistration
-                onSubmit={handleSubmit}
-                onSell={handleDirectSell}
-                onClose={() => setActiveTab('dashboard')}
-                isModal={false}
-              />
+              <Suspense fallback={<LoadingFallback />}>
+                <InvestmentRegistration
+                  onSubmit={handleSubmit}
+                  onSell={handleDirectSell}
+                  onClose={() => setActiveTab('dashboard')}
+                  isModal={false}
+                />
+              </Suspense>
             </div>
           )}
 
@@ -428,45 +445,55 @@ const Index = () => {
                   Registro de todas as compras e vendas realizadas
                 </p>
               </div>
-              <TransactionHistory 
-                transactions={transactions} 
-                onDelete={handleDeleteTransaction} 
-                onEdit={handleEditTransaction}
-              />
+              <Suspense fallback={<LoadingFallback />}>
+                <TransactionHistory 
+                  transactions={transactions} 
+                  onDelete={handleDeleteTransaction} 
+                  onEdit={handleEditTransaction}
+                />
+              </Suspense>
             </div>
           )}
         </main>
 
         {showRegistration && (
-          <InvestmentRegistration
-            onSubmit={handleSubmit}
-            onSell={handleDirectSell}
-            onClose={handleClose}
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <InvestmentRegistration
+              onSubmit={handleSubmit}
+              onSell={handleDirectSell}
+              onClose={handleClose}
+            />
+          </Suspense>
         )}
 
         {sellingInvestment && (
-          <SellAssetModal
-            investment={sellingInvestment}
-            onSell={handleConfirmSell}
-            onClose={() => setSellingInvestment(null)}
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <SellAssetModal
+              investment={sellingInvestment}
+              onSell={handleConfirmSell}
+              onClose={() => setSellingInvestment(null)}
+            />
+          </Suspense>
         )}
 
         {editingInvestment && (
-          <EditInvestmentModal
-            investment={editingInvestment}
-            onSave={handleSaveEdit}
-            onClose={() => setEditingInvestment(null)}
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <EditInvestmentModal
+              investment={editingInvestment}
+              onSave={handleSaveEdit}
+              onClose={() => setEditingInvestment(null)}
+            />
+          </Suspense>
         )}
 
         {editingTransaction && (
-          <EditTransactionModal
-            transaction={editingTransaction}
-            onSave={handleSaveTransaction}
-            onClose={() => setEditingTransaction(null)}
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <EditTransactionModal
+              transaction={editingTransaction}
+              onSave={handleSaveTransaction}
+              onClose={() => setEditingTransaction(null)}
+            />
+          </Suspense>
         )}
       </div>
     </>
