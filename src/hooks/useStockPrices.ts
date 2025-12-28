@@ -31,88 +31,119 @@ export function useStockPrices() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
+  // Fetch a single stock price from BRAPI
+  const fetchSinglePrice = async (symbol: string): Promise<StockPrice | null> => {
+    try {
+      const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
+        body: { symbols: [symbol] },
+      });
+
+      if (fetchError) {
+        console.error('Edge function error for', symbol, ':', fetchError);
+        return null;
+      }
+
+      if (data?.quotes?.[symbol]) {
+        const q = data.quotes[symbol];
+        return {
+          symbol: q.symbol,
+          price: q.price,
+          change: q.change,
+          changePercent: q.changePercent,
+          high24h: q.high24h,
+          low24h: q.low24h,
+          open: q.open,
+          lastUpdated: q.lastUpdated,
+        };
+      }
+      return null;
+    } catch (err) {
+      console.error('Error fetching price for', symbol, ':', err);
+      return null;
+    }
+  };
+
+  // Get local fallback price for a symbol
+  const getLocalFallback = (symbol: string): StockPrice | null => {
+    const upperSymbol = symbol.toUpperCase();
+    const stockData = localPrices[upperSymbol];
+    
+    if (!stockData) return null;
+    
+    // Small random variation to simulate real-time
+    const variationPercent = (Math.random() - 0.5) * 0.01;
+    const variation = stockData.price * variationPercent;
+    const currentPrice = stockData.price + variation;
+    
+    return {
+      symbol: upperSymbol,
+      price: Math.round(currentPrice * 100) / 100,
+      change: stockData.change + variation,
+      changePercent: stockData.changePercent + variationPercent * 100,
+      high24h: Math.round(currentPrice * 1.02 * 100) / 100,
+      low24h: Math.round(currentPrice * 0.98 * 100) / 100,
+      open: Math.round((currentPrice - stockData.change) * 100) / 100,
+      lastUpdated: new Date().toISOString(),
+    };
+  };
+
+  // Fetch prices for specific symbols only (on demand)
   const fetchPrices = useCallback(async (symbols?: string[]) => {
+    if (!symbols || symbols.length === 0) {
+      // Don't fetch all stocks at once - use local data for initial load
+      const priceMap: Record<string, StockPrice> = {};
+      Object.keys(localPrices).forEach(symbol => {
+        const fallback = getLocalFallback(symbol);
+        if (fallback) priceMap[symbol] = fallback;
+      });
+      setPrices(priceMap);
+      setLastUpdate(new Date());
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const symbolsToFetch = symbols || Object.keys(localPrices);
+      // Fetch each symbol individually to comply with BRAPI free tier
+      const newPrices: Record<string, StockPrice> = {};
       
-      // Try to fetch from BRAPI via edge function
-      const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
-        body: { symbols: symbolsToFetch },
-      });
-
-      if (fetchError) {
-        console.error('Edge function error:', fetchError);
-        throw new Error(fetchError.message);
-      }
-
-      if (data?.quotes) {
-        const priceMap: Record<string, StockPrice> = {};
+      for (const symbol of symbols) {
+        const upperSymbol = symbol.toUpperCase();
         
-        for (const [symbol, quote] of Object.entries(data.quotes)) {
-          const q = quote as any;
-          priceMap[symbol] = {
-            symbol: q.symbol,
-            price: q.price,
-            change: q.change,
-            changePercent: q.changePercent,
-            high24h: q.high24h,
-            low24h: q.low24h,
-            open: q.open,
-            lastUpdated: q.lastUpdated,
-          };
+        // Try BRAPI first
+        const livePrice = await fetchSinglePrice(upperSymbol);
+        
+        if (livePrice) {
+          newPrices[upperSymbol] = livePrice;
+          console.log(`Updated ${upperSymbol} price from BRAPI:`, livePrice.price);
+        } else {
+          // Fallback to local data
+          const fallback = getLocalFallback(upperSymbol);
+          if (fallback) {
+            newPrices[upperSymbol] = fallback;
+            console.log(`Using local fallback for ${upperSymbol}:`, fallback.price);
+          }
         }
-
-        setPrices(prev => ({ ...prev, ...priceMap }));
-        setLastUpdate(new Date());
-        console.log(`Updated ${Object.keys(priceMap).length} stock prices from BRAPI`);
-      } else {
-        // Fallback to local data
-        useLocalFallback(symbolsToFetch);
       }
+
+      setPrices(prev => ({ ...prev, ...newPrices }));
+      setLastUpdate(new Date());
     } catch (err) {
       console.error('Error fetching stock prices:', err);
       setError(err instanceof Error ? err.message : 'Erro ao buscar cotações');
       
-      // Use local fallback
-      const symbolsToFetch = symbols || Object.keys(localPrices);
-      useLocalFallback(symbolsToFetch);
+      // Use local fallback for all requested symbols
+      const fallbackPrices: Record<string, StockPrice> = {};
+      symbols.forEach(symbol => {
+        const fallback = getLocalFallback(symbol.toUpperCase());
+        if (fallback) fallbackPrices[symbol.toUpperCase()] = fallback;
+      });
+      setPrices(prev => ({ ...prev, ...fallbackPrices }));
     } finally {
       setIsLoading(false);
     }
   }, []);
-
-  const useLocalFallback = (symbols: string[]) => {
-    const priceMap: Record<string, StockPrice> = {};
-    
-    symbols.forEach(symbol => {
-      const upperSymbol = symbol.toUpperCase();
-      const stockData = localPrices[upperSymbol];
-      
-      if (stockData) {
-        // Small random variation to simulate real-time
-        const variationPercent = (Math.random() - 0.5) * 0.01;
-        const variation = stockData.price * variationPercent;
-        const currentPrice = stockData.price + variation;
-        
-        priceMap[upperSymbol] = {
-          symbol: upperSymbol,
-          price: Math.round(currentPrice * 100) / 100,
-          change: stockData.change + variation,
-          changePercent: stockData.changePercent + variationPercent * 100,
-          high24h: Math.round(currentPrice * 1.02 * 100) / 100,
-          low24h: Math.round(currentPrice * 0.98 * 100) / 100,
-          open: Math.round((currentPrice - stockData.change) * 100) / 100,
-          lastUpdated: new Date().toISOString(),
-        };
-      }
-    });
-
-    setPrices(prev => ({ ...prev, ...priceMap }));
-    setLastUpdate(new Date());
-  };
 
   const getPrice = useCallback((symbol: string): number | null => {
     const upperSymbol = symbol.toUpperCase();
@@ -129,16 +160,16 @@ export function useStockPrices() {
     };
   }, [prices]);
 
-  // Initial fetch and update every 60 seconds
+  // Load local prices on mount only (no API calls)
   useEffect(() => {
-    fetchPrices();
-    
-    const interval = setInterval(() => {
-      fetchPrices();
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [fetchPrices]);
+    const priceMap: Record<string, StockPrice> = {};
+    Object.keys(localPrices).forEach(symbol => {
+      const fallback = getLocalFallback(symbol);
+      if (fallback) priceMap[symbol] = fallback;
+    });
+    setPrices(priceMap);
+    setLastUpdate(new Date());
+  }, []);
 
   return {
     prices,
