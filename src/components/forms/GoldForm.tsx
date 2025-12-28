@@ -81,11 +81,11 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
       </div>
 
       {/* Preço do Ouro em Tempo Real */}
-      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+      <div className="p-3 rounded-lg bg-accent/20 border border-border">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-sm text-muted-foreground">Preço do Ouro (24K)</div>
-            <div className="text-xl font-bold text-amber-500">
+            <div className="text-xl font-bold text-foreground">
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : pricePerGram ? (
@@ -94,6 +94,12 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
                 'Carregando...'
               )}
             </div>
+            {pricePerGram && (
+              <div className="text-xs text-muted-foreground mt-1">
+                Preço estimado {formData.purity}K: R${' '}
+                {(pricePerGram * (formData.purity / 24)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/g
+              </div>
+            )}
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={fetchPrice} disabled={isLoading}>
             Atualizar
