@@ -326,51 +326,48 @@ const Index = () => {
         <Header onAddClick={handleAddClick} />
 
         {/* Navigation Tabs */}
-        <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-[73px] z-30">
-          <div className="container mx-auto px-4">
-            <div className="flex justify-between sm:justify-center gap-1">
+        <nav className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-40">
+          <div className="container mx-auto px-2 sm:px-4">
+            <div className="flex justify-around sm:justify-center gap-0 sm:gap-1">
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={cn(
-                  "flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px whitespace-nowrap text-sm sm:text-base",
+                  "flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px text-xs sm:text-base min-w-0",
                   activeTab === 'dashboard'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-card-foreground"
                 )}
               >
-                <LayoutDashboard className="w-4 h-4" />
-                <span className="hidden xs:inline">Dashboard</span>
-                <span className="xs:hidden">Início</span>
+                <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Dashboard</span>
               </button>
               <button
                 onClick={() => setActiveTab('register')}
                 className={cn(
-                  "flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px whitespace-nowrap text-sm sm:text-base",
+                  "flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px text-xs sm:text-base min-w-0",
                   activeTab === 'register'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-card-foreground"
                 )}
               >
-                <PlusCircle className="w-4 h-4" />
-                <span className="hidden xs:inline">Cadastrar</span>
-                <span className="xs:hidden">Novo</span>
+                <PlusCircle className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Cadastrar</span>
               </button>
               <button
                 onClick={() => setActiveTab('history')}
                 className={cn(
-                  "flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px whitespace-nowrap text-sm sm:text-base",
+                  "flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px text-xs sm:text-base min-w-0",
                   activeTab === 'history'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-card-foreground"
                 )}
               >
-                <History className="w-4 h-4" />
-                <span className="hidden xs:inline">Histórico</span>
-                <span className="xs:hidden">Hist.</span>
+                <History className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Histórico</span>
               </button>
             </div>
           </div>
-        </div>
+        </nav>
 
         <main className="container mx-auto px-4 py-6 space-y-6">
           {activeTab === 'dashboard' && (
