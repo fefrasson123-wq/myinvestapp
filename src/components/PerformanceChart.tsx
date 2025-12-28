@@ -1,7 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -26,12 +24,25 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-// Gera dados simulados baseados nos investimentos existentes
-function generateHistoricalData(investments: Investment[], period: string): PriceHistory[] {
+// Gera dados baseados nos investimentos reais - usa um cache por investmentKey
+function generateHistoricalData(investments: Investment[], period: string, cacheRef: React.MutableRefObject<{key: string, data: PriceHistory[]}>): PriceHistory[] {
   const totalValue = investments.reduce((sum, inv) => sum + inv.currentValue, 0);
   const totalInvested = investments.reduce((sum, inv) => sum + inv.investedAmount, 0);
   
   if (totalValue === 0) return [];
+  
+  // Cria uma chave única baseada nos dados dos investimentos
+  const investmentKey = `${period}-${investments.length}-${totalValue.toFixed(2)}-${totalInvested.toFixed(2)}`;
+  
+  // Se já temos dados em cache para essa chave, retorna o cache
+  if (cacheRef.current.key === investmentKey) {
+    // Atualiza o último ponto com o valor atual real
+    const cachedData = [...cacheRef.current.data];
+    if (cachedData.length > 0) {
+      cachedData[cachedData.length - 1] = { ...cachedData[cachedData.length - 1], value: totalValue };
+    }
+    return cachedData;
+  }
   
   const now = new Date();
   const data: PriceHistory[] = [];
@@ -69,13 +80,20 @@ function generateHistoricalData(investments: Investment[], period: string): Pric
       interval = 24 * 60 * 60 * 1000;
   }
   
-  // Simula variação de preços ao longo do tempo
+  // Simula variação de preços ao longo do tempo com seed baseada em investimentos
   const volatility = 0.02; // 2% de volatilidade
   let currentValue = totalInvested * 0.95; // Começa um pouco abaixo do investido
   
+  // Usa uma seed baseada no totalInvested para ter consistência
+  const seed = Math.floor(totalInvested * 100) % 1000;
+  const pseudoRandom = (i: number) => {
+    const x = Math.sin(seed + i * 12.9898) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  
   for (let i = points - 1; i >= 0; i--) {
     const date = new Date(now.getTime() - (i * interval));
-    const change = (Math.random() - 0.45) * volatility; // Tendência levemente positiva
+    const change = (pseudoRandom(i) - 0.45) * volatility; // Tendência levemente positiva
     currentValue = currentValue * (1 + change);
     
     // Garante que o último ponto seja o valor atual real
@@ -100,11 +118,24 @@ function generateHistoricalData(investments: Investment[], period: string): Pric
     });
   }
   
+  // Salva no cache
+  cacheRef.current = { key: investmentKey, data };
+  
   return data;
 }
 
 export function PerformanceChart({ investments, period }: PerformanceChartProps) {
-  const data = useMemo(() => generateHistoricalData(investments, period), [investments, period]);
+  // Cache para evitar regeneração desnecessária dos dados históricos
+  const cacheRef = useRef<{key: string, data: PriceHistory[]}>({ key: '', data: [] });
+  
+  // Calcula o valor total atual para forçar atualização quando preços mudam
+  const totalValue = investments.reduce((sum, inv) => sum + inv.currentValue, 0);
+  const totalInvested = investments.reduce((sum, inv) => sum + inv.investedAmount, 0);
+  
+  const data = useMemo(() => 
+    generateHistoricalData(investments, period, cacheRef), 
+    [investments, period, totalValue, totalInvested]
+  );
   
   if (data.length === 0) {
     return (
@@ -117,7 +148,6 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
   const firstValue = data[0]?.value || 0;
   const lastValue = data[data.length - 1]?.value || 0;
   const isPositive = lastValue >= firstValue;
-  const gradientColor = isPositive ? 'hsl(140, 100%, 50%)' : 'hsl(0, 72%, 51%)';
   const lineColor = isPositive ? '#22c55e' : '#ef4444';
 
   const CustomTooltip = ({ active, payload, label }: any) => {
