@@ -6,11 +6,16 @@ export type InvestmentCategory =
   | 'cdi'
   | 'treasury'
   | 'savings'
+  | 'cash'
+  | 'realestate'
+  | 'gold'
   | 'other';
 
 export type FixedIncomeType = 'pos' | 'pre' | 'ipca' | 'cdi';
 
 export type TransactionType = 'buy' | 'sell';
+
+export type RealEstateType = 'house' | 'apartment' | 'land' | 'lot' | 'commercial';
 
 export interface Transaction {
   id: string;
@@ -46,6 +51,15 @@ export interface Investment {
   fixedIncomeType?: FixedIncomeType;
   interestRate?: number;
   dividends?: number;
+  // Real Estate specific fields
+  realEstateType?: RealEstateType;
+  address?: string;
+  areaM2?: number;
+  city?: string;
+  state?: string;
+  // Gold specific fields
+  weightGrams?: number;
+  purity?: number; // karats or percentage
   createdAt: Date;
   updatedAt: Date;
 }
@@ -63,6 +77,9 @@ export const categoryLabels: Record<InvestmentCategory, string> = {
   cdi: 'CDI',
   treasury: 'Tesouro Direto',
   savings: 'Poupança',
+  cash: 'Dinheiro em Espécie',
+  realestate: 'Imóveis',
+  gold: 'Ouro',
   other: 'Outros',
 };
 
@@ -74,6 +91,9 @@ export const categoryColors: Record<InvestmentCategory, string> = {
   cdi: 'hsl(320, 100%, 50%)',
   treasury: 'hsl(30, 100%, 50%)',
   savings: 'hsl(180, 100%, 40%)',
+  cash: 'hsl(120, 70%, 45%)',
+  realestate: 'hsl(220, 70%, 50%)',
+  gold: 'hsl(50, 100%, 45%)',
   other: 'hsl(0, 0%, 50%)',
 };
 
@@ -82,6 +102,14 @@ export const fixedIncomeLabels: Record<FixedIncomeType, string> = {
   pre: 'Pré-fixado',
   ipca: 'IPCA+',
   cdi: 'CDI',
+};
+
+export const realEstateLabels: Record<RealEstateType, string> = {
+  house: 'Casa',
+  apartment: 'Apartamento',
+  land: 'Terreno',
+  lot: 'Lote',
+  commercial: 'Comercial',
 };
 
 export const transactionLabels: Record<TransactionType, string> = {

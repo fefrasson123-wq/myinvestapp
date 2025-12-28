@@ -17,6 +17,7 @@ import { useTransactions } from '@/hooks/useTransactions';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { useStockPrices } from '@/hooks/useStockPrices';
 import { useFIIPrices } from '@/hooks/useFIIPrices';
+import { useGoldPrice } from '@/hooks/useGoldPrice';
 import { Investment, Transaction } from '@/types/investment';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -68,11 +69,18 @@ const Index = () => {
     fetchPrices: fetchFIIPrices 
   } = useFIIPrices();
 
+  const {
+    pricePerGram: goldPricePerGram,
+    isLoading: goldLoading,
+    lastUpdate: goldLastUpdate,
+    fetchPrice: fetchGoldPrice,
+  } = useGoldPrice();
+
   // Combina o status de loading
-  const pricesLoading = cryptoLoading || stocksLoading || fiiLoading;
+  const pricesLoading = cryptoLoading || stocksLoading || fiiLoading || goldLoading;
   
   // Usa a atualização mais recente
-  const lastUpdate = [cryptoLastUpdate, stocksLastUpdate, fiiLastUpdate]
+  const lastUpdate = [cryptoLastUpdate, stocksLastUpdate, fiiLastUpdate, goldLastUpdate]
     .filter(Boolean)
     .sort((a, b) => (b?.getTime() || 0) - (a?.getTime() || 0))[0] || null;
 
@@ -101,7 +109,13 @@ const Index = () => {
     if (fiiTickers.length > 0) {
       fetchFIIPrices(fiiTickers);
     }
-  }, [investments, fetchCryptoPrices, fetchStockPrices, fetchFIIPrices]);
+
+    // Busca preço do ouro
+    const hasGold = investments.some(inv => inv.category === 'gold');
+    if (hasGold) {
+      fetchGoldPrice();
+    }
+  }, [investments, fetchCryptoPrices, fetchStockPrices, fetchFIIPrices, fetchGoldPrice]);
 
   // Busca preços reais quando a carteira é carregada
   useEffect(() => {
@@ -113,23 +127,25 @@ const Index = () => {
   // Atualiza os preços em tempo real para todos os tipos de ativos
   useEffect(() => {
     investments.forEach(inv => {
-      if (!inv.ticker) return;
-      
       let realTimePrice: number | null = null;
       
-      if (inv.category === 'crypto') {
+      if (inv.category === 'crypto' && inv.ticker) {
         realTimePrice = getCryptoPrice(inv.ticker);
-      } else if (inv.category === 'stocks') {
+      } else if (inv.category === 'stocks' && inv.ticker) {
         realTimePrice = getStockPrice(inv.ticker);
-      } else if (inv.category === 'fii') {
+      } else if (inv.category === 'fii' && inv.ticker) {
         realTimePrice = getFIIPrice(inv.ticker);
+      } else if (inv.category === 'gold' && goldPricePerGram && inv.weightGrams && inv.purity) {
+        // Para ouro, calcula o valor atual baseado no peso e pureza
+        const purityMultiplier = inv.purity / 24;
+        realTimePrice = goldPricePerGram * purityMultiplier;
       }
       
       if (realTimePrice && Math.abs(realTimePrice - inv.currentPrice) > 0.01) {
         updateInvestment(inv.id, { currentPrice: realTimePrice });
       }
     });
-  }, [cryptoPrices, investments, getCryptoPrice, getStockPrice, getFIIPrice, updateInvestment]);
+  }, [cryptoPrices, goldPricePerGram, investments, getCryptoPrice, getStockPrice, getFIIPrice, updateInvestment]);
 
   // Handler para venda direta do formulário de cadastro
   const handleDirectSell = (data: {
