@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Search, Check, ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, Check, ArrowLeft, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { searchStocks, StockAsset, stocksList } from '@/data/stocksList';
 import { Investment } from '@/types/investment';
 import { cn } from '@/lib/utils';
+import { useStockPrices } from '@/hooks/useStockPrices';
+import { AssetPriceChart } from '@/components/AssetPriceChart';
 
 type TransactionMode = 'buy' | 'sell';
 
@@ -37,20 +39,43 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
     notes: '',
   });
 
+  const { prices, isLoading: isPriceLoading, fetchPrices } = useStockPrices();
+
   const filteredStocks = useMemo(() => {
     if (!searchQuery) return [];
     return searchStocks(searchQuery).slice(0, 8);
   }, [searchQuery]);
 
+  // Busca preço em tempo real quando seleciona ação
+  const currentLivePrice = selectedStock ? prices[selectedStock.ticker] : null;
+
   const handleSelectStock = (stock: StockAsset) => {
     setSelectedStock(stock);
     setSearchQuery(`${stock.ticker} - ${stock.name}`);
+    
+    // Usa preço em tempo real se disponível
+    const livePrice = prices[stock.ticker];
+    const priceToUse = livePrice?.price ?? stock.price;
+    
     setFormData(prev => ({
       ...prev,
-      averagePrice: stock.price.toString(),
+      averagePrice: priceToUse.toString(),
     }));
     setShowSuggestions(false);
+    
+    // Força atualização do preço
+    fetchPrices([stock.ticker]);
   };
+
+  // Atualiza preço médio quando preço em tempo real chega
+  useEffect(() => {
+    if (currentLivePrice && selectedStock) {
+      setFormData(prev => ({
+        ...prev,
+        averagePrice: currentLivePrice.price.toString(),
+      }));
+    }
+  }, [currentLivePrice, selectedStock]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,16 +193,40 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
       </div>
 
       {selectedStock && (
-        <div className="p-3 rounded-lg bg-secondary/30 border border-primary/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="font-mono text-primary font-semibold">{selectedStock.ticker}</span>
-              <span className="ml-2 text-card-foreground">{selectedStock.name}</span>
+        <div className="space-y-4">
+          <div className="p-3 rounded-lg bg-secondary/30 border border-primary/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="font-mono text-primary font-semibold">{selectedStock.ticker}</span>
+                <span className="ml-2 text-card-foreground">{selectedStock.name}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isPriceLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                <span className="font-mono text-foreground">
+                  R$ {(currentLivePrice?.price ?? selectedStock.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+                {currentLivePrice && (
+                  <span className={cn(
+                    "text-xs font-mono",
+                    currentLivePrice.changePercent >= 0 ? "text-success" : "text-destructive"
+                  )}>
+                    {currentLivePrice.changePercent >= 0 ? '+' : ''}{currentLivePrice.changePercent.toFixed(2)}%
+                  </span>
+                )}
+              </div>
             </div>
-            <span className="font-mono text-foreground">
-              R$ {selectedStock.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </span>
           </div>
+
+          {/* Gráfico de variação 24h */}
+          {currentLivePrice && (
+            <AssetPriceChart
+              symbol={selectedStock.ticker}
+              currentPrice={currentLivePrice.price}
+              change24h={currentLivePrice.change}
+              changePercent24h={currentLivePrice.changePercent}
+              currency="BRL"
+            />
+          )}
         </div>
       )}
 
