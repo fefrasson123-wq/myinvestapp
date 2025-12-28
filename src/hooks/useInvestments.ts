@@ -122,6 +122,9 @@ export function useInvestments() {
       cdi: 0,
       treasury: 0,
       savings: 0,
+      cash: 0,
+      realestate: 0,
+      gold: 0,
       other: 0,
     };
 

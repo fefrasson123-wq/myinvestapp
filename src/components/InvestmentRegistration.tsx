@@ -6,8 +6,10 @@ import {
   Banknote, 
   Landmark, 
   PiggyBank,
+  Wallet,
+  Home,
+  CircleDollarSign,
   X,
-  ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Investment } from '@/types/investment';
@@ -15,6 +17,9 @@ import { CryptoForm } from './forms/CryptoForm';
 import { StockForm } from './forms/StockForm';
 import { FIIForm } from './forms/FIIForm';
 import { FixedIncomeForm } from './forms/FixedIncomeForm';
+import { CashForm } from './forms/CashForm';
+import { RealEstateForm } from './forms/RealEstateForm';
+import { GoldForm } from './forms/GoldForm';
 
 interface SellData {
   name: string;
@@ -33,12 +38,15 @@ interface InvestmentRegistrationProps {
   isModal?: boolean;
 }
 
-type FormType = 'menu' | 'crypto' | 'stocks' | 'fii' | 'cdb' | 'cdi' | 'treasury' | 'savings';
+type FormType = 'menu' | 'crypto' | 'stocks' | 'fii' | 'cdb' | 'cdi' | 'treasury' | 'savings' | 'cash' | 'realestate' | 'gold';
 
 const investmentTypes = [
   { id: 'crypto' as const, label: 'Criptomoedas', icon: Bitcoin, color: 'hsl(45, 100%, 50%)' },
   { id: 'stocks' as const, label: 'Ações', icon: TrendingUp, color: 'hsl(200, 100%, 50%)' },
   { id: 'fii' as const, label: 'Fundos Imobiliários', icon: Building2, color: 'hsl(280, 100%, 60%)' },
+  { id: 'gold' as const, label: 'Ouro', icon: CircleDollarSign, color: 'hsl(50, 100%, 45%)' },
+  { id: 'realestate' as const, label: 'Imóveis', icon: Home, color: 'hsl(220, 70%, 50%)' },
+  { id: 'cash' as const, label: 'Dinheiro', icon: Wallet, color: 'hsl(120, 70%, 45%)' },
   { id: 'cdb' as const, label: 'CDB', icon: Banknote, color: 'hsl(140, 100%, 50%)' },
   { id: 'treasury' as const, label: 'Tesouro Direto', icon: Landmark, color: 'hsl(30, 100%, 50%)' },
   { id: 'savings' as const, label: 'Poupança', icon: PiggyBank, color: 'hsl(180, 100%, 40%)' },
@@ -77,6 +85,12 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
         return <StockForm onSubmit={handleSubmit} onSell={handleSell} onBack={handleBack} />;
       case 'fii':
         return <FIIForm onSubmit={handleSubmit} onBack={handleBack} />;
+      case 'cash':
+        return <CashForm onSubmit={handleSubmit} onBack={handleBack} />;
+      case 'realestate':
+        return <RealEstateForm onSubmit={handleSubmit} onBack={handleBack} />;
+      case 'gold':
+        return <GoldForm onSubmit={handleSubmit} onBack={handleBack} />;
       case 'cdb':
       case 'cdi':
       case 'treasury':
