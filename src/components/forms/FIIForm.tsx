@@ -177,15 +177,10 @@ export function FIIForm({ onSubmit, onSell, onBack }: FIIFormProps) {
                 key={fii.ticker}
                 type="button"
                 onClick={() => handleSelectFII(fii)}
-                className="w-full flex items-center justify-between p-3 hover:bg-secondary/50 transition-colors text-left border-b border-border/30 last:border-0"
+                className="w-full flex items-center p-3 hover:bg-secondary/50 transition-colors text-left border-b border-border/30 last:border-0"
               >
-                <div>
-                  <span className="font-mono text-primary font-semibold">{fii.ticker}</span>
-                  <span className="ml-2 text-card-foreground">{fii.name}</span>
-                </div>
-                <span className="font-mono text-muted-foreground">
-                  R$ {fii.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
+                <span className="font-mono text-primary font-semibold">{fii.ticker}</span>
+                <span className="ml-2 text-card-foreground">{fii.name}</span>
               </button>
             ))}
           </div>

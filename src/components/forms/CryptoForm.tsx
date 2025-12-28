@@ -163,15 +163,10 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
             <button
               key={crypto.id}
               onClick={() => handleSelectCrypto(crypto)}
-              className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all text-left"
+              className="flex items-center p-3 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all text-left"
             >
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-primary font-semibold">{crypto.symbol}</span>
-                <span className="text-card-foreground">{crypto.name}</span>
-              </div>
-              <span className="font-mono text-muted-foreground">
-                $ {crypto.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
-              </span>
+              <span className="font-mono text-primary font-semibold">{crypto.symbol}</span>
+              <span className="ml-3 text-card-foreground">{crypto.name}</span>
             </button>
           ))}
         </div>

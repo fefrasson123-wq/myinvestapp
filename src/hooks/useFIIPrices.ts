@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { fiiList, StockAsset } from '@/data/stocksList';
 
 interface FIIPrice {
@@ -41,8 +42,8 @@ const fiiDividendYields: Record<string, number> = {
   'ALZR11': 8.4,
 };
 
-// Gera mapa de preços a partir da lista
-function generateFIIPrices(): Record<string, StockAsset> {
+// Fallback prices from local data
+function getLocalFIIPrices(): Record<string, StockAsset> {
   const priceMap: Record<string, StockAsset> = {};
   fiiList.forEach(fii => {
     priceMap[fii.ticker] = fii;
@@ -50,7 +51,7 @@ function generateFIIPrices(): Record<string, StockAsset> {
   return priceMap;
 }
 
-const baseFIIPrices = generateFIIPrices();
+const localFIIPrices = getLocalFIIPrices();
 
 export function useFIIPrices() {
   const [prices, setPrices] = useState<Record<string, FIIPrice>>({});
@@ -63,48 +64,83 @@ export function useFIIPrices() {
     setError(null);
 
     try {
-      // Simula delay de rede curto
-      await new Promise(resolve => setTimeout(resolve, 200));
+      const symbolsToFetch = symbols || Object.keys(localFIIPrices);
       
-      const symbolsToFetch = symbols || Object.keys(baseFIIPrices);
-      const priceMap: Record<string, FIIPrice> = {};
-
-      symbolsToFetch.forEach(symbol => {
-        const upperSymbol = symbol.toUpperCase();
-        const fiiData = baseFIIPrices[upperSymbol];
-        
-        if (fiiData) {
-          // Adiciona variação aleatória pequena para simular tempo real (±0.3%)
-          const variationPercent = (Math.random() - 0.5) * 0.006;
-          const variation = fiiData.price * variationPercent;
-          const currentPrice = fiiData.price + variation;
-          
-          // Calcula high/low baseado no preço e variação
-          const baseHigh = currentPrice * (1 + Math.abs(fiiData.changePercent) / 100 + 0.003);
-          const baseLow = currentPrice * (1 - Math.abs(fiiData.changePercent) / 100 - 0.003);
-          
-          priceMap[upperSymbol] = {
-            symbol: upperSymbol,
-            price: Math.round(currentPrice * 100) / 100,
-            change: fiiData.change + variation,
-            changePercent: fiiData.changePercent + variationPercent * 100,
-            dividendYield: fiiDividendYields[upperSymbol] || 10.0,
-            high24h: Math.round(baseHigh * 100) / 100,
-            low24h: Math.round(baseLow * 100) / 100,
-            lastUpdated: new Date().toISOString(),
-          };
-        }
+      // Try to fetch from BRAPI via edge function
+      const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
+        body: { symbols: symbolsToFetch },
       });
 
-      setPrices(priceMap);
-      setLastUpdate(new Date());
+      if (fetchError) {
+        console.error('Edge function error:', fetchError);
+        throw new Error(fetchError.message);
+      }
+
+      if (data?.quotes) {
+        const priceMap: Record<string, FIIPrice> = {};
+        
+        for (const [symbol, quote] of Object.entries(data.quotes)) {
+          const q = quote as any;
+          priceMap[symbol] = {
+            symbol: q.symbol,
+            price: q.price,
+            change: q.change,
+            changePercent: q.changePercent,
+            dividendYield: fiiDividendYields[symbol] || 10.0,
+            high24h: q.high24h,
+            low24h: q.low24h,
+            lastUpdated: q.lastUpdated,
+          };
+        }
+
+        setPrices(prev => ({ ...prev, ...priceMap }));
+        setLastUpdate(new Date());
+        console.log(`Updated ${Object.keys(priceMap).length} FII prices from BRAPI`);
+      } else {
+        // Fallback to local data
+        useLocalFallback(symbolsToFetch);
+      }
     } catch (err) {
+      console.error('Error fetching FII prices:', err);
       setError(err instanceof Error ? err.message : 'Erro ao buscar cotações');
-      console.error('Erro ao buscar preços de FIIs:', err);
+      
+      // Use local fallback
+      const symbolsToFetch = symbols || Object.keys(localFIIPrices);
+      useLocalFallback(symbolsToFetch);
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  const useLocalFallback = (symbols: string[]) => {
+    const priceMap: Record<string, FIIPrice> = {};
+
+    symbols.forEach(symbol => {
+      const upperSymbol = symbol.toUpperCase();
+      const fiiData = localFIIPrices[upperSymbol];
+      
+      if (fiiData) {
+        // Small random variation
+        const variationPercent = (Math.random() - 0.5) * 0.006;
+        const variation = fiiData.price * variationPercent;
+        const currentPrice = fiiData.price + variation;
+        
+        priceMap[upperSymbol] = {
+          symbol: upperSymbol,
+          price: Math.round(currentPrice * 100) / 100,
+          change: fiiData.change + variation,
+          changePercent: fiiData.changePercent + variationPercent * 100,
+          dividendYield: fiiDividendYields[upperSymbol] || 10.0,
+          high24h: Math.round(currentPrice * 1.015 * 100) / 100,
+          low24h: Math.round(currentPrice * 0.985 * 100) / 100,
+          lastUpdated: new Date().toISOString(),
+        };
+      }
+    });
+
+    setPrices(prev => ({ ...prev, ...priceMap }));
+    setLastUpdate(new Date());
+  };
 
   const getPrice = useCallback((symbol: string): number | null => {
     const upperSymbol = symbol.toUpperCase();
@@ -126,7 +162,7 @@ export function useFIIPrices() {
     return prices[upperSymbol]?.dividendYield ?? null;
   }, [prices]);
 
-  // Busca inicial e atualização a cada 60 segundos
+  // Initial fetch and update every 60 seconds
   useEffect(() => {
     fetchPrices();
     
