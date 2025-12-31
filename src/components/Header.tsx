@@ -16,7 +16,7 @@ export function Header({ onAddClick }: HeaderProps) {
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold text-primary text-glow tracking-tight">
-                InvestTracker
+                My Invest
               </h1>
               <p className="text-xs text-muted-foreground hidden sm:block">Gerencie seus investimentos</p>
             </div>
