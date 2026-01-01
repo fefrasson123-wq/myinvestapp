@@ -217,18 +217,16 @@ export function FIIForm({ onSubmit, onSell, onBack }: FIIFormProps) {
             )}
           </div>
 
-          {/* Gráfico de variação 24h */}
-          {currentLivePrice && (
-            <AssetPriceChart
-              symbol={selectedFII.ticker}
-              currentPrice={currentLivePrice.price}
-              change24h={currentLivePrice.change}
-              changePercent24h={currentLivePrice.changePercent}
-              high24h={currentLivePrice.high24h}
-              low24h={currentLivePrice.low24h}
-              currency="BRL"
-            />
-          )}
+          {/* Gráfico de variação 24h - sempre mostra, usando dados disponíveis */}
+          <AssetPriceChart
+            symbol={selectedFII.ticker}
+            currentPrice={currentLivePrice?.price ?? selectedFII.price}
+            change24h={currentLivePrice?.change ?? selectedFII.change}
+            changePercent24h={currentLivePrice?.changePercent ?? selectedFII.changePercent}
+            high24h={currentLivePrice?.high24h}
+            low24h={currentLivePrice?.low24h}
+            currency="BRL"
+          />
         </div>
       )}
 
