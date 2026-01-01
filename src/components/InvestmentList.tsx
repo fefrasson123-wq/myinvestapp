@@ -45,14 +45,14 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell }: Invest
         return (
           <div 
             key={investment.id} 
-            className="investment-card animate-smooth-appear"
-            style={{ animationDelay: `${index * 30}ms` }}
+            className="investment-card animate-slide-up group"
+            style={{ animationDelay: `${index * 50}ms` }}
           >
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               {/* Info principal */}
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h4 className="font-semibold text-card-foreground">
+                  <h4 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">
                     {investment.name}
                     {investment.ticker && (
                       <span className="ml-2 text-primary font-mono text-sm">
@@ -61,7 +61,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell }: Invest
                     )}
                   </h4>
                   <span 
-                    className="category-badge"
+                    className="category-badge transition-transform duration-200 hover:scale-105"
                     style={{ 
                       borderColor: categoryColors[investment.category],
                       color: categoryColors[investment.category],
@@ -76,7 +76,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell }: Invest
                 </div>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
+                  <div className="transition-colors">
                     <span className="text-muted-foreground">Quantidade</span>
                     <p className="font-mono text-card-foreground">{investment.quantity.toLocaleString('pt-BR')}</p>
                   </div>
@@ -100,9 +100,9 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell }: Invest
                 <div className="text-right">
                   <div className="flex items-center gap-1 justify-end">
                     {isPositive ? (
-                      <TrendingUp className="w-4 h-4 text-success" />
+                      <TrendingUp className="w-4 h-4 text-success transition-transform group-hover:scale-110" />
                     ) : (
-                      <TrendingDown className="w-4 h-4 text-destructive" />
+                      <TrendingDown className="w-4 h-4 text-destructive transition-transform group-hover:scale-110" />
                     )}
                     <span className={cn(
                       "font-mono font-medium",
@@ -120,12 +120,12 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell }: Invest
                 </div>
 
                 {/* Ações */}
-                <div className="flex gap-1">
+                <div className="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
                   <Button 
                     variant="ghost" 
                     size="icon"
                     onClick={() => onSell(investment)}
-                    className="hover:text-primary hover:bg-primary/10"
+                    className="hover:text-primary hover:bg-primary/10 btn-interactive"
                     title="Vender"
                   >
                     <DollarSign className="w-4 h-4" />
@@ -134,6 +134,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell }: Invest
                     variant="ghost" 
                     size="icon"
                     onClick={() => onEdit(investment)}
+                    className="btn-interactive"
                     title="Editar"
                   >
                     <Edit className="w-4 h-4" />
@@ -142,7 +143,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell }: Invest
                     variant="ghost" 
                     size="icon"
                     onClick={() => onDelete(investment.id)}
-                    className="hover:text-destructive hover:bg-destructive/10"
+                    className="hover:text-destructive hover:bg-destructive/10 btn-interactive"
                     title="Excluir"
                   >
                     <Trash2 className="w-4 h-4" />

@@ -111,69 +111,66 @@
     background: linear-gradient(135deg, hsl(140 100% 50% / 0.3), transparent 50%);
   }
 
-  /* Animações suaves */
-  .animate-smooth-appear {
-    animation: smoothAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* GPU-accelerated smooth transitions */
+  .transition-gpu {
+    @apply transition-all duration-300;
+    will-change: transform, opacity;
+    transform: translateZ(0);
   }
 
-  .animate-smooth-fade {
-    animation: smoothFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* Shimmer effect for loading states */
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--secondary)) 0%,
+      hsl(var(--muted)) 50%,
+      hsl(var(--secondary)) 100%
+    );
+    background-size: 200% 100%;
   }
 
-  .animate-pulse-subtle {
-    animation: pulseSubtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
   }
 
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
+  /* Hover lift effect */
+  .hover-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px -10px hsl(var(--primary) / 0.3);
   }
 
-  .transition-smooth {
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Scale on press */
+  .press-scale {
+    @apply transition-transform duration-150 active:scale-[0.97];
   }
-}
 
-@keyframes smoothAppear {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
+  /* Stagger animation delays */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
 
-@keyframes smoothFade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes pulseSubtle {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
+  /* Smooth number counter animation */
+  .counter-animate {
+    @apply animate-counter-up;
   }
 }
 
 @layer components {
   .investment-card {
-    @apply glass-card rounded-xl p-4 transition-all duration-300 ease-out hover:border-primary/50 hover:glow-primary hover:translate-y-[-2px];
+    @apply glass-card rounded-xl p-4 transition-all duration-300 ease-out;
+    @apply hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10;
+    transform: translateZ(0);
+  }
+  .investment-card:hover {
+    transform: translateY(-2px) translateZ(0);
   }
 
   .stat-value {
@@ -188,13 +185,55 @@
     @apply px-3 py-1 rounded-full text-xs font-medium border transition-all duration-200;
   }
 
-  /* Botões com animação suave */
-  .btn-smooth {
-    @apply transition-all duration-200 ease-out active:scale-95;
+  /* Interactive button with press effect */
+  .btn-interactive {
+    @apply transition-all duration-200 ease-out;
+    @apply hover:shadow-lg hover:shadow-primary/20;
+    @apply active:scale-[0.97] active:shadow-none;
   }
 
-  /* Cards com hover suave */
-  .card-hover {
-    @apply transition-all duration-300 ease-out hover:shadow-xl hover:shadow-primary/5 hover:border-primary/30;
+  /* Card with hover glow */
+  .card-glow {
+    @apply transition-all duration-300 ease-out;
+    @apply hover:shadow-xl hover:shadow-primary/10 hover:border-primary/40;
+  }
+
+  /* Menu item hover */
+  .menu-item {
+    @apply transition-all duration-200 ease-out rounded-lg;
+    @apply hover:bg-secondary/50 hover:translate-x-1;
+  }
+
+  /* Floating action button */
+  .fab {
+    @apply shadow-lg shadow-primary/30 animate-glow-pulse;
+    @apply hover:shadow-xl hover:shadow-primary/40;
+    @apply active:scale-95 transition-transform duration-150;
+  }
+
+  /* Tab indicator animation */
+  .tab-active {
+    @apply relative;
+  }
+  .tab-active::after {
+    content: '';
+    @apply absolute bottom-0 left-0 right-0 h-0.5 bg-primary;
+    @apply animate-scale-in origin-center;
+  }
+
+  /* Progress bar animation */
+  .progress-animated {
+    @apply transition-all duration-500 ease-out;
+  }
+
+  /* Number display with glow */
+  .number-glow {
+    @apply font-mono font-bold;
+    text-shadow: 0 0 20px hsl(var(--primary) / 0.4);
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply bg-secondary/50 rounded animate-pulse;
   }
 }
