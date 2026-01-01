@@ -24,22 +24,35 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-// Gera dados baseados nos investimentos reais - usa um cache por investmentKey
+// Taxa de conversão USD -> BRL para crypto
+const USD_TO_BRL = 6.15;
+
+// Gera dados baseados nos investimentos reais - mostra evolução do lucro/prejuízo
 function generateHistoricalData(investments: Investment[], period: string, cacheRef: React.MutableRefObject<{key: string, data: PriceHistory[]}>): PriceHistory[] {
-  const totalValue = investments.reduce((sum, inv) => sum + inv.currentValue, 0);
-  const totalInvested = investments.reduce((sum, inv) => sum + inv.investedAmount, 0);
+  // Calcula valores totais convertendo crypto para BRL
+  const totalValue = investments.reduce((sum, inv) => {
+    const value = inv.category === 'crypto' ? inv.currentValue * USD_TO_BRL : inv.currentValue;
+    return sum + value;
+  }, 0);
   
-  if (totalValue === 0) return [];
+  const totalInvested = investments.reduce((sum, inv) => {
+    const value = inv.category === 'crypto' ? inv.investedAmount * USD_TO_BRL : inv.investedAmount;
+    return sum + value;
+  }, 0);
+  
+  const totalProfitLoss = totalValue - totalInvested;
+  
+  if (investments.length === 0) return [];
   
   // Cria uma chave única baseada nos dados dos investimentos
-  const investmentKey = `${period}-${investments.length}-${totalValue.toFixed(2)}-${totalInvested.toFixed(2)}`;
+  const investmentKey = `${period}-${investments.length}-${totalValue.toFixed(2)}-${totalInvested.toFixed(2)}-${totalProfitLoss.toFixed(2)}`;
   
   // Se já temos dados em cache para essa chave, retorna o cache
   if (cacheRef.current.key === investmentKey) {
     // Atualiza o último ponto com o valor atual real
     const cachedData = [...cacheRef.current.data];
     if (cachedData.length > 0) {
-      cachedData[cachedData.length - 1] = { ...cachedData[cachedData.length - 1], value: totalValue };
+      cachedData[cachedData.length - 1] = { ...cachedData[cachedData.length - 1], value: totalProfitLoss };
     }
     return cachedData;
   }
@@ -73,33 +86,44 @@ function generateHistoricalData(investments: Investment[], period: string, cache
       break;
     case 'total':
       points = 24;
-      interval = 30 * 24 * 60 * 60 * 1000; // 2 anos de dados
+      interval = 30 * 24 * 60 * 60 * 1000;
       break;
     default:
       points = 30;
       interval = 24 * 60 * 60 * 1000;
   }
   
-  // Simula variação de preços ao longo do tempo com seed baseada em investimentos
-  const volatility = 0.02; // 2% de volatilidade
-  let currentValue = totalInvested * 0.95; // Começa um pouco abaixo do investido
-  
-  // Usa uma seed baseada no totalInvested para ter consistência
-  const seed = Math.floor(totalInvested * 100) % 1000;
-  const pseudoRandom = (i: number) => {
-    const x = Math.sin(seed + i * 12.9898) * 43758.5453;
-    return x - Math.floor(x);
-  };
-  
+  // Calcula o lucro/prejuízo por investimento considerando a data de compra
   for (let i = points - 1; i >= 0; i--) {
     const date = new Date(now.getTime() - (i * interval));
-    const change = (pseudoRandom(i) - 0.45) * volatility; // Tendência levemente positiva
-    currentValue = currentValue * (1 + change);
     
-    // Garante que o último ponto seja o valor atual real
-    if (i === 0) {
-      currentValue = totalValue;
-    }
+    // Calcula o lucro acumulado até essa data
+    let profitAtDate = 0;
+    
+    investments.forEach(inv => {
+      const purchaseDate = inv.purchaseDate ? new Date(inv.purchaseDate) : inv.createdAt;
+      
+      // Se o investimento já existia nessa data
+      if (purchaseDate <= date) {
+        // Calcula quanto tempo passou desde a compra até a data do ponto
+        const totalDays = Math.max(1, (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
+        const daysAtPoint = Math.max(0, (date.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Proporção do lucro atual que corresponde a esse ponto no tempo
+        const profitRatio = Math.min(1, daysAtPoint / totalDays);
+        
+        // Lucro proporcional (convertendo crypto para BRL)
+        const invProfitLoss = inv.category === 'crypto' ? inv.profitLoss * USD_TO_BRL : inv.profitLoss;
+        
+        // Se é o ponto atual (i === 0), usa o lucro real
+        if (i === 0) {
+          profitAtDate += invProfitLoss;
+        } else {
+          // Para pontos passados, calcula proporcionalmente
+          profitAtDate += invProfitLoss * profitRatio;
+        }
+      }
+    });
     
     let dateStr: string;
     if (period === '1d') {
@@ -114,7 +138,7 @@ function generateHistoricalData(investments: Investment[], period: string, cache
     
     data.push({
       date: dateStr,
-      value: Math.max(0, currentValue),
+      value: profitAtDate,
     });
   }
   
@@ -129,12 +153,19 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
   const cacheRef = useRef<{key: string, data: PriceHistory[]}>({ key: '', data: [] });
   
   // Calcula o valor total atual para forçar atualização quando preços mudam
-  const totalValue = investments.reduce((sum, inv) => sum + inv.currentValue, 0);
-  const totalInvested = investments.reduce((sum, inv) => sum + inv.investedAmount, 0);
+  const totalValue = investments.reduce((sum, inv) => {
+    const value = inv.category === 'crypto' ? inv.currentValue * USD_TO_BRL : inv.currentValue;
+    return sum + value;
+  }, 0);
+  const totalInvested = investments.reduce((sum, inv) => {
+    const value = inv.category === 'crypto' ? inv.investedAmount * USD_TO_BRL : inv.investedAmount;
+    return sum + value;
+  }, 0);
+  const totalProfitLoss = totalValue - totalInvested;
   
   const data = useMemo(() => 
     generateHistoricalData(investments, period, cacheRef), 
-    [investments, period, totalValue, totalInvested]
+    [investments, period, totalValue, totalInvested, totalProfitLoss]
   );
   
   if (data.length === 0) {
