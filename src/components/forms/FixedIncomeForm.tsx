@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Check, ArrowLeft, Percent, Calendar, Banknote } from 'lucide-react';
+import { Check, ArrowLeft, Percent, Banknote, TrendingUp, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Investment, FixedIncomeType, fixedIncomeLabels, InvestmentCategory } from '@/types/investment';
+import { useEconomicRates } from '@/hooks/useEconomicRates';
 
 interface FixedIncomeFormProps {
   category: 'cdb' | 'cdi' | 'treasury' | 'savings';
@@ -21,6 +22,14 @@ const categoryTitles: Record<string, string> = {
   savings: 'Poupança',
 };
 
+// Labels específicos para cada tipo
+const rateLabels: Record<FixedIncomeType, { label: string; placeholder: string; suffix: string }> = {
+  pos: { label: '% do CDI', placeholder: 'Ex: 110', suffix: '% do CDI' },
+  pre: { label: 'Taxa (% a.a.)', placeholder: 'Ex: 12.5', suffix: '% a.a.' },
+  ipca: { label: 'Taxa adicional (IPCA +)', placeholder: 'Ex: 5.5', suffix: '% a.a.' },
+  cdi: { label: '% do CDI', placeholder: 'Ex: 100', suffix: '% do CDI' },
+};
+
 export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormProps) {
   const [step, setStep] = useState<'type' | 'form'>(category === 'savings' ? 'form' : 'type');
   const [selectedType, setSelectedType] = useState<FixedIncomeType | null>(category === 'savings' ? 'pos' : null);
@@ -33,10 +42,14 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     notes: '',
   });
 
+  const { rates, isLoading: ratesLoading, calculateVariableReturn } = useEconomicRates();
+
   const handleSelectType = (type: FixedIncomeType) => {
     setSelectedType(type);
     setStep('form');
   };
+
+  const isVariableRate = selectedType === 'pos' || selectedType === 'ipca' || selectedType === 'cdi';
 
   const calculateCurrentValue = (purchaseDateStr: string, rate: number, amount: number) => {
     const purchaseDate = new Date(purchaseDateStr);
@@ -44,7 +57,18 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     const yearsElapsed = (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
     
     if (yearsElapsed <= 0 || rate === 0) return amount;
+
+    if (selectedType === 'ipca') {
+      // IPCA + taxa adicional
+      const totalRate = rates.ipca + rate;
+      return amount * Math.pow(1 + totalRate / 100, yearsElapsed);
+    } else if (selectedType === 'pos' || selectedType === 'cdi') {
+      // % do CDI
+      const effectiveRate = (rates.cdi * rate) / 100;
+      return amount * Math.pow(1 + effectiveRate / 100, yearsElapsed);
+    }
     
+    // Pré-fixado
     return amount * Math.pow(1 + rate / 100, yearsElapsed);
   };
 
@@ -57,9 +81,26 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     if (!maturityDate || amount === 0 || rate === 0) return null;
     
     const years = (maturityDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
-    const estimatedReturn = amount * Math.pow(1 + rate / 100, years);
+
+    if (selectedType === 'ipca') {
+      const totalRate = rates.ipca + rate;
+      return amount * Math.pow(1 + totalRate / 100, years);
+    } else if (selectedType === 'pos' || selectedType === 'cdi') {
+      const effectiveRate = (rates.cdi * rate) / 100;
+      return amount * Math.pow(1 + effectiveRate / 100, years);
+    }
     
-    return estimatedReturn;
+    return amount * Math.pow(1 + rate / 100, years);
+  };
+
+  const getEffectiveRate = () => {
+    const rate = parseFloat(formData.interestRate) || 0;
+    if (selectedType === 'ipca') {
+      return rates.ipca + rate;
+    } else if (selectedType === 'pos' || selectedType === 'cdi') {
+      return (rates.cdi * rate) / 100;
+    }
+    return rate;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -72,6 +113,9 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     // Calculate current value based on elapsed time
     const currentValue = calculateCurrentValue(purchaseDate, rate, investedAmount);
 
+    // Para taxas variáveis, armazenamos a taxa efetiva calculada
+    const effectiveRate = getEffectiveRate();
+
     onSubmit({
       name: formData.name.trim() || `${categoryTitles[category]} ${selectedType ? fixedIncomeLabels[selectedType] : ''}`,
       category: category as InvestmentCategory,
@@ -80,7 +124,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
       currentPrice: currentValue,
       investedAmount,
       fixedIncomeType: selectedType || undefined,
-      interestRate: parseFloat(formData.interestRate) || undefined,
+      interestRate: effectiveRate, // Taxa efetiva anual
       purchaseDate: purchaseDate,
       maturityDate: formData.maturityDate || undefined,
       notes: formData.notes.trim() || undefined,
@@ -115,6 +159,8 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     );
   }
 
+  const rateConfig = selectedType ? rateLabels[selectedType] : rateLabels.pre;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-center gap-3">
@@ -130,6 +176,27 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
           </h3>
         </div>
       </div>
+
+      {/* Exibir taxas atuais para tipos variáveis */}
+      {isVariableRate && (
+        <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+            <TrendingUp className="w-4 h-4" />
+            <span>Taxas Atuais (atualizadas automaticamente)</span>
+            {ratesLoading && <RefreshCw className="w-3 h-3 animate-spin" />}
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="text-muted-foreground">CDI/Selic:</span>
+              <span className="ml-2 font-semibold text-card-foreground">{rates.cdi}% a.a.</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">IPCA 12m:</span>
+              <span className="ml-2 font-semibold text-card-foreground">{rates.ipca}% a.a.</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
@@ -156,15 +223,29 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
         </div>
 
         <div>
-          <Label htmlFor="interestRate">Taxa (% a.a.)</Label>
-          <Input
-            id="interestRate"
-            type="number"
-            step="any"
-            value={formData.interestRate}
-            onChange={(e) => setFormData(prev => ({ ...prev, interestRate: e.target.value }))}
-            placeholder="Ex: 12.5"
-          />
+          <Label htmlFor="interestRate">
+            {rateConfig.label} *
+          </Label>
+          <div className="relative">
+            <Input
+              id="interestRate"
+              type="number"
+              step="any"
+              value={formData.interestRate}
+              onChange={(e) => setFormData(prev => ({ ...prev, interestRate: e.target.value }))}
+              placeholder={rateConfig.placeholder}
+              required
+              className="pr-16"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+              {rateConfig.suffix}
+            </span>
+          </div>
+          {isVariableRate && formData.interestRate && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Taxa efetiva: <span className="font-medium text-primary">{getEffectiveRate().toFixed(2)}% a.a.</span>
+            </p>
+          )}
         </div>
 
         <div>
@@ -196,6 +277,11 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
             <p className="text-xl font-mono font-bold text-primary">
               R$ {estimatedReturn.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
+            {isVariableRate && (
+              <p className="text-xs text-muted-foreground mt-1">
+                * Estimativa com taxas atuais. Valores podem variar conforme índices econômicos.
+              </p>
+            )}
           </div>
         )}
 
