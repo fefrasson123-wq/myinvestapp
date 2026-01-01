@@ -30,7 +30,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell }: Invest
     return (
       <div className="investment-card text-center py-12 animate-smooth-appear">
         <p className="text-muted-foreground">Nenhum investimento cadastrado ainda.</p>
-        <p className="text-muted-foreground text-sm mt-2">Clique em "Adicionar Investimento" para começar.</p>
+        <p className="text-muted-foreground text-sm mt-2">Clique em "Cadastrar" para começar.</p>
       </div>
     );
   }

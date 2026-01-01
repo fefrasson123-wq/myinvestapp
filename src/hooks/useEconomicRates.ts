@@ -7,7 +7,7 @@ interface EconomicRates {
 }
 
 const RATES_STORAGE_KEY = 'economic-rates';
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 horas
+const CACHE_DURATION = 1 * 60 * 60 * 1000; // 1 hora - atualiza com mais frequência
 
 // Taxas aproximadas atuais (fallback)
 const DEFAULT_RATES: EconomicRates = {
