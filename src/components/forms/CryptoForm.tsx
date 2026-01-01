@@ -207,6 +207,8 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
           currentPrice={currentLivePrice.current_price}
           change24h={currentLivePrice.price_change_24h}
           changePercent24h={currentLivePrice.price_change_percentage_24h}
+          high24h={currentLivePrice.high_24h}
+          low24h={currentLivePrice.low_24h}
           currency="USD"
         />
       )}

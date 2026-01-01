@@ -6,6 +6,8 @@ interface CryptoPrice {
   current_price: number;
   price_change_24h: number;
   price_change_percentage_24h: number;
+  high_24h: number;
+  low_24h: number;
   last_updated: string;
 }
 
@@ -176,6 +178,8 @@ export function useCryptoPrices() {
           current_price: crypto.price,
           price_change_24h: change,
           price_change_percentage_24h: changePercent,
+          high_24h: crypto.price * 1.02,
+          low_24h: crypto.price * 0.98,
           last_updated: new Date().toISOString(),
         };
       });

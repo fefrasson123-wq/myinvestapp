@@ -8,6 +8,8 @@ interface AssetPriceChartProps {
   currentPrice: number;
   change24h?: number;
   changePercent24h?: number;
+  high24h?: number;
+  low24h?: number;
   currency?: 'BRL' | 'USD';
 }
 
@@ -49,11 +51,11 @@ export function AssetPriceChart({
   currentPrice, 
   change24h = 0, 
   changePercent24h = 0,
+  high24h: propHigh24h,
+  low24h: propLow24h,
   currency = 'BRL' 
 }: AssetPriceChartProps) {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [high24h, setHigh24h] = useState(0);
-  const [low24h, setLow24h] = useState(0);
   
   const isPositive = changePercent24h >= 0;
   const formatPrice = (value: number) => {
@@ -63,13 +65,13 @@ export function AssetPriceChart({
     return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  // Use props if provided, otherwise calculate from chart data
+  const high24h = propHigh24h ?? (chartData.length > 0 ? Math.max(...chartData.map(d => d.price)) : currentPrice);
+  const low24h = propLow24h ?? (chartData.length > 0 ? Math.min(...chartData.map(d => d.price)) : currentPrice);
+
   useEffect(() => {
     const data = generate24hData(currentPrice, changePercent24h);
     setChartData(data);
-    
-    const prices = data.map(d => d.price);
-    setHigh24h(Math.max(...prices));
-    setLow24h(Math.min(...prices));
   }, [currentPrice, changePercent24h]);
 
   const openPrice = chartData.length > 0 ? chartData[0].price : currentPrice;
