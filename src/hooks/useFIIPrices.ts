@@ -193,15 +193,23 @@ export function useFIIPrices() {
     return prices[upperSymbol]?.dividendYield ?? null;
   }, [prices]);
 
-  // Load local prices on mount only (no API calls)
+  // Load local prices on mount and auto-refresh every 60 seconds
   useEffect(() => {
-    const priceMap: Record<string, FIIPrice> = {};
-    Object.keys(localFIIPrices).forEach(symbol => {
-      const fallback = getLocalFallback(symbol);
-      if (fallback) priceMap[symbol] = fallback;
-    });
-    setPrices(priceMap);
-    setLastUpdate(new Date());
+    const loadPrices = () => {
+      const priceMap: Record<string, FIIPrice> = {};
+      Object.keys(localFIIPrices).forEach(symbol => {
+        const fallback = getLocalFallback(symbol);
+        if (fallback) priceMap[symbol] = fallback;
+      });
+      setPrices(priceMap);
+      setLastUpdate(new Date());
+    };
+
+    loadPrices();
+
+    // Atualiza a cada 60 segundos
+    const interval = setInterval(loadPrices, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   return {

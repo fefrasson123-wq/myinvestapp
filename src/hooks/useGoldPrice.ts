@@ -138,8 +138,8 @@ export function useGoldPrice() {
   useEffect(() => {
     fetchPrice();
     
-    // Atualiza a cada 5 minutos
-    const interval = setInterval(fetchPrice, 5 * 60 * 1000);
+    // Atualiza a cada 60 segundos
+    const interval = setInterval(fetchPrice, 60000);
     return () => clearInterval(interval);
   }, [fetchPrice]);
 
