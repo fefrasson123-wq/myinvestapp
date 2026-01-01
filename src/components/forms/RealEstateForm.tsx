@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Investment, RealEstateType, realEstateLabels } from '@/types/investment';
 import { cn } from '@/lib/utils';
+import { RealEstateValueChart } from '@/components/RealEstateValueChart';
 
 interface RealEstateFormProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
@@ -351,32 +352,32 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
             </div>
           </div>
 
-          {/* Valor Estimado */}
+          {/* Gráfico de Valorização do Imóvel */}
           {estimatedValue && estimatedValue > 0 && (
-            <div className="p-4 rounded-lg bg-success/10 border border-success/30">
-              <div className="text-sm text-muted-foreground mb-1">Valor Estimado Atual</div>
-              <div className="text-2xl font-bold text-success">
-                R$ {estimatedValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
+            <>
+              <RealEstateValueChart
+                purchasePrice={parseFloat(formData.purchasePrice) || estimatedValue * 0.85}
+                currentValue={estimatedValue}
+                purchaseDate={formData.purchaseDate}
+              />
+              <div className="text-xs text-muted-foreground text-center">
                 {valuationMode === 'manual_m2' 
                   ? `Baseado em R$ ${parseFloat(formData.manualPricePerM2).toLocaleString('pt-BR')}/m²`
                   : `Baseado em R$ ${(pricePerM2ByState[formData.state] * typeMultipliers[formData.type]).toLocaleString('pt-BR')}/m² para ${realEstateLabels[formData.type].toLowerCase()} em ${formData.state}`
                 }
               </div>
-            </div>
+            </>
           )}
         </>
       )}
 
-      {/* Valor direto preview */}
+      {/* Gráfico de Valorização - Modo Direto */}
       {valuationMode === 'direct' && formData.directValue && parseFloat(formData.directValue) > 0 && (
-        <div className="p-4 rounded-lg bg-success/10 border border-success/30">
-          <div className="text-sm text-muted-foreground mb-1">Valor do Imóvel</div>
-          <div className="text-2xl font-bold text-success">
-            R$ {parseFloat(formData.directValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </div>
-        </div>
+        <RealEstateValueChart
+          purchasePrice={parseFloat(formData.purchasePrice) || parseFloat(formData.directValue) * 0.85}
+          currentValue={parseFloat(formData.directValue)}
+          purchaseDate={formData.purchaseDate}
+        />
       )}
 
       <div>
