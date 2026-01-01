@@ -2,6 +2,7 @@ import { Trash2, Edit, TrendingUp, TrendingDown, DollarSign } from 'lucide-react
 import { Investment, categoryLabels, categoryColors } from '@/types/investment';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { RealEstateValueChart } from '@/components/RealEstateValueChart';
 
 interface InvestmentListProps {
   investments: Investment[];
@@ -40,6 +41,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell }: Invest
       {investments.map((investment, index) => {
         const isPositive = investment.profitLoss >= 0;
         const isCrypto = investment.category === 'crypto';
+        const isRealEstate = investment.category === 'realestate';
         const currency = isCrypto ? 'USD' : 'BRL';
         
         return (
@@ -48,108 +50,119 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell }: Invest
             className="investment-card animate-slide-up group"
             style={{ animationDelay: `${index * 50}ms` }}
           >
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              {/* Info principal */}
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h4 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">
-                    {investment.name}
-                    {investment.ticker && (
-                      <span className="ml-2 text-primary font-mono text-sm">
-                        ({investment.ticker})
-                      </span>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                {/* Info principal */}
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h4 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">
+                      {investment.name}
+                      {investment.ticker && (
+                        <span className="ml-2 text-primary font-mono text-sm">
+                          ({investment.ticker})
+                        </span>
+                      )}
+                    </h4>
+                    <span 
+                      className="category-badge transition-transform duration-200 hover:scale-105"
+                      style={{ 
+                        borderColor: categoryColors[investment.category],
+                        color: categoryColors[investment.category],
+                        backgroundColor: `${categoryColors[investment.category]}20`,
+                      }}
+                    >
+                      {categoryLabels[investment.category]}
+                    </span>
+                    {isCrypto && (
+                      <span className="text-xs text-muted-foreground font-mono">USD</span>
                     )}
-                  </h4>
-                  <span 
-                    className="category-badge transition-transform duration-200 hover:scale-105"
-                    style={{ 
-                      borderColor: categoryColors[investment.category],
-                      color: categoryColors[investment.category],
-                      backgroundColor: `${categoryColors[investment.category]}20`,
-                    }}
-                  >
-                    {categoryLabels[investment.category]}
-                  </span>
-                  {isCrypto && (
-                    <span className="text-xs text-muted-foreground font-mono">USD</span>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div className="transition-colors">
-                    <span className="text-muted-foreground">Quantidade</span>
-                    <p className="font-mono text-card-foreground">{investment.quantity.toLocaleString('pt-BR')}</p>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Preço Médio</span>
-                    <p className="font-mono text-card-foreground">{formatCurrency(investment.averagePrice, currency)}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Preço Atual</span>
-                    <p className="font-mono text-card-foreground">{formatCurrency(investment.currentPrice, currency)}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Valor Atual</span>
-                    <p className="font-mono text-primary font-medium">{formatCurrency(investment.currentValue, currency)}</p>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="transition-colors">
+                      <span className="text-muted-foreground">Quantidade</span>
+                      <p className="font-mono text-card-foreground">{investment.quantity.toLocaleString('pt-BR')}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Preço Médio</span>
+                      <p className="font-mono text-card-foreground">{formatCurrency(investment.averagePrice, currency)}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Preço Atual</span>
+                      <p className="font-mono text-card-foreground">{formatCurrency(investment.currentPrice, currency)}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Valor Atual</span>
+                      <p className="font-mono text-primary font-medium">{formatCurrency(investment.currentValue, currency)}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Lucro/Prejuízo */}
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <div className="flex items-center gap-1 justify-end">
-                    {isPositive ? (
-                      <TrendingUp className="w-4 h-4 text-success transition-transform group-hover:scale-110" />
-                    ) : (
-                      <TrendingDown className="w-4 h-4 text-destructive transition-transform group-hover:scale-110" />
-                    )}
+                {/* Lucro/Prejuízo */}
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <div className="flex items-center gap-1 justify-end">
+                      {isPositive ? (
+                        <TrendingUp className="w-4 h-4 text-success transition-transform group-hover:scale-110" />
+                      ) : (
+                        <TrendingDown className="w-4 h-4 text-destructive transition-transform group-hover:scale-110" />
+                      )}
+                      <span className={cn(
+                        "font-mono font-medium",
+                        isPositive ? "text-success" : "text-destructive"
+                      )}>
+                        {formatCurrency(investment.profitLoss, currency)}
+                      </span>
+                    </div>
                     <span className={cn(
-                      "font-mono font-medium",
-                      isPositive ? "text-success" : "text-destructive"
+                      "text-sm font-mono",
+                      isPositive ? "text-success/70" : "text-destructive/70"
                     )}>
-                      {formatCurrency(investment.profitLoss, currency)}
+                      {isPositive ? '+' : ''}{formatPercent(investment.profitLossPercent)}
                     </span>
                   </div>
-                  <span className={cn(
-                    "text-sm font-mono",
-                    isPositive ? "text-success/70" : "text-destructive/70"
-                  )}>
-                    {isPositive ? '+' : ''}{formatPercent(investment.profitLossPercent)}
-                  </span>
-                </div>
 
-                {/* Ações */}
-                <div className="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => onSell(investment)}
-                    className="hover:text-primary hover:bg-primary/10 btn-interactive"
-                    title="Vender"
-                  >
-                    <DollarSign className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => onEdit(investment)}
-                    className="btn-interactive"
-                    title="Editar"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => onDelete(investment.id)}
-                    className="hover:text-destructive hover:bg-destructive/10 btn-interactive"
-                    title="Excluir"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  {/* Ações */}
+                  <div className="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => onSell(investment)}
+                      className="hover:text-primary hover:bg-primary/10 btn-interactive"
+                      title="Vender"
+                    >
+                      <DollarSign className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => onEdit(investment)}
+                      className="btn-interactive"
+                      title="Editar"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => onDelete(investment.id)}
+                      className="hover:text-destructive hover:bg-destructive/10 btn-interactive"
+                      title="Excluir"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
+
+              {/* Gráfico de Valorização para Imóveis */}
+              {isRealEstate && (
+                <RealEstateValueChart
+                  purchasePrice={investment.investedAmount}
+                  currentValue={investment.currentValue}
+                  purchaseDate={investment.purchaseDate}
+                />
+              )}
             </div>
           </div>
         );

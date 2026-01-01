@@ -7,6 +7,7 @@ interface RealEstateValueChartProps {
   purchasePrice: number;
   currentValue: number;
   purchaseDate?: string;
+  expanded?: boolean; // Para exibir gráfico maior no Dashboard
 }
 
 interface ChartDataPoint {
@@ -20,43 +21,58 @@ interface ChartDataPoint {
 function generateValueGrowthData(
   purchasePrice: number, 
   currentValue: number, 
-  purchaseDate?: string
+  purchaseDate?: string,
+  expanded?: boolean
 ): ChartDataPoint[] {
   const data: ChartDataPoint[] = [];
   
   const startDate = purchaseDate ? new Date(purchaseDate) : new Date();
-  startDate.setFullYear(startDate.getFullYear() - 1); // Fallback: 1 ano atrás se não tiver data
-  
-  const endDate = new Date();
-  const totalDays = Math.max(1, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
-  
-  // Define quantidade de pontos baseado no período
-  let points: number;
-  let labelFormat: 'month' | 'year';
-  
-  if (totalDays <= 365) {
-    points = Math.min(12, totalDays); // Mensal para até 1 ano
-    labelFormat = 'month';
-  } else if (totalDays <= 365 * 3) {
-    points = Math.min(24, Math.floor(totalDays / 30)); // A cada 2 meses para até 3 anos
-    labelFormat = 'month';
-  } else {
-    points = Math.min(20, Math.floor(totalDays / 180)); // Semestral para períodos longos
-    labelFormat = 'year';
+  if (!purchaseDate) {
+    startDate.setFullYear(startDate.getFullYear() - 2); // Fallback: 2 anos atrás se não tiver data
   }
   
-  points = Math.max(6, points); // Mínimo 6 pontos
+  const endDate = new Date();
+  const totalDays = Math.max(30, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+  
+  // Define quantidade de pontos baseado no período e se é expandido
+  let points: number;
+  
+  if (expanded) {
+    // Mais pontos para gráfico expandido
+    if (totalDays <= 365) {
+      points = 24; // Quinzenal para 1 ano
+    } else if (totalDays <= 365 * 2) {
+      points = 24; // Mensal para 2 anos
+    } else if (totalDays <= 365 * 5) {
+      points = 30; // Bimestral para 5 anos
+    } else {
+      points = 36; // Trimestral para períodos longos
+    }
+  } else {
+    if (totalDays <= 365) {
+      points = 12;
+    } else if (totalDays <= 365 * 3) {
+      points = 18;
+    } else {
+      points = 24;
+    }
+  }
   
   const totalProfit = currentValue - purchasePrice;
   
   for (let i = 0; i <= points; i++) {
     const progress = i / points;
     
-    // Simula valorização gradual com pequenas variações
-    // Imóveis tendem a valorizar de forma mais estável
-    const baseGrowth = progress;
-    const variation = Math.sin(progress * Math.PI * 2) * 0.02; // Pequena oscilação
-    const adjustedProgress = Math.max(0, Math.min(1, baseGrowth + variation * (1 - progress)));
+    // Simula valorização gradual realista do imóvel
+    // Usa uma curva logarítmica suave para simular valorização mais intensa no início
+    // e mais estável depois, típico de imóveis
+    const baseGrowth = Math.pow(progress, 0.9); // Curva suave
+    
+    // Adiciona pequenas variações sazonais (típicas do mercado imobiliário)
+    const seasonalVariation = Math.sin(progress * Math.PI * 4) * 0.008;
+    const marketNoise = (Math.random() - 0.5) * 0.005 * (1 - progress); // Mais ruído no início
+    
+    const adjustedProgress = Math.max(0, Math.min(1, baseGrowth + seasonalVariation + marketNoise));
     
     const value = purchasePrice + (totalProfit * adjustedProgress);
     const profit = value - purchasePrice;
@@ -64,11 +80,20 @@ function generateValueGrowthData(
     
     const pointDate = new Date(startDate.getTime() + (totalDays * progress * 24 * 60 * 60 * 1000));
     
+    // Formata label baseado no período total
     let label: string;
-    if (labelFormat === 'month') {
+    if (totalDays <= 365) {
+      label = pointDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+    } else if (totalDays <= 365 * 3) {
       label = pointDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
     } else {
-      label = pointDate.getFullYear().toString();
+      // Para períodos longos, mostra mês/ano a cada 6 meses
+      const month = pointDate.getMonth();
+      if (month === 0 || month === 6 || i === 0 || i === points) {
+        label = pointDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+      } else {
+        label = pointDate.toLocaleDateString('pt-BR', { month: 'short' });
+      }
     }
     
     data.push({
@@ -79,8 +104,15 @@ function generateValueGrowthData(
     });
   }
   
-  // Garante que o último ponto seja o valor atual
+  // Garante que o primeiro ponto seja o valor de compra
   if (data.length > 0) {
+    data[0].value = purchasePrice;
+    data[0].profit = 0;
+    data[0].profitPercent = 0;
+  }
+  
+  // Garante que o último ponto seja o valor atual
+  if (data.length > 1) {
     data[data.length - 1].value = currentValue;
     data[data.length - 1].profit = currentValue - purchasePrice;
     data[data.length - 1].profitPercent = purchasePrice > 0 
@@ -94,11 +126,12 @@ function generateValueGrowthData(
 export function RealEstateValueChart({ 
   purchasePrice, 
   currentValue, 
-  purchaseDate 
+  purchaseDate,
+  expanded = true // Por padrão expandido para Dashboard
 }: RealEstateValueChartProps) {
   const chartData = useMemo(() => 
-    generateValueGrowthData(purchasePrice, currentValue, purchaseDate),
-    [purchasePrice, currentValue, purchaseDate]
+    generateValueGrowthData(purchasePrice, currentValue, purchaseDate, expanded),
+    [purchasePrice, currentValue, purchaseDate, expanded]
   );
 
   const totalProfit = currentValue - purchasePrice;
@@ -111,6 +144,20 @@ export function RealEstateValueChart({
   const formatPercent = (value: number) => 
     `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
 
+  // Calcula período do investimento
+  const getPeriodText = () => {
+    if (!purchaseDate) return 'Período estimado';
+    const start = new Date(purchaseDate);
+    const now = new Date();
+    const years = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365));
+    const months = Math.floor(((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30)) % 12);
+    
+    if (years > 0) {
+      return `${years} ano${years > 1 ? 's' : ''}${months > 0 ? ` e ${months} mês${months > 1 ? 'es' : ''}` : ''}`;
+    }
+    return `${months} mês${months !== 1 ? 'es' : ''}`;
+  };
+
   return (
     <div className="p-4 rounded-xl bg-secondary/30 border border-border/50 space-y-4">
       {/* Header */}
@@ -118,6 +165,7 @@ export function RealEstateValueChart({
         <div className="flex items-center gap-2">
           <Building2 className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium text-card-foreground">Valorização do Imóvel</span>
+          <span className="text-xs text-muted-foreground">({getPeriodText()})</span>
         </div>
         <div className="flex items-center gap-2">
           <TrendingUp className={cn(
@@ -133,8 +181,8 @@ export function RealEstateValueChart({
         </div>
       </div>
 
-      {/* Gráfico de Valorização */}
-      <div className="h-36">
+      {/* Gráfico de Valorização - Altura maior para melhor visualização */}
+      <div className={cn("w-full", expanded ? "h-48" : "h-36")}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <defs>
