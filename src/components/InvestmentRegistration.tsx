@@ -101,38 +101,35 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
     }
   };
 
-  const content = (
-    <>
-      {currentForm === 'menu' ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {investmentTypes.map((type) => {
-            const Icon = type.icon;
-            return (
-              <button
-                key={type.id}
-                onClick={() => setCurrentForm(type.id)}
-                className="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all group"
-              >
-                <div 
-                  className="p-3 rounded-lg mb-3 transition-all group-hover:scale-110"
-                  style={{ backgroundColor: `${type.color}20` }}
-                >
-                  <Icon 
-                    className="w-6 h-6" 
-                    style={{ color: type.color }}
-                  />
-                </div>
-                <span className="font-medium text-card-foreground text-sm text-center">
-                  {type.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        renderForm()
-      )}
-    </>
+  const content = currentForm === 'menu' ? (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {investmentTypes.map((type) => {
+        const Icon = type.icon;
+        return (
+          <button
+            key={type.id}
+            type="button"
+            onClick={() => setCurrentForm(type.id)}
+            className="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-colors"
+          >
+            <div 
+              className="p-3 rounded-lg mb-3"
+              style={{ backgroundColor: `${type.color}20` }}
+            >
+              <Icon 
+                className="w-6 h-6" 
+                style={{ color: type.color }}
+              />
+            </div>
+            <span className="font-medium text-card-foreground text-sm text-center">
+              {type.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  ) : (
+    renderForm()
   );
 
   // Modal version
