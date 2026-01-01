@@ -103,25 +103,26 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
 
   const content = currentForm === 'menu' ? (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      {investmentTypes.map((type) => {
+      {investmentTypes.map((type, index) => {
         const Icon = type.icon;
         return (
           <button
             key={type.id}
             type="button"
             onClick={() => setCurrentForm(type.id)}
-            className="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-colors"
+            className="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 active:scale-95 animate-slide-up group"
+            style={{ animationDelay: `${index * 40}ms` }}
           >
             <div 
-              className="p-3 rounded-lg mb-3"
+              className="p-3 rounded-lg mb-3 transition-transform duration-200 group-hover:scale-110"
               style={{ backgroundColor: `${type.color}20` }}
             >
               <Icon 
-                className="w-6 h-6" 
+                className="w-6 h-6 transition-transform duration-200" 
                 style={{ color: type.color }}
               />
             </div>
-            <span className="font-medium text-card-foreground text-sm text-center">
+            <span className="font-medium text-card-foreground text-sm text-center group-hover:text-primary transition-colors">
               {type.label}
             </span>
           </button>
@@ -129,19 +130,26 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
       })}
     </div>
   ) : (
-    renderForm()
+    <div className="animate-slide-in-right">
+      {renderForm()}
+    </div>
   );
 
   // Modal version
   if (isModal) {
     return (
       <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto animate-fade-in">
-        <div className="bg-card border border-border/50 rounded-xl w-full max-w-md shadow-xl animate-scale-in my-8 mx-4">
+        <div className="bg-card border border-border/50 rounded-xl w-full max-w-md shadow-2xl shadow-primary/5 animate-pop my-8 mx-4">
           <div className="flex items-center justify-between p-4 border-b border-border/50">
             <h2 className="text-lg font-semibold text-card-foreground">
               {currentForm === 'menu' ? 'Novo Investimento' : 'Cadastrar'}
             </h2>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onClose}
+              className="hover:bg-destructive/10 hover:text-destructive transition-colors"
+            >
               <X className="w-5 h-5" />
             </Button>
           </div>
