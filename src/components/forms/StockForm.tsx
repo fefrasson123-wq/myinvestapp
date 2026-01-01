@@ -219,6 +219,8 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
               currentPrice={currentLivePrice.price}
               change24h={currentLivePrice.change}
               changePercent24h={currentLivePrice.changePercent}
+              high24h={currentLivePrice.high24h}
+              low24h={currentLivePrice.low24h}
               currency="BRL"
             />
           )}

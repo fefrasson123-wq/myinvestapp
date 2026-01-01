@@ -224,6 +224,8 @@ export function FIIForm({ onSubmit, onSell, onBack }: FIIFormProps) {
               currentPrice={currentLivePrice.price}
               change24h={currentLivePrice.change}
               changePercent24h={currentLivePrice.changePercent}
+              high24h={currentLivePrice.high24h}
+              low24h={currentLivePrice.low24h}
               currency="BRL"
             />
           )}
