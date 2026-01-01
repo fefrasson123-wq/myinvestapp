@@ -212,18 +212,16 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
             </div>
           </div>
 
-          {/* Gráfico de variação 24h */}
-          {currentLivePrice && (
-            <AssetPriceChart
-              symbol={selectedStock.ticker}
-              currentPrice={currentLivePrice.price}
-              change24h={currentLivePrice.change}
-              changePercent24h={currentLivePrice.changePercent}
-              high24h={currentLivePrice.high24h}
-              low24h={currentLivePrice.low24h}
-              currency="BRL"
-            />
-          )}
+          {/* Gráfico de variação 24h - sempre mostra, usando dados disponíveis */}
+          <AssetPriceChart
+            symbol={selectedStock.ticker}
+            currentPrice={currentLivePrice?.price ?? selectedStock.price}
+            change24h={currentLivePrice?.change ?? selectedStock.change}
+            changePercent24h={currentLivePrice?.changePercent ?? selectedStock.changePercent}
+            high24h={currentLivePrice?.high24h}
+            low24h={currentLivePrice?.low24h}
+            currency="BRL"
+          />
         </div>
       )}
 
