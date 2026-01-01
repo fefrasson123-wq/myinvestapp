@@ -359,6 +359,7 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
                 purchasePrice={parseFloat(formData.purchasePrice) || estimatedValue * 0.85}
                 currentValue={estimatedValue}
                 purchaseDate={formData.purchaseDate}
+                expanded={false}
               />
               <div className="text-xs text-muted-foreground text-center">
                 {valuationMode === 'manual_m2' 
@@ -377,6 +378,7 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
           purchasePrice={parseFloat(formData.purchasePrice) || parseFloat(formData.directValue) * 0.85}
           currentValue={parseFloat(formData.directValue)}
           purchaseDate={formData.purchaseDate}
+          expanded={false}
         />
       )}
 
