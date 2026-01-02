@@ -12,7 +12,7 @@ import { Investment, PriceHistory } from '@/types/investment';
 
 interface PerformanceChartProps {
   investments: Investment[];
-  period: '1d' | '1w' | '1m' | '6m' | '1y' | 'total';
+  period: '24h' | '1d' | '1w' | '1m' | '6m' | '1y' | 'total';
 }
 
 function formatCurrency(value: number): string {
@@ -71,9 +71,14 @@ function generatePortfolioHistory(investments: Investment[], period: string, cac
   let startDate: Date;
   
   switch (period) {
-    case '1d':
+    case '24h':
       points = 24;
-      interval = 60 * 60 * 1000;
+      interval = 60 * 60 * 1000; // A cada hora
+      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      break;
+    case '1d':
+      points = 48;
+      interval = 30 * 60 * 1000; // A cada 30 minutos
       startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       break;
     case '1w':
@@ -149,7 +154,7 @@ function generatePortfolioHistory(investments: Investment[], period: string, cac
     });
     
     let dateStr: string;
-    if (period === '1d') {
+    if (period === '24h' || period === '1d') {
       dateStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     } else if (period === '1w' || period === '1m') {
       dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -168,7 +173,7 @@ function generatePortfolioHistory(investments: Investment[], period: string, cac
   // Adiciona o ponto atual se o último ponto não for o valor atual
   if (data.length > 0) {
     const lastDate = data[data.length - 1].date;
-    const nowStr = period === '1d' 
+    const nowStr = (period === '24h' || period === '1d')
       ? now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
       : now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     
