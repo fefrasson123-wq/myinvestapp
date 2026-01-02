@@ -27,8 +27,10 @@ function formatCurrency(value: number): string {
 // Taxa de conversão USD -> BRL para crypto
 const USD_TO_BRL = 6.15;
 
-// Gera dados baseados nos investimentos reais - mostra evolução do lucro/prejuízo
-function generateHistoricalData(investments: Investment[], period: string, cacheRef: React.MutableRefObject<{key: string, data: PriceHistory[]}>): PriceHistory[] {
+// Gera dados de evolução do patrimônio total ao longo do tempo
+function generatePortfolioHistory(investments: Investment[], period: string, cacheRef: React.MutableRefObject<{key: string, data: PriceHistory[]}>): PriceHistory[] {
+  if (investments.length === 0) return [];
+  
   // Calcula valores totais convertendo crypto para BRL
   const totalValue = investments.reduce((sum, inv) => {
     const value = inv.category === 'crypto' ? inv.currentValue * USD_TO_BRL : inv.currentValue;
@@ -40,19 +42,14 @@ function generateHistoricalData(investments: Investment[], period: string, cache
     return sum + value;
   }, 0);
   
-  const totalProfitLoss = totalValue - totalInvested;
-  
-  if (investments.length === 0) return [];
-  
   // Cria uma chave única baseada nos dados dos investimentos
-  const investmentKey = `${period}-${investments.length}-${totalValue.toFixed(2)}-${totalInvested.toFixed(2)}-${totalProfitLoss.toFixed(2)}`;
+  const investmentKey = `portfolio-${period}-${investments.length}-${totalValue.toFixed(2)}-${totalInvested.toFixed(2)}`;
   
   // Se já temos dados em cache para essa chave, retorna o cache
   if (cacheRef.current.key === investmentKey) {
-    // Atualiza o último ponto com o valor atual real
     const cachedData = [...cacheRef.current.data];
     if (cachedData.length > 0) {
-      cachedData[cachedData.length - 1] = { ...cachedData[cachedData.length - 1], value: totalProfitLoss };
+      cachedData[cachedData.length - 1] = { ...cachedData[cachedData.length - 1], value: totalValue };
     }
     return cachedData;
   }
@@ -60,68 +57,94 @@ function generateHistoricalData(investments: Investment[], period: string, cache
   const now = new Date();
   const data: PriceHistory[] = [];
   
+  // Encontra a data mais antiga de investimento
+  const oldestDate = investments.reduce((oldest, inv) => {
+    const invDate = inv.purchaseDate ? new Date(inv.purchaseDate) : inv.createdAt;
+    return invDate < oldest ? invDate : oldest;
+  }, now);
+  
+  // Calcula o período total desde o primeiro investimento
+  const totalDays = Math.max(1, (now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
+  
   let points: number;
-  let interval: number; // em milissegundos
+  let interval: number;
+  let startDate: Date;
   
   switch (period) {
     case '1d':
       points = 24;
       interval = 60 * 60 * 1000;
+      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       break;
     case '1w':
       points = 7;
       interval = 24 * 60 * 60 * 1000;
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       break;
     case '1m':
       points = 30;
       interval = 24 * 60 * 60 * 1000;
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       break;
     case '6m':
       points = 26;
       interval = 7 * 24 * 60 * 60 * 1000;
+      startDate = new Date(now.getTime() - 182 * 24 * 60 * 60 * 1000);
       break;
     case '1y':
       points = 12;
       interval = 30 * 24 * 60 * 60 * 1000;
+      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
       break;
     case 'total':
-      points = 24;
-      interval = 30 * 24 * 60 * 60 * 1000;
-      break;
     default:
-      points = 30;
-      interval = 24 * 60 * 60 * 1000;
+      // Para 'total', usa o período desde o primeiro investimento
+      const daysSinceFirst = Math.ceil(totalDays);
+      if (daysSinceFirst <= 30) {
+        points = daysSinceFirst || 1;
+        interval = 24 * 60 * 60 * 1000;
+      } else if (daysSinceFirst <= 180) {
+        points = Math.ceil(daysSinceFirst / 7);
+        interval = 7 * 24 * 60 * 60 * 1000;
+      } else {
+        points = Math.ceil(daysSinceFirst / 30);
+        interval = 30 * 24 * 60 * 60 * 1000;
+      }
+      startDate = oldestDate;
+      break;
   }
   
-  // Calcula o lucro/prejuízo por investimento considerando a data de compra
-  for (let i = points - 1; i >= 0; i--) {
-    const date = new Date(now.getTime() - (i * interval));
+  // Gera os pontos de dados
+  for (let i = 0; i < points; i++) {
+    const date = new Date(startDate.getTime() + (i * interval));
     
-    // Calcula o lucro acumulado até essa data
-    let profitAtDate = 0;
+    // Não gera pontos no futuro
+    if (date > now) break;
+    
+    // Calcula o patrimônio total nessa data
+    let portfolioAtDate = 0;
     
     investments.forEach(inv => {
       const purchaseDate = inv.purchaseDate ? new Date(inv.purchaseDate) : inv.createdAt;
       
       // Se o investimento já existia nessa data
       if (purchaseDate <= date) {
-        // Calcula quanto tempo passou desde a compra até a data do ponto
-        const totalDays = Math.max(1, (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
+        const investedAmount = inv.category === 'crypto' ? inv.investedAmount * USD_TO_BRL : inv.investedAmount;
+        const currentValue = inv.category === 'crypto' ? inv.currentValue * USD_TO_BRL : inv.currentValue;
+        const profitLoss = currentValue - investedAmount;
+        
+        // Calcula quanto tempo passou desde a compra até a data atual
+        const totalInvDays = Math.max(1, (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
+        // Quanto tempo passou desde a compra até o ponto do gráfico
         const daysAtPoint = Math.max(0, (date.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
         
-        // Proporção do lucro atual que corresponde a esse ponto no tempo
-        const profitRatio = Math.min(1, daysAtPoint / totalDays);
+        // Proporção do lucro/prejuízo acumulado até esse ponto
+        const profitRatio = Math.min(1, daysAtPoint / totalInvDays);
         
-        // Lucro proporcional (convertendo crypto para BRL)
-        const invProfitLoss = inv.category === 'crypto' ? inv.profitLoss * USD_TO_BRL : inv.profitLoss;
+        // Valor do investimento nesse ponto = valor investido + lucro proporcional
+        const valueAtPoint = investedAmount + (profitLoss * profitRatio);
         
-        // Se é o ponto atual (i === 0), usa o lucro real
-        if (i === 0) {
-          profitAtDate += invProfitLoss;
-        } else {
-          // Para pontos passados, calcula proporcionalmente
-          profitAtDate += invProfitLoss * profitRatio;
-        }
+        portfolioAtDate += valueAtPoint;
       }
     });
     
@@ -130,7 +153,7 @@ function generateHistoricalData(investments: Investment[], period: string, cache
       dateStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     } else if (period === '1w' || period === '1m') {
       dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    } else if (period === 'total') {
+    } else if (period === 'total' && totalDays > 365) {
       dateStr = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
     } else {
       dateStr = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
@@ -138,8 +161,25 @@ function generateHistoricalData(investments: Investment[], period: string, cache
     
     data.push({
       date: dateStr,
-      value: profitAtDate,
+      value: portfolioAtDate,
     });
+  }
+  
+  // Adiciona o ponto atual se o último ponto não for o valor atual
+  if (data.length > 0) {
+    const lastDate = data[data.length - 1].date;
+    const nowStr = period === '1d' 
+      ? now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      : now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    
+    if (lastDate !== nowStr) {
+      data.push({
+        date: 'Agora',
+        value: totalValue,
+      });
+    } else {
+      data[data.length - 1].value = totalValue;
+    }
   }
   
   // Salva no cache
@@ -149,10 +189,8 @@ function generateHistoricalData(investments: Investment[], period: string, cache
 }
 
 export function PerformanceChart({ investments, period }: PerformanceChartProps) {
-  // Cache para evitar regeneração desnecessária dos dados históricos
   const cacheRef = useRef<{key: string, data: PriceHistory[]}>({ key: '', data: [] });
   
-  // Calcula o valor total atual para forçar atualização quando preços mudam
   const totalValue = investments.reduce((sum, inv) => {
     const value = inv.category === 'crypto' ? inv.currentValue * USD_TO_BRL : inv.currentValue;
     return sum + value;
@@ -161,17 +199,16 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
     const value = inv.category === 'crypto' ? inv.investedAmount * USD_TO_BRL : inv.investedAmount;
     return sum + value;
   }, 0);
-  const totalProfitLoss = totalValue - totalInvested;
   
   const data = useMemo(() => 
-    generateHistoricalData(investments, period, cacheRef), 
-    [investments, period, totalValue, totalInvested, totalProfitLoss]
+    generatePortfolioHistory(investments, period, cacheRef), 
+    [investments, period, totalValue, totalInvested]
   );
   
   if (data.length === 0) {
     return (
       <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-        Adicione investimentos para ver o gráfico de evolução
+        Adicione investimentos para ver o gráfico de patrimônio
       </div>
     );
   }
@@ -183,11 +220,19 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const value = payload[0].value;
+      const change = value - firstValue;
+      const changePercent = firstValue > 0 ? ((change / firstValue) * 100) : 0;
+      const changeIsPositive = change >= 0;
+      
       return (
         <div className="bg-card border border-border/50 rounded-lg p-3 shadow-lg">
-          <p className="text-muted-foreground text-sm">{label}</p>
-          <p className="text-primary font-mono font-semibold">
-            {formatCurrency(payload[0].value)}
+          <p className="text-muted-foreground text-sm mb-1">{label}</p>
+          <p className="text-primary font-mono font-semibold text-lg">
+            {formatCurrency(value)}
+          </p>
+          <p className={`text-sm font-mono ${changeIsPositive ? 'text-success' : 'text-destructive'}`}>
+            {changeIsPositive ? '+' : ''}{formatCurrency(change)} ({changeIsPositive ? '+' : ''}{changePercent.toFixed(2)}%)
           </p>
         </div>
       );
@@ -200,7 +245,7 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <defs>
-            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="colorPortfolio" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor={lineColor} stopOpacity={0.3} />
               <stop offset="95%" stopColor={lineColor} stopOpacity={0} />
             </linearGradient>
@@ -217,6 +262,7 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
             fontSize={12}
             tickLine={false}
             tickFormatter={(value) => formatCurrency(value)}
+            domain={['dataMin * 0.95', 'dataMax * 1.05']}
           />
           <Tooltip content={<CustomTooltip />} />
           <Area 
@@ -224,7 +270,7 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
             dataKey="value" 
             stroke={lineColor} 
             strokeWidth={2}
-            fill="url(#colorValue)" 
+            fill="url(#colorPortfolio)" 
           />
         </AreaChart>
       </ResponsiveContainer>
