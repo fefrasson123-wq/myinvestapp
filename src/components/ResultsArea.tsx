@@ -49,10 +49,10 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
 
   return (
     <div className="space-y-6">
-      {/* Gráfico de Evolução */}
+      {/* Gráfico de Patrimônio Total */}
       <div className="investment-card">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <h2 className="text-lg font-semibold text-card-foreground">Evolução do Lucro/Prejuízo</h2>
+          <h2 className="text-lg font-semibold text-card-foreground">Evolução do Patrimônio</h2>
           <div className="flex gap-1 p-1 bg-secondary/50 rounded-lg">
             {periods.map((period) => (
               <button
