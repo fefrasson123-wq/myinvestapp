@@ -51,16 +51,16 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
   return (
     <div className="space-y-6">
       {/* Gráfico de Patrimônio Total */}
-      <div className="investment-card">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <h2 className="text-lg font-semibold text-card-foreground">Evolução do Patrimônio</h2>
-          <div className="flex gap-1 p-1 bg-secondary/50 rounded-lg">
+      <div className="investment-card overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <h2 className="text-lg font-semibold text-card-foreground shrink-0">Evolução do Patrimônio</h2>
+          <div className="flex flex-wrap gap-1 p-1 bg-secondary/50 rounded-lg w-fit">
             {periods.map((period) => (
               <button
                 key={period.id}
                 onClick={() => setSelectedPeriod(period.id)}
                 className={cn(
-                  "px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
+                  "px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap",
                   selectedPeriod === period.id
                     ? "bg-primary text-primary-foreground shadow-md"
                     : "text-muted-foreground hover:text-card-foreground hover:bg-secondary/80"
