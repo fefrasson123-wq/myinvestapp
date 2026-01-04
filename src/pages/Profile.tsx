@@ -1,0 +1,292 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import { TrendingUp, ArrowLeft, User, TrendingDown, Edit2, Save, X, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Profile {
+  username: string | null;
+  display_name: string | null;
+}
+
+interface RealizedProfitLoss {
+  total: number;
+  percent: number;
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+export default function Profile() {
+  const { user, signOut, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [realizedProfitLoss, setRealizedProfitLoss] = useState<RealizedProfitLoss>({ total: 0, percent: 0 });
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  // Load profile
+  useEffect(() => {
+    async function loadProfile() {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('username, display_name')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading profile:', error);
+        }
+        
+        if (data) {
+          setProfile(data);
+          setEditUsername(data.username || data.display_name || '');
+        }
+      } catch (err) {
+        console.error('Error loading profile:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadProfile();
+  }, [user]);
+
+  // Calculate realized profit/loss from transactions
+  useEffect(() => {
+    async function loadRealizedProfitLoss() {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('type, total_value, profit_loss, profit_loss_percent')
+          .eq('user_id', user.id)
+          .eq('type', 'sell');
+        
+        if (error) {
+          console.error('Error loading transactions:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const totalProfitLoss = data.reduce((sum, tx) => sum + (Number(tx.profit_loss) || 0), 0);
+          const totalSold = data.reduce((sum, tx) => sum + (Number(tx.total_value) || 0), 0);
+          const avgPercent = totalSold > 0 ? (totalProfitLoss / (totalSold - totalProfitLoss)) * 100 : 0;
+          
+          setRealizedProfitLoss({
+            total: totalProfitLoss,
+            percent: avgPercent,
+          });
+        }
+      } catch (err) {
+        console.error('Error loading realized profit/loss:', err);
+      }
+    }
+
+    loadRealizedProfitLoss();
+  }, [user]);
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ username: editUsername, display_name: editUsername })
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      setProfile(prev => prev ? { ...prev, username: editUsername, display_name: editUsername } : null);
+      setIsEditing(false);
+      toast({
+        title: 'Perfil atualizado',
+        description: 'Suas alterações foram salvas.',
+      });
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao salvar',
+        description: err.message,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: 'Logout realizado',
+      description: 'Você saiu da sua conta.',
+    });
+    navigate('/');
+  };
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-primary animate-pulse text-glow">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  const isPositive = realizedProfitLoss.total >= 0;
+  const displayName = profile?.display_name || profile?.username || user.email?.split('@')[0] || 'Usuário';
+
+  return (
+    <>
+      <Helmet>
+        <title>Meu Perfil - My Invest</title>
+        <meta name="description" content="Visualize e edite seu perfil no My Invest." />
+      </Helmet>
+
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="border-b border-border/50 bg-card/80 backdrop-blur-md">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/')}
+                className="mr-2"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+              <div className="p-2 rounded-lg bg-primary/20 glow-primary">
+                <TrendingUp className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-primary text-glow tracking-tight">
+                  Meu Perfil
+                </h1>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="container mx-auto px-4 py-6 max-w-2xl">
+          {/* Profile Card */}
+          <div className="bg-card border border-border rounded-xl shadow-lg p-6 mb-6 animate-smooth-appear">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center glow-primary">
+                <User className="w-10 h-10 text-primary" />
+              </div>
+              <div className="flex-1">
+                {isEditing ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Nome de usuário</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="username"
+                        value={editUsername}
+                        onChange={(e) => setEditUsername(e.target.value)}
+                        placeholder="Seu nome"
+                      />
+                      <Button size="icon" onClick={handleSaveProfile} disabled={isSaving}>
+                        <Save className="w-4 h-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => setIsEditing(false)}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-2xl font-bold text-card-foreground">{displayName}</h2>
+                      <Button size="icon" variant="ghost" onClick={() => setIsEditing(true)}>
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <p className="text-xs text-muted-foreground mb-1">
+                Conta criada em {new Date(user.created_at).toLocaleDateString('pt-BR')}
+              </p>
+            </div>
+          </div>
+
+          {/* Realized Profit/Loss Card */}
+          <div className="bg-card border border-border rounded-xl shadow-lg p-6 mb-6 animate-smooth-appear" style={{ animationDelay: '50ms' }}>
+            <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
+              {isPositive ? (
+                <TrendingUp className="w-5 h-5 text-green-500" />
+              ) : (
+                <TrendingDown className="w-5 h-5 text-red-500" />
+              )}
+              Lucro / Prejuízo Realizado
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-background/50 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground mb-1">Total em R$</p>
+                <p className={`text-2xl font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                  {isPositive ? '+' : ''}{formatCurrency(realizedProfitLoss.total)}
+                </p>
+              </div>
+              <div className="bg-background/50 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground mb-1">Percentual</p>
+                <p className={`text-2xl font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                  {isPositive ? '+' : ''}{realizedProfitLoss.percent.toFixed(2)}%
+                </p>
+              </div>
+            </div>
+            
+            <p className="text-xs text-muted-foreground mt-4">
+              * Lucro/Prejuízo realizado considera apenas ativos vendidos
+            </p>
+          </div>
+
+          {/* Logout Button */}
+          <div className="animate-smooth-appear" style={{ animationDelay: '100ms' }}>
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={handleSignOut}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair da conta
+            </Button>
+          </div>
+        </main>
+      </div>
+    </>
+  );
+}
