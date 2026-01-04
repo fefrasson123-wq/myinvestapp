@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Check } from 'lucide-react';
+import { X, Check, Calendar } from 'lucide-react';
 import { Investment, categoryLabels } from '@/types/investment';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,11 +19,18 @@ function formatCurrency(value: number, currency: 'BRL' | 'USD' = 'BRL'): string 
   }).format(value);
 }
 
+function formatDateForInput(date: Date | string | undefined): string {
+  if (!date) return '';
+  const d = new Date(date);
+  return d.toISOString().split('T')[0];
+}
+
 export function EditInvestmentModal({ investment, onSave, onClose }: EditInvestmentModalProps) {
   const [formData, setFormData] = useState({
     quantity: investment.quantity.toString(),
     averagePrice: investment.averagePrice.toString(),
     currentPrice: investment.currentPrice.toString(),
+    purchaseDate: formatDateForInput(investment.purchaseDate),
     notes: investment.notes || '',
   });
 
@@ -44,6 +51,7 @@ export function EditInvestmentModal({ investment, onSave, onClose }: EditInvestm
       averagePrice,
       currentPrice,
       investedAmount,
+      purchaseDate: formData.purchaseDate || undefined,
       notes: formData.notes.trim() || undefined,
     });
   };
@@ -52,8 +60,8 @@ export function EditInvestmentModal({ investment, onSave, onClose }: EditInvestm
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative w-full max-w-md bg-card border border-border rounded-xl shadow-2xl animate-scale-in">
-        <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="relative w-full max-w-md bg-card border border-border rounded-xl shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-card z-10">
           <h2 className="text-lg font-semibold text-card-foreground">
             Editar Investimento
           </h2>
@@ -101,7 +109,7 @@ export function EditInvestmentModal({ investment, onSave, onClose }: EditInvestm
               />
             </div>
 
-            <div className="col-span-2">
+            <div>
               <Label htmlFor="currentPrice">Preço Atual ({currency})</Label>
               <Input
                 id="currentPrice"
@@ -109,6 +117,20 @@ export function EditInvestmentModal({ investment, onSave, onClose }: EditInvestm
                 step="any"
                 value={formData.currentPrice}
                 onChange={(e) => setFormData(prev => ({ ...prev, currentPrice: e.target.value }))}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="purchaseDate" className="flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                Data de Compra
+              </Label>
+              <Input
+                id="purchaseDate"
+                type="date"
+                value={formData.purchaseDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
                 className="mt-1"
               />
             </div>
