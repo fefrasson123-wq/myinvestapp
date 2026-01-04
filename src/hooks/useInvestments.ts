@@ -126,7 +126,31 @@ export function useInvestments() {
         if (inv.id !== id) return inv;
         
         const updatedInv = { ...inv, ...data };
-        updatedInv.currentValue = updatedInv.quantity * updatedInv.currentPrice;
+        
+        // Recalcula investedAmount se quantidade ou preço médio foram atualizados
+        if (data.quantity !== undefined || data.averagePrice !== undefined) {
+          updatedInv.investedAmount = updatedInv.quantity * updatedInv.averagePrice;
+        }
+        
+        // Para renda fixa com taxa de juros, recalcula baseado no tempo decorrido
+        const isFixedIncome = ['cdb', 'cdi', 'treasury', 'savings'].includes(updatedInv.category);
+        
+        if (isFixedIncome && updatedInv.interestRate && updatedInv.purchaseDate) {
+          const purchaseDate = new Date(updatedInv.purchaseDate);
+          const now = new Date();
+          const yearsElapsed = (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+          
+          if (yearsElapsed > 0) {
+            updatedInv.currentValue = updatedInv.investedAmount * Math.pow(1 + updatedInv.interestRate / 100, yearsElapsed);
+            updatedInv.currentPrice = updatedInv.currentValue / updatedInv.quantity;
+          } else {
+            updatedInv.currentValue = updatedInv.investedAmount;
+            updatedInv.currentPrice = updatedInv.averagePrice;
+          }
+        } else {
+          updatedInv.currentValue = updatedInv.quantity * updatedInv.currentPrice;
+        }
+        
         updatedInv.profitLoss = updatedInv.currentValue - updatedInv.investedAmount;
         updatedInv.profitLossPercent = updatedInv.investedAmount > 0 
           ? (updatedInv.profitLoss / updatedInv.investedAmount) * 100 
