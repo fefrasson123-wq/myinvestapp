@@ -1,5 +1,6 @@
 import { TrendingUp, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { UserMenu } from '@/components/UserMenu';
 
 interface HeaderProps {
   onAddClick: () => void;
@@ -22,11 +23,14 @@ export function Header({ onAddClick }: HeaderProps) {
             </div>
           </div>
           
-          <Button onClick={onAddClick} size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Adicionar Investimento</span>
-            <span className="sm:hidden">Novo</span>
-          </Button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button onClick={onAddClick} size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Adicionar Investimento</span>
+              <span className="sm:hidden">Novo</span>
+            </Button>
+            <UserMenu />
+          </div>
         </div>
       </div>
     </header>
