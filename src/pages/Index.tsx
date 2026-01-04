@@ -13,6 +13,7 @@ import { useGoldPrice } from '@/hooks/useGoldPrice';
 import { Investment, Transaction } from '@/types/investment';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { InvestmentTag } from '@/components/InvestmentsByTag';
 
 // Lazy load heavy components to reduce initial bundle size
 const CategoryChart = lazy(() => import('@/components/CategoryChart').then(m => ({ default: m.CategoryChart })));
@@ -23,6 +24,7 @@ const SellAssetModal = lazy(() => import('@/components/SellAssetModal').then(m =
 const EditInvestmentModal = lazy(() => import('@/components/EditInvestmentModal').then(m => ({ default: m.EditInvestmentModal })));
 const TransactionHistory = lazy(() => import('@/components/TransactionHistory').then(m => ({ default: m.TransactionHistory })));
 const EditTransactionModal = lazy(() => import('@/components/EditTransactionModal').then(m => ({ default: m.EditTransactionModal })));
+const InvestmentsByTag = lazy(() => import('@/components/InvestmentsByTag').then(m => ({ default: m.InvestmentsByTag })));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -39,7 +41,28 @@ const Index = () => {
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [sellingInvestment, setSellingInvestment] = useState<Investment | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [investmentTags, setInvestmentTags] = useState<Record<string, InvestmentTag>>(() => {
+    const saved = localStorage.getItem('investment-tags');
+    return saved ? JSON.parse(saved) : {};
+  });
   const { toast } = useToast();
+
+  // Salva tags no localStorage
+  useEffect(() => {
+    localStorage.setItem('investment-tags', JSON.stringify(investmentTags));
+  }, [investmentTags]);
+
+  const handleTagChange = useCallback((investmentId: string, tag: InvestmentTag | null) => {
+    setInvestmentTags(prev => {
+      const newTags = { ...prev };
+      if (tag === null) {
+        delete newTags[investmentId];
+      } else {
+        newTags[investmentId] = tag;
+      }
+      return newTags;
+    });
+  }, []);
 
   const {
     investments,
@@ -390,7 +413,7 @@ const Index = () => {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
                 <div className="lg:col-span-1">
                   <Suspense fallback={<LoadingFallback />}>
-                    <CategoryChart categoryTotals={getCategoryTotals()} />
+                    <CategoryChart categoryTotals={getCategoryTotals()} investments={investments} />
                   </Suspense>
                 </div>
                 <div className="lg:col-span-2">
@@ -399,6 +422,19 @@ const Index = () => {
                   </Suspense>
                 </div>
               </div>
+
+              {/* Investimentos por Tag */}
+              {Object.keys(investmentTags).length > 0 && (
+                <div className="mt-6">
+                  <Suspense fallback={<LoadingFallback />}>
+                    <InvestmentsByTag
+                      investments={investments}
+                      investmentTags={investmentTags}
+                      onTagChange={handleTagChange}
+                    />
+                  </Suspense>
+                </div>
+              )}
 
               <div className="mt-6">
                 <div className="mb-4">
@@ -415,6 +451,8 @@ const Index = () => {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onSell={handleSell}
+                    investmentTags={investmentTags}
+                    onTagChange={handleTagChange}
                   />
                 </Suspense>
               </div>
