@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { TrendingUp, TrendingDown, Zap } from 'lucide-react';
 import { Investment, categoryLabels, categoryColors } from '@/types/investment';
 import { PerformanceChart } from './PerformanceChart';
+import { CategoryProfitLoss } from './CategoryProfitLoss';
 import { cn } from '@/lib/utils';
 
 interface ResultsAreaProps {
@@ -150,6 +151,11 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
             })}
           </div>
         </div>
+      )}
+
+      {/* Lucro/Prejuízo por Classe */}
+      {investments.length > 0 && (
+        <CategoryProfitLoss investments={investments} />
       )}
     </div>
   );
