@@ -76,7 +76,7 @@ const Index = () => {
     getCategoryTotals,
   } = useInvestments();
 
-  const { transactions, addTransaction, deleteTransaction, updateTransaction } = useTransactions();
+  const { transactions, addTransaction, deleteTransaction, updateTransaction, getRealizedProfitLoss } = useTransactions();
   
   // Hooks de preços em tempo real
   const { 
@@ -410,6 +410,7 @@ const Index = () => {
                 totalValue={getTotalValue()}
                 totalInvested={getTotalInvested()}
                 totalProfitLoss={getTotalProfitLoss()}
+                realizedProfitLoss={getRealizedProfitLoss()}
               />
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">

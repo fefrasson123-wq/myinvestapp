@@ -187,6 +187,12 @@ export function useTransactions() {
     return transactions.filter(tx => tx.investmentId === investmentId);
   }, [transactions]);
 
+  const getRealizedProfitLoss = useCallback(() => {
+    return transactions
+      .filter(tx => tx.type === 'sell' && tx.profitLoss !== undefined)
+      .reduce((sum, tx) => sum + (tx.profitLoss || 0), 0);
+  }, [transactions]);
+
   return {
     transactions,
     isLoading,
@@ -195,5 +201,6 @@ export function useTransactions() {
     updateTransaction,
     getRecentTransactions,
     getTransactionsByInvestment,
+    getRealizedProfitLoss,
   };
 }
