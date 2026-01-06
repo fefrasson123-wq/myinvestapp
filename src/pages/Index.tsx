@@ -302,26 +302,28 @@ const Index = () => {
     setSellingInvestment(null);
   };
 
-  const handleSubmit = (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
-    const newInvestment = addInvestment(data);
+  const handleSubmit = async (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
+    const newInvestment = await addInvestment(data);
     
-    // Registra a transação de compra
-    addTransaction({
-      investmentId: newInvestment.id,
-      investmentName: data.name,
-      ticker: data.ticker,
-      category: data.category,
-      type: 'buy',
-      quantity: data.quantity,
-      price: data.averagePrice,
-      total: data.investedAmount,
-      date: data.purchaseDate ? new Date(data.purchaseDate) : new Date(),
-    });
+    if (newInvestment) {
+      // Registra a transação de compra
+      addTransaction({
+        investmentId: newInvestment.id,
+        investmentName: data.name,
+        ticker: data.ticker,
+        category: data.category,
+        type: 'buy',
+        quantity: data.quantity,
+        price: data.averagePrice,
+        total: data.investedAmount,
+        date: data.purchaseDate ? new Date(data.purchaseDate) : new Date(),
+      });
 
-    toast({
-      title: 'Investimento adicionado',
-      description: 'O novo investimento foi cadastrado com sucesso.',
-    });
+      toast({
+        title: 'Investimento adicionado',
+        description: 'O novo investimento foi cadastrado com sucesso.',
+      });
+    }
     setShowRegistration(false);
   };
 
