@@ -58,6 +58,64 @@ interface HistoricalPrice {
 // Cache para dados históricos
 const historicalCache: Record<string, { data: HistoricalPrice[], expiry: number }> = {};
 
+// Cache para resolução de ticker -> coinId (evita bater no /search toda hora)
+const coinIdCache: Record<string, { id: string | null; expiry: number }> = {};
+
+function normalizeTicker(raw: string): string {
+  // Ex: "BTC/USDT" -> "BTC", " btc " -> "BTC"
+  const trimmed = raw.trim().toUpperCase();
+  const first = trimmed.split(/[^A-Z0-9]/).filter(Boolean)[0] || trimmed;
+  return first;
+}
+
+async function resolveCoinId(ticker: string): Promise<string | null> {
+  const t = normalizeTicker(ticker);
+  const now = Date.now();
+
+  const cached = coinIdCache[t];
+  if (cached && cached.expiry > now) return cached.id;
+
+  // 1) Mapeamento fixo (mais rápido)
+  if (symbolToId[t]) {
+    coinIdCache[t] = { id: symbolToId[t], expiry: now + 24 * 60 * 60 * 1000 };
+    return symbolToId[t];
+  }
+
+  // 2) Tenta usar o próprio ticker como id (algumas moedas funcionam assim)
+  // (não cacheia ainda; só se der certo via fetch)
+
+  // 3) Fallback: pesquisa no CoinGecko (best-effort)
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    const resp = await fetch(`${COINGECKO_API}/search?query=${encodeURIComponent(t)}`, {
+      headers: { 'Accept': 'application/json' },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!resp.ok) {
+      coinIdCache[t] = { id: null, expiry: now + 10 * 60 * 1000 };
+      return null;
+    }
+
+    const json = await resp.json();
+    const coins: Array<{ id: string; symbol: string; name: string }> = json?.coins || [];
+
+    const exactSymbol = coins.find((c) => (c.symbol || '').toUpperCase() === t);
+    const candidate = exactSymbol || coins[0];
+
+    const resolved = candidate?.id ?? null;
+    coinIdCache[t] = { id: resolved, expiry: now + 24 * 60 * 60 * 1000 };
+    return resolved;
+  } catch {
+    coinIdCache[t] = { id: null, expiry: now + 10 * 60 * 1000 };
+    return null;
+  }
+}
+
 function getPeriodDays(period: string): number {
   switch (period) {
     case '24h':
@@ -91,27 +149,30 @@ async function fetchHistoricalPricesWithRetry(
 ): Promise<HistoricalPrice[]> {
   const cacheKey = `${coinId}-${days}-${vsCurrency}`;
   const now = Date.now();
-  
+
   // Verifica cache (válido por 5 minutos)
   if (historicalCache[cacheKey] && historicalCache[cacheKey].expiry > now) {
     return historicalCache[cacheKey].data;
   }
-  
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
-      
-      const response = await fetch(
-        `${COINGECKO_API}/coins/${coinId}/market_chart?vs_currency=${vsCurrency}&days=${days}`,
-        { 
-          headers: { 'Accept': 'application/json' },
-          signal: controller.signal
-        }
-      );
-      
+
+      const url = new URL(`${COINGECKO_API}/coins/${coinId}/market_chart`);
+      url.searchParams.set('vs_currency', vsCurrency);
+      url.searchParams.set('days', String(days));
+      // melhora granularidade no curto prazo
+      if (days <= 1) url.searchParams.set('interval', 'hourly');
+
+      const response = await fetch(url.toString(), {
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal,
+      });
+
       clearTimeout(timeoutId);
-      
+
       if (!response.ok) {
         if (attempt === retries) {
           throw new Error(`HTTP ${response.status}`);
@@ -119,16 +180,16 @@ async function fetchHistoricalPricesWithRetry(
         await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
         continue;
       }
-      
+
       const data = await response.json();
-      const prices: HistoricalPrice[] = data.prices.map(([timestamp, price]: [number, number]) => ({
+      const prices: HistoricalPrice[] = (data?.prices || []).map(([timestamp, price]: [number, number]) => ({
         timestamp,
         price
       }));
-      
+
       // Salva no cache por 5 minutos
       historicalCache[cacheKey] = { data: prices, expiry: now + 5 * 60 * 1000 };
-      
+
       return prices;
     } catch (err) {
       if (attempt === retries) {
@@ -138,7 +199,7 @@ async function fetchHistoricalPricesWithRetry(
       await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
     }
   }
-  
+
   return [];
 }
 
@@ -261,55 +322,89 @@ function useHistoricalData(investments: Investment[], period: string) {
     );
     
     // Busca histórico das cryptos em paralelo
-    const cryptoHistoryPromises = cryptoInvestments.map(async inv => {
-      const coinId = symbolToId[inv.ticker?.toUpperCase() || ''] || inv.ticker?.toLowerCase();
-      if (!coinId) return { inv, history: [] };
-      
+    const cryptoHistoryPromises = cryptoInvestments.map(async (inv) => {
+      if (!inv.ticker) return { inv, history: [] as HistoricalPrice[] };
+
+      const resolvedId = await resolveCoinId(inv.ticker);
+      // Tentativa extra: usar ticker como id diretamente
+      const coinId = resolvedId || normalizeTicker(inv.ticker).toLowerCase();
+
       const history = await fetchHistoricalPricesWithRetry(coinId, days, 'usd');
       return { inv, history };
     });
-    
+
     const cryptoResults = await Promise.all(cryptoHistoryPromises);
-    
+
     // Constrói dados do gráfico
     const chartData: PriceHistory[] = [];
-    
+
+    // Helper: interpola preço no timestamp (evita “linha reta” por aproximação ruim)
+    const interpolatePriceAt = (history: HistoricalPrice[], t: number): number | null => {
+      if (history.length === 0) return null;
+
+      // CoinGecko vem ordenado por tempo; garantimos por segurança
+      const sorted = history[0].timestamp <= history[history.length - 1].timestamp
+        ? history
+        : [...history].sort((a, b) => a.timestamp - b.timestamp);
+
+      if (t <= sorted[0].timestamp) return sorted[0].price;
+      if (t >= sorted[sorted.length - 1].timestamp) return sorted[sorted.length - 1].price;
+
+      // Busca binária do ponto à direita
+      let lo = 0;
+      let hi = sorted.length - 1;
+      while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (sorted[mid].timestamp < t) lo = mid + 1;
+        else hi = mid;
+      }
+
+      const right = sorted[lo];
+      const left = sorted[Math.max(0, lo - 1)];
+
+      const dt = right.timestamp - left.timestamp;
+      if (dt <= 0) return right.price;
+
+      const alpha = (t - left.timestamp) / dt;
+      return left.price + (right.price - left.price) * alpha;
+    };
+
     for (let i = 0; i < timestamps.length; i++) {
       const timestamp = timestamps[i];
       let portfolioValue = 0;
-      
-      // 1. Cryptos - usa histórico real ou gera variação
+
+      // 1. Cryptos - usa histórico real; se não houver, mantém valor atual (sem “inventar” variação)
       for (const { inv, history } of cryptoResults) {
-        const purchaseDate = inv.purchaseDate 
-          ? new Date(inv.purchaseDate).getTime() 
+        const purchaseDate = inv.purchaseDate
+          ? new Date(inv.purchaseDate).getTime()
           : inv.createdAt.getTime();
-        
+
         if (timestamp < purchaseDate) continue;
-        
-        if (history.length > 0) {
-          // Usa histórico real
-          const closestPrice = history.reduce((prev, curr) => 
-            Math.abs(curr.timestamp - timestamp) < Math.abs(prev.timestamp - timestamp) ? curr : prev
-          );
-          portfolioValue += inv.quantity * closestPrice.price * USD_TO_BRL;
+
+        const priceAt = interpolatePriceAt(history, timestamp);
+        if (priceAt != null) {
+          portfolioValue += inv.quantity * priceAt * USD_TO_BRL;
         } else {
-          // Gera variação realista
-          const variations = generateRealisticVariation(inv, numPoints, days, false);
-          portfolioValue += variations[i] || inv.currentValue * USD_TO_BRL;
+          // Sem histórico real disponível para esse ticker → não simulamos
+          portfolioValue += (inv.currentValue || 0) * USD_TO_BRL;
         }
       }
-      
+
       // 2. Renda fixa - calcula rendimento real
       for (const inv of fixedIncomeInvestments) {
         portfolioValue += calculateFixedIncomeAtTime(inv, timestamp);
       }
-      
-      // 3. Outros investimentos - gera variação realista
+
+      // 3. Outros investimentos - (ainda sem fonte pública de histórico) mantém valor atual
       for (const inv of otherInvestments) {
-        const variations = generateRealisticVariation(inv, numPoints, days);
-        portfolioValue += variations[i] || inv.currentValue;
+        const purchaseDate = inv.purchaseDate
+          ? new Date(inv.purchaseDate).getTime()
+          : inv.createdAt.getTime();
+
+        if (timestamp < purchaseDate) continue;
+        portfolioValue += inv.currentValue;
       }
-      
+
       // Formata data
       const date = new Date(timestamp);
       let dateStr: string;
@@ -322,7 +417,7 @@ function useHistoricalData(investments: Investment[], period: string) {
       } else {
         dateStr = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
       }
-      
+
       chartData.push({ date: dateStr, value: portfolioValue });
     }
     
