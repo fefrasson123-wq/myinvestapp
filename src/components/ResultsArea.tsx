@@ -9,11 +9,10 @@ interface ResultsAreaProps {
   investments: Investment[];
 }
 
-type Period = '24h' | '1d' | '1w' | '1m' | '6m' | '1y' | 'total';
+type Period = '24h' | '1w' | '1m' | '6m' | '1y' | 'total';
 
 const periods: { id: Period; label: string }[] = [
   { id: '24h', label: '24H' },
-  { id: '1d', label: '1D' },
   { id: '1w', label: '1S' },
   { id: '1m', label: '1M' },
   { id: '6m', label: '6M' },

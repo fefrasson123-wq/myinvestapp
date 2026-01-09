@@ -12,7 +12,7 @@ import { Investment, PriceHistory } from '@/types/investment';
 
 interface PerformanceChartProps {
   investments: Investment[];
-  period: '24h' | '1d' | '1w' | '1m' | '6m' | '1y' | 'total';
+  period: '24h' | '1w' | '1m' | '6m' | '1y' | 'total';
 }
 
 function formatCurrency(value: number): string {
@@ -61,7 +61,6 @@ const historicalCache: Record<string, { data: HistoricalPrice[], expiry: number 
 function getPeriodDays(period: string): number {
   switch (period) {
     case '24h':
-    case '1d':
       return 1;
     case '1w':
       return 7;
