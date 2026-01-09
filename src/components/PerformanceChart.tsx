@@ -58,8 +58,8 @@ interface HistoricalPrice {
 // Cache para dados históricos
 const historicalCache: Record<string, { data: HistoricalPrice[], expiry: number }> = {};
 
-async function fetchHistoricalPrices(coinId: string, days: number): Promise<HistoricalPrice[]> {
-  const cacheKey = `${coinId}-${days}`;
+async function fetchHistoricalPrices(coinId: string, days: number, vsCurrency: string = 'usd'): Promise<HistoricalPrice[]> {
+  const cacheKey = `${coinId}-${days}-${vsCurrency}`;
   const now = Date.now();
   
   // Verifica cache (válido por 5 minutos)
@@ -69,7 +69,7 @@ async function fetchHistoricalPrices(coinId: string, days: number): Promise<Hist
   
   try {
     const response = await fetch(
-      `${COINGECKO_API}/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`,
+      `${COINGECKO_API}/coins/${coinId}/market_chart?vs_currency=${vsCurrency}&days=${days}`,
       { headers: { 'Accept': 'application/json' } }
     );
     
@@ -112,6 +112,49 @@ function getPeriodDays(period: string): number {
   }
 }
 
+// Calcula o valor da renda fixa em um determinado momento baseado na taxa de juros
+function calculateFixedIncomeValueAtTime(
+  investment: Investment, 
+  timestamp: number,
+  dailyRate: number
+): number {
+  const purchaseDate = investment.purchaseDate 
+    ? new Date(investment.purchaseDate).getTime() 
+    : investment.createdAt.getTime();
+  
+  // Se o timestamp é antes da compra, retorna 0
+  if (timestamp < purchaseDate) {
+    return 0;
+  }
+  
+  const daysElapsed = (timestamp - purchaseDate) / (1000 * 60 * 60 * 24);
+  const value = investment.investedAmount * Math.pow(1 + dailyRate, daysElapsed);
+  
+  return value;
+}
+
+// Calcula taxa diária baseada no tipo de renda fixa
+function getDailyRate(investment: Investment): number {
+  const annualRate = (investment.interestRate || 10) / 100;
+  
+  // Taxa diária = (1 + taxa anual)^(1/365) - 1
+  return Math.pow(1 + annualRate, 1/365) - 1;
+}
+
+// Gera timestamps para o período
+function generateTimestamps(days: number, numPoints: number): number[] {
+  const now = Date.now();
+  const startTime = now - days * 24 * 60 * 60 * 1000;
+  const timestamps: number[] = [];
+  const interval = (now - startTime) / (numPoints - 1);
+  
+  for (let i = 0; i < numPoints; i++) {
+    timestamps.push(startTime + i * interval);
+  }
+  
+  return timestamps;
+}
+
 function useHistoricalData(investments: Investment[], period: string) {
   const [data, setData] = useState<PriceHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -127,97 +170,144 @@ function useHistoricalData(investments: Investment[], period: string) {
       setIsLoading(true);
       
       const days = getPeriodDays(period);
+      const numPoints = days <= 1 ? 24 : days <= 7 ? 7 : days <= 30 ? 30 : 12;
+      const timestamps = generateTimestamps(days, numPoints);
       
-      // Busca histórico para cada crypto
+      // Separa investimentos por categoria
       const cryptoInvestments = investments.filter(inv => inv.category === 'crypto' && inv.ticker);
-      const otherInvestments = investments.filter(inv => inv.category !== 'crypto');
-      
-      // Valor total dos investimentos não-crypto (constante no gráfico)
-      const otherValue = otherInvestments.reduce((sum, inv) => sum + inv.currentValue, 0);
+      const goldInvestments = investments.filter(inv => inv.category === 'gold');
+      const fixedIncomeInvestments = investments.filter(inv => 
+        ['cdb', 'cdi', 'treasury', 'savings'].includes(inv.category)
+      );
+      const stockInvestments = investments.filter(inv => 
+        ['stocks', 'fii'].includes(inv.category)
+      );
+      const otherInvestments = investments.filter(inv => 
+        ['cash', 'realestate', 'other'].includes(inv.category)
+      );
       
       // Busca dados históricos das cryptos
-      const historicalDataMap: Record<string, HistoricalPrice[]> = {};
+      const cryptoHistoryMap: Record<string, HistoricalPrice[]> = {};
       
       for (const inv of cryptoInvestments) {
         const coinId = symbolToId[inv.ticker?.toUpperCase() || ''] || inv.ticker?.toLowerCase();
-        if (coinId && !historicalDataMap[coinId]) {
-          const history = await fetchHistoricalPrices(coinId, days);
+        if (coinId && !cryptoHistoryMap[coinId]) {
+          const history = await fetchHistoricalPrices(coinId, days, 'usd');
           if (history.length > 0) {
-            historicalDataMap[coinId] = history;
+            cryptoHistoryMap[coinId] = history;
           }
         }
       }
       
-      // Se não conseguiu buscar dados históricos, usa fallback
-      if (Object.keys(historicalDataMap).length === 0 && cryptoInvestments.length > 0) {
-        // Fallback: gera dados simulados baseados no valor atual
-        const totalValue = investments.reduce((sum, inv) => {
-          const value = inv.category === 'crypto' ? inv.currentValue * USD_TO_BRL : inv.currentValue;
-          return sum + value;
-        }, 0);
-        
-        const points = days <= 1 ? 24 : days <= 7 ? 7 : days <= 30 ? 30 : 12;
-        const fallbackData: PriceHistory[] = [];
-        const now = Date.now();
-        const interval = (days * 24 * 60 * 60 * 1000) / points;
-        
-        for (let i = 0; i < points; i++) {
-          const timestamp = now - (points - i - 1) * interval;
-          const date = new Date(timestamp);
-          
-          let dateStr: string;
-          if (days <= 1) {
-            dateStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-          } else if (days <= 30) {
-            dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-          } else {
-            dateStr = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
-          }
-          
-          fallbackData.push({ date: dateStr, value: totalValue });
-        }
-        
-        setData(fallbackData);
-        setIsLoading(false);
-        return;
+      // Busca histórico do ouro (PAX Gold em BRL)
+      let goldHistory: HistoricalPrice[] = [];
+      if (goldInvestments.length > 0) {
+        goldHistory = await fetchHistoricalPrices('pax-gold', days, 'brl');
       }
       
-      // Pega o primeiro histórico para usar como base de timestamps
-      const firstHistory = Object.values(historicalDataMap)[0] || [];
-      if (firstHistory.length === 0) {
-        setData([]);
-        setIsLoading(false);
-        return;
-      }
-      
-      // Reduz o número de pontos para melhor visualização
-      const maxPoints = days <= 1 ? 24 : days <= 7 ? 7 : days <= 30 ? 30 : 12;
-      const step = Math.max(1, Math.floor(firstHistory.length / maxPoints));
-      
+      // Constrói os dados do gráfico
       const chartData: PriceHistory[] = [];
       
-      for (let i = 0; i < firstHistory.length; i += step) {
-        const timestamp = firstHistory[i].timestamp;
+      for (const timestamp of timestamps) {
+        let portfolioValue = 0;
         const date = new Date(timestamp);
         
-        // Calcula o valor total do portfolio nesse momento
-        let portfolioValue = otherValue; // Investimentos não-crypto
-        
+        // 1. Calcula valor das cryptos com preço histórico real
         for (const inv of cryptoInvestments) {
           const coinId = symbolToId[inv.ticker?.toUpperCase() || ''] || inv.ticker?.toLowerCase();
-          const history = historicalDataMap[coinId];
+          const history = cryptoHistoryMap[coinId];
           
-          if (history) {
+          if (history && history.length > 0) {
             // Encontra o preço mais próximo do timestamp
             const closestPrice = history.reduce((prev, curr) => {
               return Math.abs(curr.timestamp - timestamp) < Math.abs(prev.timestamp - timestamp) ? curr : prev;
             });
             
-            // Valor = quantidade * preço histórico * conversão USD->BRL
-            portfolioValue += inv.quantity * closestPrice.price * USD_TO_BRL;
+            // Só conta se a compra já foi feita
+            const purchaseDate = inv.purchaseDate 
+              ? new Date(inv.purchaseDate).getTime() 
+              : inv.createdAt.getTime();
+            
+            if (timestamp >= purchaseDate) {
+              portfolioValue += inv.quantity * closestPrice.price * USD_TO_BRL;
+            }
           } else {
             // Fallback: usa valor atual
-            portfolioValue += inv.currentValue * USD_TO_BRL;
+            const purchaseDate = inv.purchaseDate 
+              ? new Date(inv.purchaseDate).getTime() 
+              : inv.createdAt.getTime();
+            
+            if (timestamp >= purchaseDate) {
+              portfolioValue += inv.currentValue * USD_TO_BRL;
+            }
+          }
+        }
+        
+        // 2. Calcula valor do ouro com preço histórico real
+        for (const inv of goldInvestments) {
+          const purchaseDate = inv.purchaseDate 
+            ? new Date(inv.purchaseDate).getTime() 
+            : inv.createdAt.getTime();
+          
+          if (timestamp >= purchaseDate) {
+            if (goldHistory.length > 0) {
+              const closestPrice = goldHistory.reduce((prev, curr) => {
+                return Math.abs(curr.timestamp - timestamp) < Math.abs(prev.timestamp - timestamp) ? curr : prev;
+              });
+              // PAX Gold = 1 onça troy, converter para gramas
+              const pricePerGram = closestPrice.price / 31.1035;
+              const weight = inv.weightGrams || inv.quantity;
+              portfolioValue += weight * pricePerGram;
+            } else {
+              portfolioValue += inv.currentValue;
+            }
+          }
+        }
+        
+        // 3. Calcula valor da renda fixa com evolução baseada na taxa de juros
+        for (const inv of fixedIncomeInvestments) {
+          const purchaseDate = inv.purchaseDate 
+            ? new Date(inv.purchaseDate).getTime() 
+            : inv.createdAt.getTime();
+          
+          if (timestamp >= purchaseDate) {
+            const dailyRate = getDailyRate(inv);
+            const value = calculateFixedIncomeValueAtTime(inv, timestamp, dailyRate);
+            portfolioValue += value;
+          }
+        }
+        
+        // 4. Ações e FIIs - usa preço atual (sem API de histórico gratuita)
+        // Simula variação baseada na diferença entre preço médio e atual
+        for (const inv of stockInvestments) {
+          const purchaseDate = inv.purchaseDate 
+            ? new Date(inv.purchaseDate).getTime() 
+            : inv.createdAt.getTime();
+          
+          if (timestamp >= purchaseDate) {
+            const now = Date.now();
+            const totalPeriod = now - purchaseDate;
+            const elapsed = timestamp - purchaseDate;
+            
+            if (totalPeriod > 0 && elapsed > 0) {
+              // Interpolação linear entre valor investido e valor atual
+              const progress = elapsed / totalPeriod;
+              const valueAtTime = inv.investedAmount + (inv.currentValue - inv.investedAmount) * progress;
+              portfolioValue += valueAtTime;
+            } else {
+              portfolioValue += inv.investedAmount;
+            }
+          }
+        }
+        
+        // 5. Outros investimentos (imóveis, caixa, outros) - valor constante
+        for (const inv of otherInvestments) {
+          const purchaseDate = inv.purchaseDate 
+            ? new Date(inv.purchaseDate).getTime() 
+            : inv.createdAt.getTime();
+          
+          if (timestamp >= purchaseDate) {
+            portfolioValue += inv.currentValue;
           }
         }
         
@@ -237,20 +327,25 @@ function useHistoricalData(investments: Investment[], period: string) {
         });
       }
       
-      // Adiciona o ponto atual
+      // Adiciona o ponto atual com valores reais
       const now = new Date();
-      const totalValue = investments.reduce((sum, inv) => {
-        const value = inv.category === 'crypto' ? inv.currentValue * USD_TO_BRL : inv.currentValue;
-        return sum + value;
-      }, 0);
+      let totalValue = 0;
+      
+      for (const inv of investments) {
+        if (inv.category === 'crypto') {
+          totalValue += inv.currentValue * USD_TO_BRL;
+        } else {
+          totalValue += inv.currentValue;
+        }
+      }
       
       const lastDateStr = days <= 1 
         ? now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
         : 'Agora';
       
-      if (chartData.length === 0 || chartData[chartData.length - 1].date !== lastDateStr) {
+      if (chartData.length > 0 && chartData[chartData.length - 1].date !== lastDateStr) {
         chartData.push({ date: lastDateStr, value: totalValue });
-      } else {
+      } else if (chartData.length > 0) {
         chartData[chartData.length - 1].value = totalValue;
       }
       
