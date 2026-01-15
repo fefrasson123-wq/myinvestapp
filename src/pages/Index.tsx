@@ -462,7 +462,7 @@ const Index = () => {
           )}
 
           {activeTab === 'register' && (
-            <div className="max-w-2xl mx-auto animate-smooth-appear">
+            <div className="animate-smooth-appear">
               <Suspense fallback={<LoadingFallback />}>
                 <InvestmentRegistration
                   onSubmit={handleSubmit}
@@ -475,7 +475,7 @@ const Index = () => {
           )}
 
           {activeTab === 'history' && (
-            <div className="max-w-3xl mx-auto animate-smooth-appear overflow-hidden">
+            <div className="animate-smooth-appear">
               <div className="mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl font-semibold text-card-foreground flex items-center gap-2">
                   <History className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
