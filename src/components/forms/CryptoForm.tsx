@@ -299,7 +299,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
           type="submit" 
           className={cn(
             "flex-1 gap-2",
-            mode === 'sell' && "bg-destructive hover:bg-destructive/90"
+            mode === 'sell' && "bg-destructive hover:bg-destructive/90 shadow-[0_0_20px_rgba(239,68,68,0.4)]"
           )}
         >
           <Check className="w-4 h-4" />
