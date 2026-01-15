@@ -165,7 +165,7 @@ export function SellAssetModal({ investment, onSell, onClose }: SellAssetModalPr
             </Button>
             <Button 
               type="submit" 
-              className="flex-1"
+              className="flex-1 bg-destructive hover:bg-destructive/90 shadow-[0_0_20px_rgba(239,68,68,0.4)]"
               disabled={quantity <= 0 || quantity > investment.quantity}
             >
               Confirmar Venda
