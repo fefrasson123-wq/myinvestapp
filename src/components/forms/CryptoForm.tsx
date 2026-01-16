@@ -72,9 +72,9 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
       // Pega a primeira correspondência
       const foundCoin = searchData.coins[0];
       
-      // Busca o preço atual
+      // Busca o preço atual em BRL
       const priceResponse = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${foundCoin.id}&vs_currencies=usd&include_24hr_change=true`
+        `https://api.coingecko.com/api/v3/simple/price?ids=${foundCoin.id}&vs_currencies=brl&include_24hr_change=true`
       );
 
       if (!priceResponse.ok) {
@@ -82,7 +82,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
       }
 
       const priceData = await priceResponse.json();
-      const price = priceData[foundCoin.id]?.usd || 0;
+      const price = priceData[foundCoin.id]?.brl || 0;
 
       if (price === 0) {
         toast.error(`Não foi possível obter o preço de "${foundCoin.name}"`);
@@ -98,7 +98,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
         price: price,
       };
 
-      toast.success(`${foundCoin.name} (${foundCoin.symbol.toUpperCase()}) encontrada! Preço: $${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`);
+      toast.success(`${foundCoin.name} (${foundCoin.symbol.toUpperCase()}) encontrada! Preço: R$ ${price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`);
       
       setSelectedCrypto(customCrypto);
       setFormData(prev => ({
@@ -338,7 +338,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
           </h3>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             {isPriceLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-            <span>Preço atual: $ {(currentLivePrice?.current_price ?? selectedCrypto?.price ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
+            <span>Preço atual: R$ {(currentLivePrice?.current_price ?? selectedCrypto?.price ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
             {currentLivePrice && (
               <span className={cn(
                 "font-mono",

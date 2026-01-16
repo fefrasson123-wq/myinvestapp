@@ -161,32 +161,6 @@ export function useCryptoPrices() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
-  // Carrega preços locais como fallback inicial
-  const loadLocalPrices = useCallback(() => {
-    // Importa da lista local de criptos
-    import('@/data/cryptoList').then(({ cryptoList }) => {
-      const localPrices: Record<string, CryptoPrice> = {};
-      cryptoList.forEach(crypto => {
-        const symbol = crypto.symbol.toUpperCase();
-        // Simula variação 24h
-        const changePercent = (Math.random() - 0.5) * 4; // -2% a +2%
-        const change = crypto.price * (changePercent / 100);
-        
-        localPrices[symbol] = {
-          id: crypto.id,
-          symbol: symbol.toLowerCase(),
-          current_price: crypto.price,
-          price_change_24h: change,
-          price_change_percentage_24h: changePercent,
-          high_24h: crypto.price * 1.02,
-          low_24h: crypto.price * 0.98,
-          last_updated: new Date().toISOString(),
-        };
-      });
-      setPrices(prev => ({ ...localPrices, ...prev })); // Mantém preços da API se existirem
-    });
-  }, []);
-
   const fetchPrices = useCallback(async (symbols?: string[]) => {
     setIsLoading(true);
     setError(null);
@@ -199,8 +173,9 @@ export function useCryptoPrices() {
       
       const uniqueIds = [...new Set(idsToFetch)].slice(0, 100); // CoinGecko limita a 100 por request
       
+      // Buscar preços diretamente em BRL para cotação real
       const response = await fetch(
-        `${COINGECKO_API}/coins/markets?vs_currency=usd&ids=${uniqueIds.join(',')}&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h`,
+        `${COINGECKO_API}/coins/markets?vs_currency=brl&ids=${uniqueIds.join(',')}&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h`,
         {
           headers: {
             'Accept': 'application/json',
@@ -246,9 +221,8 @@ export function useCryptoPrices() {
     };
   }, [prices]);
 
-  // Carrega preços locais na inicialização e busca da API
+  // Busca preços na inicialização
   useEffect(() => {
-    loadLocalPrices();
     fetchPrices();
     
     // Atualiza a cada 60 segundos
@@ -257,7 +231,7 @@ export function useCryptoPrices() {
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [fetchPrices, loadLocalPrices]);
+  }, [fetchPrices]);
 
   return {
     prices,

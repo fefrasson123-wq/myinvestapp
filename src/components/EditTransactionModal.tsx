@@ -102,7 +102,7 @@ export function EditTransactionModal({ transaction, onSave, onClose }: EditTrans
               "text-lg font-mono font-medium",
               transaction.type === 'buy' ? "text-success" : "text-primary"
             )}>
-              {isCrypto ? '$' : 'R$'} {((parseFloat(formData.quantity) || 0) * (parseFloat(formData.price) || 0)).toLocaleString(isCrypto ? 'en-US' : 'pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              R$ {((parseFloat(formData.quantity) || 0) * (parseFloat(formData.price) || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
 

@@ -16,10 +16,11 @@ const BENCHMARK_RATES = {
   btc: 50.0, // Bitcoin média anual (muito volátil)
 };
 
-function formatCurrency(value: number, currency: 'BRL' | 'USD' = 'BRL'): string {
-  return new Intl.NumberFormat(currency === 'BRL' ? 'pt-BR' : 'en-US', {
+function formatCurrency(value: number): string {
+  // Todos os valores agora em BRL
+  return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency,
+    currency: 'BRL',
   }).format(value);
 }
 
@@ -97,13 +98,13 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
               <div>
                 <span className="text-muted-foreground">Investido</span>
                 <p className="font-mono text-card-foreground">
-                  {formatCurrency(investment.investedAmount, currency)}
+                  {formatCurrency(investment.investedAmount)}
                 </p>
               </div>
               <div>
                 <span className="text-muted-foreground">Valor Atual</span>
                 <p className="font-mono text-primary font-medium">
-                  {formatCurrency(investment.currentValue, currency)}
+                  {formatCurrency(investment.currentValue)}
                 </p>
               </div>
               <div>
@@ -113,7 +114,7 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
                   investment.profitLoss >= 0 ? "text-success" : "text-destructive"
                 )}>
                   {investment.profitLoss >= 0 ? '+' : ''}
-                  {formatCurrency(investment.profitLoss, currency)}
+                  {formatCurrency(investment.profitLoss)}
                 </p>
               </div>
               <div>
@@ -154,7 +155,7 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-mono text-muted-foreground">
-                    Teria: {formatCurrency(benchmark.expectedValue, currency)}
+                    Teria: {formatCurrency(benchmark.expectedValue)}
                   </p>
                   <div className="flex items-center gap-1 justify-end">
                     {benchmark.performedBetter ? (
@@ -166,7 +167,7 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
                       "text-sm font-mono font-medium",
                       benchmark.performedBetter ? "text-success" : "text-destructive"
                     )}>
-                      {benchmark.performedBetter ? 'Superou' : 'Perdeu'} {formatCurrency(Math.abs(benchmark.difference), currency)}
+                      {benchmark.performedBetter ? 'Superou' : 'Perdeu'} {formatCurrency(Math.abs(benchmark.difference))}
                     </p>
                   </div>
                 </div>

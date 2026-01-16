@@ -10,9 +10,10 @@ interface TransactionHistoryProps {
 }
 
 function formatCurrency(value: number, isCrypto: boolean = false): string {
-  return new Intl.NumberFormat(isCrypto ? 'en-US' : 'pt-BR', {
+  // Todos os valores agora são em BRL
+  return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: isCrypto ? 'USD' : 'BRL',
+    currency: 'BRL',
     minimumFractionDigits: 2,
     maximumFractionDigits: isCrypto ? 6 : 2,
   }).format(value);
