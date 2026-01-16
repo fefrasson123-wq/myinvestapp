@@ -7,6 +7,7 @@ import { RealEstateValueChart } from '@/components/RealEstateValueChart';
 import { BenchmarkComparison } from '@/components/BenchmarkComparison';
 import { TagSelector } from '@/components/TagSelector';
 import { InvestmentTag, tagColors } from '@/components/InvestmentsByTag';
+import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 
 interface InvestmentListProps {
   investments: Investment[];
@@ -17,23 +18,22 @@ interface InvestmentListProps {
   onTagChange?: (investmentId: string, tag: InvestmentTag | null) => void;
 }
 
-function formatCurrency(value: number, currency: 'BRL' | 'USD' = 'BRL'): string {
-  return new Intl.NumberFormat(currency === 'BRL' ? 'pt-BR' : 'en-US', {
-    style: 'currency',
-    currency,
-  }).format(value);
-}
-
-function formatPercent(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'percent',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value / 100);
-}
-
 export function InvestmentList({ investments, onEdit, onDelete, onSell, investmentTags = {}, onTagChange }: InvestmentListProps) {
   const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
+  const { showValues, formatPercent } = useValuesVisibility();
+
+  const formatCurrency = (value: number, currency: 'BRL' | 'USD' = 'BRL') => {
+    if (!showValues) return currency === 'BRL' ? 'R$ •••••' : '$ •••••';
+    return new Intl.NumberFormat(currency === 'BRL' ? 'pt-BR' : 'en-US', {
+      style: 'currency',
+      currency,
+    }).format(value);
+  };
+
+  const formatQuantity = (value: number) => {
+    if (!showValues) return '•••';
+    return value.toLocaleString('pt-BR');
+  };
 
   if (investments.length === 0) {
     return (
@@ -105,7 +105,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div className="transition-colors">
                         <span className="text-muted-foreground">Quantidade</span>
-                        <p className="font-mono text-card-foreground">{investment.quantity.toLocaleString('pt-BR')}</p>
+                        <p className="font-mono text-card-foreground">{formatQuantity(investment.quantity)}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Preço Médio</span>
@@ -142,7 +142,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                         "text-sm font-mono",
                         isPositive ? "text-success/70" : "text-destructive/70"
                       )}>
-                        {isPositive ? '+' : ''}{formatPercent(investment.profitLossPercent)}
+                        {formatPercent(investment.profitLossPercent)}
                       </span>
                     </div>
 

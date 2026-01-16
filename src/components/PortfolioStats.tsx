@@ -1,5 +1,6 @@
 import { TrendingUp, TrendingDown, Wallet, PiggyBank } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 
 interface PortfolioStatsProps {
   totalValue: number;
@@ -7,24 +8,18 @@ interface PortfolioStatsProps {
   totalProfitLoss: number;
 }
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
-}
-
-function formatPercent(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'percent',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value / 100);
-}
-
 export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: PortfolioStatsProps) {
+  const { showValues, formatValue, formatPercent } = useValuesVisibility();
   const profitLossPercent = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
   const isPositive = totalProfitLoss >= 0;
+
+  const formatCurrency = (value: number) => {
+    if (!showValues) return 'R$ •••••';
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -76,7 +71,7 @@ export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: P
             "text-sm font-mono transition-opacity",
             isPositive ? "text-success/70" : "text-destructive/70"
           )}>
-            ({isPositive ? '+' : ''}{formatPercent(profitLossPercent)})
+            ({formatPercent(profitLossPercent)})
           </span>
         </div>
       </div>
