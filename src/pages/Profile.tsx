@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { TrendingUp, ArrowLeft, User, TrendingDown, Edit2, Save, X, LogOut } from 'lucide-react';
+import { TrendingUp, ArrowLeft, User, TrendingDown, Edit2, Save, X, LogOut, DollarSign, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useValuesVisibility, DisplayCurrency } from '@/contexts/ValuesVisibilityContext';
 
 interface Profile {
   username: string | null;
@@ -19,19 +20,18 @@ interface RealizedProfitLoss {
   percent: number;
 }
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
 export default function Profile() {
   const { user, signOut, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { 
+    displayCurrency, 
+    setDisplayCurrency, 
+    formatCurrencyValue, 
+    usdBrlRate, 
+    isRateLoading, 
+    rateLastUpdated 
+  } = useValuesVisibility();
   
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -243,8 +243,64 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Realized Profit/Loss Card */}
+          {/* Currency Preference Card */}
           <div className="bg-card border border-border rounded-xl shadow-lg p-6 mb-6 animate-smooth-appear" style={{ animationDelay: '50ms' }}>
+            <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-primary" />
+              Moeda de Exibição
+            </h3>
+            
+            <p className="text-sm text-muted-foreground mb-4">
+              Escolha a moeda para exibir seus saldos e valores no app.
+            </p>
+            
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <Button
+                variant={displayCurrency === 'BRL' ? 'default' : 'outline'}
+                className="w-full h-16 flex flex-col items-center justify-center gap-1"
+                onClick={() => setDisplayCurrency('BRL')}
+              >
+                <span className="text-lg font-bold">R$</span>
+                <span className="text-xs">Real Brasileiro</span>
+              </Button>
+              <Button
+                variant={displayCurrency === 'USD' ? 'default' : 'outline'}
+                className="w-full h-16 flex flex-col items-center justify-center gap-1"
+                onClick={() => setDisplayCurrency('USD')}
+              >
+                <span className="text-lg font-bold">$</span>
+                <span className="text-xs">Dólar Americano</span>
+              </Button>
+            </div>
+
+            {/* Exchange rate info */}
+            <div className="bg-background/50 rounded-lg p-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Cotação atual</p>
+                <p className="text-sm font-semibold text-card-foreground">
+                  {isRateLoading ? (
+                    <span className="animate-pulse">Carregando...</span>
+                  ) : (
+                    <>1 USD = R$ {usdBrlRate.toFixed(4)}</>
+                  )}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
+                  <RefreshCw className="w-3 h-3" />
+                  Tempo real
+                </p>
+                {rateLastUpdated && (
+                  <p className="text-xs text-muted-foreground">
+                    Atualizado: {rateLastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Realized Profit/Loss Card */}
+          <div className="bg-card border border-border rounded-xl shadow-lg p-6 mb-6 animate-smooth-appear" style={{ animationDelay: '100ms' }}>
             <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
               {isPositive ? (
                 <TrendingUp className="w-5 h-5 text-green-500" />
@@ -256,9 +312,9 @@ export default function Profile() {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-background/50 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-1">Total em R$</p>
+                <p className="text-sm text-muted-foreground mb-1">Total</p>
                 <p className={`text-2xl font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                  {isPositive ? '+' : ''}{formatCurrency(realizedProfitLoss.total)}
+                  {isPositive ? '+' : ''}{formatCurrencyValue(realizedProfitLoss.total)}
                 </p>
               </div>
               <div className="bg-background/50 rounded-lg p-4">
@@ -275,7 +331,7 @@ export default function Profile() {
           </div>
 
           {/* Logout Button */}
-          <div className="animate-smooth-appear" style={{ animationDelay: '100ms' }}>
+          <div className="animate-smooth-appear" style={{ animationDelay: '150ms' }}>
             <Button
               variant="destructive"
               className="w-full"
