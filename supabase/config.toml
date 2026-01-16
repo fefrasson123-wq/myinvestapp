@@ -2,3 +2,6 @@ project_id = "illckjvvbcqavladafsc"
 
 [functions.stock-quotes]
 verify_jwt = true
+
+[functions.send-email]
+verify_jwt = false
