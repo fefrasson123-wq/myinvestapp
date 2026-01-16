@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Check, ArrowLeft, TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
+import { Search, Check, ArrowLeft, TrendingUp, TrendingDown, Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,7 @@ import { Investment } from '@/types/investment';
 import { cn } from '@/lib/utils';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { AssetPriceChart } from '@/components/AssetPriceChart';
+import { toast } from 'sonner';
 
 type TransactionMode = 'buy' | 'sell';
 
@@ -27,10 +28,12 @@ interface CryptoFormProps {
 }
 
 export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
-  const [step, setStep] = useState<'select' | 'form'>('select');
+  const [step, setStep] = useState<'select' | 'form' | 'custom'>('select');
   const [mode, setMode] = useState<TransactionMode>('buy');
   const [selectedCrypto, setSelectedCrypto] = useState<CryptoAsset | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [customCryptoName, setCustomCryptoName] = useState('');
+  const [isSearchingCustom, setIsSearchingCustom] = useState(false);
   const [formData, setFormData] = useState({
     quantity: '',
     averagePrice: '',
@@ -39,6 +42,78 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
   });
 
   const { prices, isLoading: isPriceLoading, fetchPrices } = useCryptoPrices();
+
+  // Busca cripto personalizada via CoinGecko
+  const searchCustomCrypto = async (name: string) => {
+    if (!name.trim()) {
+      toast.error('Digite o nome da criptomoeda');
+      return;
+    }
+
+    setIsSearchingCustom(true);
+    try {
+      // Primeiro busca pelo nome na API de busca do CoinGecko
+      const searchResponse = await fetch(
+        `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(name.trim())}`
+      );
+      
+      if (!searchResponse.ok) {
+        throw new Error('Erro ao buscar criptomoeda');
+      }
+
+      const searchData = await searchResponse.json();
+      
+      if (!searchData.coins || searchData.coins.length === 0) {
+        toast.error(`Criptomoeda "${name}" não encontrada`);
+        setIsSearchingCustom(false);
+        return;
+      }
+
+      // Pega a primeira correspondência
+      const foundCoin = searchData.coins[0];
+      
+      // Busca o preço atual
+      const priceResponse = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${foundCoin.id}&vs_currencies=usd&include_24hr_change=true`
+      );
+
+      if (!priceResponse.ok) {
+        throw new Error('Erro ao buscar preço');
+      }
+
+      const priceData = await priceResponse.json();
+      const price = priceData[foundCoin.id]?.usd || 0;
+
+      if (price === 0) {
+        toast.error(`Não foi possível obter o preço de "${foundCoin.name}"`);
+        setIsSearchingCustom(false);
+        return;
+      }
+
+      // Cria o objeto de cripto personalizada
+      const customCrypto: CryptoAsset = {
+        id: foundCoin.id,
+        name: foundCoin.name,
+        symbol: foundCoin.symbol.toUpperCase(),
+        price: price,
+      };
+
+      toast.success(`${foundCoin.name} (${foundCoin.symbol.toUpperCase()}) encontrada! Preço: $${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`);
+      
+      setSelectedCrypto(customCrypto);
+      setFormData(prev => ({
+        ...prev,
+        averagePrice: price.toString(),
+      }));
+      setStep('form');
+      setCustomCryptoName('');
+    } catch (error) {
+      console.error('Erro ao buscar cripto:', error);
+      toast.error('Erro ao buscar criptomoeda. Tente novamente.');
+    } finally {
+      setIsSearchingCustom(false);
+    }
+  };
 
   const filteredCryptos = useMemo(() => {
     if (!searchQuery) return cryptoList;
@@ -159,6 +234,15 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
         </div>
 
         <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pr-2">
+          {/* Opção "Outras" no topo */}
+          <button
+            onClick={() => setStep('custom')}
+            className="flex items-center p-3 rounded-lg border border-dashed border-primary/50 bg-primary/10 hover:border-primary hover:bg-primary/20 transition-all text-left"
+          >
+            <Plus className="w-5 h-5 text-primary" />
+            <span className="ml-3 text-primary font-medium">Outras - Buscar criptomoeda</span>
+          </button>
+
           {filteredCryptos.map((crypto) => (
             <button
               key={crypto.id}
@@ -169,6 +253,73 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
               <span className="ml-3 text-card-foreground">{crypto.name}</span>
             </button>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Tela de busca de cripto personalizada
+  if (step === 'custom') {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => setStep('select')}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <h3 className="text-lg font-semibold text-card-foreground">Buscar Outra Criptomoeda</h3>
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          Digite o nome ou símbolo da criptomoeda que deseja adicionar. 
+          Vamos buscar automaticamente o preço atual.
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="customCryptoName">Nome ou Símbolo da Criptomoeda</Label>
+            <Input
+              id="customCryptoName"
+              type="text"
+              value={customCryptoName}
+              onChange={(e) => setCustomCryptoName(e.target.value)}
+              placeholder="Ex: Pepe, BONK, MEME..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  searchCustomCrypto(customCryptoName);
+                }
+              }}
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="flex-1" 
+              onClick={() => setStep('select')}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="button" 
+              className="flex-1 gap-2"
+              onClick={() => searchCustomCrypto(customCryptoName)}
+              disabled={isSearchingCustom || !customCryptoName.trim()}
+            >
+              {isSearchingCustom ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Buscando...
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4" />
+                  Buscar
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     );
