@@ -25,14 +25,14 @@ export function ValuesVisibilityProvider({ children }: { children: ReactNode }) 
 
   const formatValue = (value: number, options?: Intl.NumberFormatOptions) => {
     if (!showValues) {
-      return '•••••';
+      return '*****';
     }
     return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2, ...options });
   };
 
   const formatPercent = (value: number) => {
     if (!showValues) {
-      return '••••';
+      return '****';
     }
     return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
   };
