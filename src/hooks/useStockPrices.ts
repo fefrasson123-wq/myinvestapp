@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { stocksList, fiiList, StockAsset } from '@/data/stocksList';
 
@@ -11,6 +11,48 @@ interface StockPrice {
   low24h: number;
   open: number;
   lastUpdated: string;
+}
+
+interface CachedStockPrices {
+  prices: Record<string, StockPrice>;
+  timestamp: number;
+}
+
+const CACHE_KEY = 'stock_prices_cache';
+const MAX_CACHE_AGE_MS = 15 * 60 * 1000; // 15 minutos - cache válido
+const STALE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hora - força atualização
+
+// Funções de cache
+function getCachedPrices(): CachedStockPrices | null {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      return JSON.parse(cached) as CachedStockPrices;
+    }
+  } catch {
+    // Ignora erros de localStorage
+  }
+  return null;
+}
+
+function setCachedPrices(prices: Record<string, StockPrice>) {
+  try {
+    const data: CachedStockPrices = {
+      prices,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch {
+    // Ignora erros de localStorage
+  }
+}
+
+function isCacheValid(timestamp: number): boolean {
+  return Date.now() - timestamp < MAX_CACHE_AGE_MS;
+}
+
+function isCacheStale(timestamp: number): boolean {
+  return Date.now() - timestamp > STALE_THRESHOLD_MS;
 }
 
 // Fallback prices from local data
@@ -26,10 +68,22 @@ function getLocalPrices(): Record<string, StockAsset> {
 const localPrices = getLocalPrices();
 
 export function useStockPrices() {
-  const [prices, setPrices] = useState<Record<string, StockPrice>>({});
+  const [prices, setPrices] = useState<Record<string, StockPrice>>(() => {
+    // Inicializa com cache local se disponível
+    const cached = getCachedPrices();
+    return cached?.prices || {};
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(() => {
+    const cached = getCachedPrices();
+    return cached?.timestamp ? new Date(cached.timestamp) : null;
+  });
+  
+  // Mantém o último preço válido da API
+  const lastValidPrices = useRef<Record<string, StockPrice>>({});
+  const retryCount = useRef(0);
+  const maxRetries = 3;
 
   // Fetch a single stock price from BRAPI
   const fetchSinglePrice = async (symbol: string): Promise<StockPrice | null> => {
@@ -53,7 +107,7 @@ export function useStockPrices() {
           high24h: q.high24h,
           low24h: q.low24h,
           open: q.open,
-          lastUpdated: q.lastUpdated,
+          lastUpdated: new Date().toISOString(),
         };
       }
       return null;
@@ -63,11 +117,23 @@ export function useStockPrices() {
     }
   };
 
-  // Get local fallback price for a symbol
+  // Get local fallback price for a symbol - usa cache primeiro
   const getLocalFallback = (symbol: string): StockPrice | null => {
     const upperSymbol = symbol.toUpperCase();
-    const stockData = localPrices[upperSymbol];
     
+    // Primeiro tenta usar preço do cache se não for muito antigo
+    const cached = getCachedPrices();
+    if (cached && cached.prices[upperSymbol] && !isCacheStale(cached.timestamp)) {
+      return cached.prices[upperSymbol];
+    }
+    
+    // Depois tenta último preço válido em memória
+    if (lastValidPrices.current[upperSymbol]) {
+      return lastValidPrices.current[upperSymbol];
+    }
+    
+    // Por fim usa dados locais estáticos
+    const stockData = localPrices[upperSymbol];
     if (!stockData) return null;
     
     // Small random variation to simulate real-time
@@ -107,6 +173,7 @@ export function useStockPrices() {
     try {
       // Fetch each symbol individually to comply with BRAPI free tier
       const newPrices: Record<string, StockPrice> = {};
+      let successCount = 0;
       
       for (const symbol of symbols) {
         const upperSymbol = symbol.toUpperCase();
@@ -116,34 +183,51 @@ export function useStockPrices() {
         
         if (livePrice) {
           newPrices[upperSymbol] = livePrice;
+          successCount++;
           console.log(`Updated ${upperSymbol} price from BRAPI:`, livePrice.price);
         } else {
-          // Fallback to local data
+          // Fallback to cache/local data
           const fallback = getLocalFallback(upperSymbol);
           if (fallback) {
             newPrices[upperSymbol] = fallback;
-            console.log(`Using local fallback for ${upperSymbol}:`, fallback.price);
+            console.log(`Using fallback for ${upperSymbol}:`, fallback.price);
           }
         }
       }
 
-      setPrices(prev => ({ ...prev, ...newPrices }));
+      const updatedPrices = { ...prices, ...newPrices };
+      
+      // Salva no cache se teve sucesso
+      if (successCount > 0) {
+        setCachedPrices(updatedPrices);
+        lastValidPrices.current = { ...lastValidPrices.current, ...newPrices };
+        retryCount.current = 0;
+      }
+      
+      setPrices(updatedPrices);
       setLastUpdate(new Date());
     } catch (err) {
       console.error('Error fetching stock prices:', err);
       setError(err instanceof Error ? err.message : 'Erro ao buscar cotações');
       
-      // Use local fallback for all requested symbols
+      retryCount.current++;
+      
+      // Use fallback for all requested symbols
       const fallbackPrices: Record<string, StockPrice> = {};
       symbols.forEach(symbol => {
         const fallback = getLocalFallback(symbol.toUpperCase());
         if (fallback) fallbackPrices[symbol.toUpperCase()] = fallback;
       });
       setPrices(prev => ({ ...prev, ...fallbackPrices }));
+      
+      // Retry se falhou
+      if (retryCount.current < maxRetries) {
+        setTimeout(() => fetchPrices(symbols), 15000);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [prices]);
 
   const getPrice = useCallback((symbol: string): number | null => {
     const upperSymbol = symbol.toUpperCase();
@@ -160,9 +244,21 @@ export function useStockPrices() {
     };
   }, [prices]);
 
-  // Load local prices on mount and auto-refresh every 60 seconds
+  // Load cached/local prices on mount and auto-refresh every 60 seconds
   useEffect(() => {
     const loadPrices = () => {
+      const cached = getCachedPrices();
+      
+      // Se cache é válido, usa
+      if (cached && isCacheValid(cached.timestamp)) {
+        console.log('Using valid cached stock prices');
+        setPrices(cached.prices);
+        setLastUpdate(new Date(cached.timestamp));
+        lastValidPrices.current = cached.prices;
+        return;
+      }
+      
+      // Senão usa fallback local
       const priceMap: Record<string, StockPrice> = {};
       Object.keys(localPrices).forEach(symbol => {
         const fallback = getLocalFallback(symbol);

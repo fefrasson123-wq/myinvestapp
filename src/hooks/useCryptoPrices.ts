@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface CryptoPrice {
   id: string;
@@ -11,7 +11,15 @@ interface CryptoPrice {
   last_updated: string;
 }
 
+interface CachedCryptoPrices {
+  prices: Record<string, CryptoPrice>;
+  timestamp: number;
+}
+
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
+const CACHE_KEY = 'crypto_prices_cache';
+const MAX_CACHE_AGE_MS = 10 * 60 * 1000; // 10 minutos - cache válido
+const STALE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutos - força atualização
 
 // Mapeamento de símbolos para IDs do CoinGecko
 const symbolToId: Record<string, string> = {
@@ -155,11 +163,56 @@ const symbolToId: Record<string, string> = {
   'WAVES': 'waves',
 };
 
+// Funções de cache
+function getCachedPrices(): CachedCryptoPrices | null {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      return JSON.parse(cached) as CachedCryptoPrices;
+    }
+  } catch {
+    // Ignora erros de localStorage
+  }
+  return null;
+}
+
+function setCachedPrices(prices: Record<string, CryptoPrice>) {
+  try {
+    const data: CachedCryptoPrices = {
+      prices,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch {
+    // Ignora erros de localStorage
+  }
+}
+
+function isCacheValid(timestamp: number): boolean {
+  return Date.now() - timestamp < MAX_CACHE_AGE_MS;
+}
+
+function isCacheStale(timestamp: number): boolean {
+  return Date.now() - timestamp > STALE_THRESHOLD_MS;
+}
+
 export function useCryptoPrices() {
-  const [prices, setPrices] = useState<Record<string, CryptoPrice>>({});
+  const [prices, setPrices] = useState<Record<string, CryptoPrice>>(() => {
+    // Inicializa com cache local se disponível
+    const cached = getCachedPrices();
+    return cached?.prices || {};
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(() => {
+    const cached = getCachedPrices();
+    return cached?.timestamp ? new Date(cached.timestamp) : null;
+  });
+  
+  // Mantém o último preço válido da API
+  const lastValidPrices = useRef<Record<string, CryptoPrice>>({});
+  const retryCount = useRef(0);
+  const maxRetries = 3;
 
   const fetchPrices = useCallback(async (symbols?: string[]) => {
     setIsLoading(true);
@@ -195,15 +248,47 @@ export function useCryptoPrices() {
         priceMap[coin.id] = coin;
       });
 
-      setPrices(prev => ({ ...prev, ...priceMap }));
+      // Salva no cache e atualiza estado
+      const newPrices = { ...prices, ...priceMap };
+      setCachedPrices(newPrices);
+      lastValidPrices.current = newPrices;
+      retryCount.current = 0; // Reset retry count on success
+      
+      setPrices(newPrices);
       setLastUpdate(new Date());
+      console.log('Crypto prices updated from API:', Object.keys(priceMap).length, 'coins');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro desconhecido');
+      const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
+      setError(errorMsg);
       console.error('Erro ao buscar preços:', err);
+      
+      retryCount.current++;
+      
+      // Tenta usar cache ou último preço válido
+      const cached = getCachedPrices();
+      
+      if (Object.keys(lastValidPrices.current).length > 0) {
+        console.log('Using last valid crypto prices from memory');
+        setPrices(lastValidPrices.current);
+      } else if (cached && !isCacheStale(cached.timestamp)) {
+        console.log('Using cached crypto prices (age:', Math.round((Date.now() - cached.timestamp) / 1000 / 60), 'min)');
+        setPrices(cached.prices);
+        setLastUpdate(new Date(cached.timestamp));
+      } else if (cached) {
+        // Cache está stale mas é melhor que nada - usa mas avisa
+        console.warn('Using stale cached crypto prices (age:', Math.round((Date.now() - cached.timestamp) / 1000 / 60), 'min) - will retry');
+        setPrices(cached.prices);
+        setLastUpdate(new Date(cached.timestamp));
+        
+        // Agenda retry mais rápido se cache está muito velho
+        if (retryCount.current < maxRetries) {
+          setTimeout(() => fetchPrices(symbols), 10000); // Retry em 10 segundos
+        }
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [prices]);
 
   const getPrice = useCallback((symbol: string): number | null => {
     const upperSymbol = symbol.toUpperCase();
@@ -221,9 +306,20 @@ export function useCryptoPrices() {
     };
   }, [prices]);
 
-  // Busca preços na inicialização
+  // Busca preços na inicialização e verifica cache
   useEffect(() => {
-    fetchPrices();
+    const cached = getCachedPrices();
+    
+    // Se cache é válido, usa e não busca imediatamente
+    if (cached && isCacheValid(cached.timestamp)) {
+      console.log('Using valid cached crypto prices');
+      setPrices(cached.prices);
+      setLastUpdate(new Date(cached.timestamp));
+      lastValidPrices.current = cached.prices;
+    } else {
+      // Cache inválido ou inexistente - busca imediatamente
+      fetchPrices();
+    }
     
     // Atualiza a cada 60 segundos
     const interval = setInterval(() => {
