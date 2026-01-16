@@ -30,12 +30,12 @@ export function UserMenu() {
   return (
     <Button
       variant="ghost"
-      size="icon"
       onClick={() => navigate('/auth')}
-      className="rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
+      className="gap-2 bg-primary/10 hover:bg-primary/20 transition-colors"
       title="Login / Cadastro"
     >
       <LogIn className="w-5 h-5 text-primary" />
+      <span className="hidden sm:inline text-primary font-medium">Entrar</span>
     </Button>
   );
 }
