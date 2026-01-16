@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { LayoutDashboard, PlusCircle, History } from 'lucide-react';
 import { Header } from '@/components/Header';
@@ -14,7 +15,7 @@ import { Investment, Transaction } from '@/types/investment';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { InvestmentTag } from '@/components/InvestmentsByTag';
-
+import { useAuth } from '@/contexts/AuthContext';
 // Lazy load heavy components to reduce initial bundle size
 const CategoryChart = lazy(() => import('@/components/CategoryChart').then(m => ({ default: m.CategoryChart })));
 const InvestmentList = lazy(() => import('@/components/InvestmentList').then(m => ({ default: m.InvestmentList })));
@@ -46,6 +47,15 @@ const Index = () => {
     return saved ? JSON.parse(saved) : {};
   });
   const { toast } = useToast();
+  const { user, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redireciona para login se não estiver autenticado
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
 
   // Salva tags no localStorage
   useEffect(() => {
@@ -332,7 +342,7 @@ const Index = () => {
     setEditingInvestment(null);
   };
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-primary animate-pulse text-glow">Carregando...</div>
@@ -340,10 +350,15 @@ const Index = () => {
     );
   }
 
+  // Não renderiza se não estiver autenticado
+  if (!user) {
+    return null;
+  }
+
   return (
     <>
       <Helmet>
-        <title>InvestTracker - Gerencie seus Investimentos</title>
+        <title>My Invest - Gerencie seus Investimentos</title>
         <meta name="description" content="Aplicativo para gerenciar e acompanhar todos os seus investimentos: criptomoedas, ações, fundos imobiliários, CDB, CDI e mais." />
       </Helmet>
 
