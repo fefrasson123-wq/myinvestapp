@@ -385,6 +385,7 @@ export function useInvestments() {
       fii: 0,
       cdb: 0,
       cdi: 0,
+      lcilca: 0,
       treasury: 0,
       savings: 0,
       cash: 0,

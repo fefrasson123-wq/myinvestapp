@@ -8,7 +8,7 @@ import { Investment, FixedIncomeType, fixedIncomeLabels, InvestmentCategory } fr
 import { useEconomicRates } from '@/hooks/useEconomicRates';
 
 interface FixedIncomeFormProps {
-  category: 'cdb' | 'cdi' | 'treasury' | 'savings';
+  category: 'cdb' | 'cdi' | 'lcilca' | 'treasury' | 'savings';
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
   onBack: () => void;
 }
@@ -18,6 +18,7 @@ const fixedIncomeTypes: FixedIncomeType[] = ['pos', 'pre', 'ipca', 'cdi'];
 const categoryTitles: Record<string, string> = {
   cdb: 'CDB',
   cdi: 'Investimento CDI',
+  lcilca: 'LCI/LCA',
   treasury: 'Tesouro Direto',
   savings: 'Poupança',
 };
