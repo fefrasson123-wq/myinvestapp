@@ -18,11 +18,11 @@ interface SellAssetModalProps {
   onClose: () => void;
 }
 
-function formatCurrency(value: number): string {
-  // Todos os valores agora em BRL
-  return new Intl.NumberFormat('pt-BR', {
+function formatCurrency(value: number, currency: 'BRL' | 'USD'): string {
+  return new Intl.NumberFormat(currency === 'BRL' ? 'pt-BR' : 'en-US', {
     style: 'currency',
-    currency: 'BRL',
+    currency,
+    maximumFractionDigits: currency === 'USD' ? 6 : 2,
   }).format(value);
 }
 
@@ -32,6 +32,7 @@ export function SellAssetModal({ investment, onSell, onClose }: SellAssetModalPr
   const [sellDate, setSellDate] = useState(new Date().toISOString().split('T')[0]);
 
   const isCrypto = investment.category === 'crypto';
+  const currency: 'BRL' | 'USD' = isCrypto ? 'USD' : 'BRL';
 
   const totalSellValue = quantity * sellPrice;
   const costBasis = quantity * investment.averagePrice;
@@ -98,7 +99,7 @@ export function SellAssetModal({ investment, onSell, onClose }: SellAssetModalPr
             </div>
 
             <div>
-              <Label>Preço de venda (R$)</Label>
+              <Label>Preço de venda ({currency})</Label>
               <Input
                 type="number"
                 value={sellPrice}
@@ -124,13 +125,13 @@ export function SellAssetModal({ investment, onSell, onClose }: SellAssetModalPr
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Valor total da venda</span>
               <span className="font-mono text-card-foreground">
-                {formatCurrency(totalSellValue)}
+                {formatCurrency(totalSellValue, currency)}
               </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Custo de aquisição</span>
               <span className="font-mono text-card-foreground">
-                {formatCurrency(costBasis)}
+                {formatCurrency(costBasis, currency)}
               </span>
             </div>
             <div className="border-t border-border pt-2 flex justify-between">
@@ -147,7 +148,7 @@ export function SellAssetModal({ investment, onSell, onClose }: SellAssetModalPr
                   "font-mono font-medium",
                   isPositive ? "text-success" : "text-destructive"
                 )}>
-                  {isPositive ? '+' : ''}{formatCurrency(profitLoss)}
+                  {isPositive ? '+' : ''}{formatCurrency(profitLoss, currency)}
                 </p>
                 <p className={cn(
                   "text-xs font-mono",

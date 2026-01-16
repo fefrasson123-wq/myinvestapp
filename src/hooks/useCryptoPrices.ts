@@ -173,9 +173,9 @@ export function useCryptoPrices() {
       
       const uniqueIds = [...new Set(idsToFetch)].slice(0, 100); // CoinGecko limita a 100 por request
       
-      // Buscar preços diretamente em BRL para cotação real
+      // Buscar preços em USD (padrão do app para cripto). A conversão para BRL é feita via taxa USD/BRL.
       const response = await fetch(
-        `${COINGECKO_API}/coins/markets?vs_currency=brl&ids=${uniqueIds.join(',')}&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h`,
+        `${COINGECKO_API}/coins/markets?vs_currency=usd&ids=${uniqueIds.join(',')}&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h`,
         {
           headers: {
             'Accept': 'application/json',

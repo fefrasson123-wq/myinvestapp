@@ -2,15 +2,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Investment, InvestmentCategory, categoryLabels, categoryColors } from '@/types/investment';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
 
 interface CategoryDetailModalProps {
   category: InvestmentCategory;
   investments: Investment[];
   onClose: () => void;
 }
-
-// Taxa de conversão USD -> BRL
-const USD_TO_BRL = 6.15;
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -28,11 +26,13 @@ function formatPercent(value: number): string {
 }
 
 export function CategoryDetailModal({ category, investments, onClose }: CategoryDetailModalProps) {
+  const { rate: usdToBrl } = useUsdBrlRate();
+
   const categoryInvestments = investments.filter(inv => inv.category === category);
   
   const totalValue = categoryInvestments.reduce((acc, inv) => {
     const isCrypto = inv.category === 'crypto';
-    return acc + (isCrypto ? inv.currentValue * USD_TO_BRL : inv.currentValue);
+    return acc + (isCrypto ? inv.currentValue * usdToBrl : inv.currentValue);
   }, 0);
 
   return (
@@ -64,7 +64,7 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
             <div className="space-y-2 max-h-[300px] overflow-y-auto">
               {categoryInvestments.map((inv, index) => {
                 const isCrypto = inv.category === 'crypto';
-                const value = isCrypto ? inv.currentValue * USD_TO_BRL : inv.currentValue;
+                const value = isCrypto ? inv.currentValue * usdToBrl : inv.currentValue;
                 const isPositive = inv.profitLoss >= 0;
                 
                 return (

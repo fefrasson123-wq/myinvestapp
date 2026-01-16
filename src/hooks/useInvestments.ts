@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { Investment, InvestmentCategory } from '@/types/investment';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
 
 const STORAGE_KEY = 'investments-portfolio';
-const USD_TO_BRL = 6.15;
 
 export function useInvestments() {
   const { user } = useAuth();
+  const { rate: usdToBrl } = useUsdBrlRate();
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -319,23 +320,23 @@ export function useInvestments() {
   const getTotalValue = useCallback(() => {
     return investments.reduce((sum, inv) => {
       const value = inv.currentValue;
-      return sum + (inv.category === 'crypto' ? value * USD_TO_BRL : value);
+      return sum + (inv.category === 'crypto' ? value * usdToBrl : value);
     }, 0);
-  }, [investments]);
+  }, [investments, usdToBrl]);
 
   const getTotalInvested = useCallback(() => {
     return investments.reduce((sum, inv) => {
       const value = inv.investedAmount;
-      return sum + (inv.category === 'crypto' ? value * USD_TO_BRL : value);
+      return sum + (inv.category === 'crypto' ? value * usdToBrl : value);
     }, 0);
-  }, [investments]);
+  }, [investments, usdToBrl]);
 
   const getTotalProfitLoss = useCallback(() => {
     return investments.reduce((sum, inv) => {
       const value = inv.profitLoss;
-      return sum + (inv.category === 'crypto' ? value * USD_TO_BRL : value);
+      return sum + (inv.category === 'crypto' ? value * usdToBrl : value);
     }, 0);
-  }, [investments]);
+  }, [investments, usdToBrl]);
 
   const getByCategory = useCallback((category: InvestmentCategory) => {
     return investments.filter(inv => inv.category === category);
@@ -357,7 +358,7 @@ export function useInvestments() {
     };
 
     investments.forEach(inv => {
-      const value = inv.category === 'crypto' ? inv.currentValue * USD_TO_BRL : inv.currentValue;
+      const value = inv.category === 'crypto' ? inv.currentValue * usdToBrl : inv.currentValue;
       totals[inv.category] += value;
     });
 
