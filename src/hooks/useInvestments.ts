@@ -298,7 +298,11 @@ export function useInvestments() {
   }, [user, investments, saveToStorage]);
 
   const deleteInvestment = useCallback(async (id: string) => {
+    // Remove from local state immediately for instant UI feedback
+    setInvestments(prev => prev.filter(inv => inv.id !== id));
+    
     if (user) {
+      // Delete from Supabase - tags will be cascaded automatically via ON DELETE CASCADE
       const { error } = await supabase
         .from('investments')
         .delete()
@@ -306,16 +310,48 @@ export function useInvestments() {
 
       if (error) {
         console.error('Error deleting investment:', error);
+        // Reload investments if delete failed
+        const { data } = await supabase
+          .from('investments')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (data) {
+          setInvestments(data.map(inv => ({
+            id: inv.id,
+            name: inv.name,
+            category: inv.category as InvestmentCategory,
+            ticker: inv.ticker || undefined,
+            quantity: Number(inv.quantity),
+            averagePrice: Number(inv.average_price),
+            currentPrice: Number(inv.current_price),
+            investedAmount: Number(inv.invested_amount),
+            currentValue: Number(inv.current_value),
+            profitLoss: Number(inv.profit_loss),
+            profitLossPercent: Number(inv.profit_loss_percent),
+            notes: inv.notes || undefined,
+            purchaseDate: inv.purchase_date || undefined,
+            maturityDate: inv.maturity_date || undefined,
+            interestRate: inv.interest_rate ? Number(inv.interest_rate) : undefined,
+            address: inv.address || undefined,
+            areaM2: inv.area_m2 ? Number(inv.area_m2) : undefined,
+            createdAt: new Date(inv.created_at),
+            updatedAt: new Date(inv.updated_at),
+          })));
+        }
         return;
       }
+      
+      console.log('Investment deleted successfully:', id);
+    } else {
+      // Update localStorage for non-authenticated users
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const updated = parsed.filter((inv: Investment) => inv.id !== id);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      }
     }
-
-    setInvestments(prev => {
-      const updated = prev.filter(inv => inv.id !== id);
-      saveToStorage(updated);
-      return updated;
-    });
-  }, [user, saveToStorage]);
+  }, [user]);
 
   const getTotalValue = useCallback(() => {
     return investments.reduce((sum, inv) => {
