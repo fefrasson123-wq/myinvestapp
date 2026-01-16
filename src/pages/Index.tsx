@@ -50,17 +50,27 @@ const Index = () => {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Redireciona para login se não estiver autenticado
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, authLoading, navigate]);
 
   // Salva tags no localStorage
   useEffect(() => {
     localStorage.setItem('investment-tags', JSON.stringify(investmentTags));
   }, [investmentTags]);
+
+  const requireAuth = useCallback(
+    (action: () => void) => {
+      if (!user) {
+        toast({
+          variant: 'destructive',
+          title: 'Faça login para continuar',
+          description: 'Entre na sua conta para realizar ações no app.',
+        });
+        navigate('/auth');
+        return;
+      }
+      action();
+    },
+    [user, toast, navigate]
+  );
 
   const handleTagChange = useCallback((investmentId: string, tag: InvestmentTag | null) => {
     setInvestmentTags(prev => {
@@ -73,6 +83,7 @@ const Index = () => {
       return newTags;
     });
   }, []);
+
 
   const {
     investments,
@@ -199,73 +210,83 @@ const Index = () => {
     date: Date;
     total: number;
   }) => {
-    // Registra a transação de venda
-    addTransaction({
-      investmentId: '',
-      investmentName: data.name,
-      ticker: data.ticker,
-      category: data.category as Investment['category'],
-      type: 'sell',
-      quantity: data.quantity,
-      price: data.price,
-      total: data.total,
-      date: data.date,
-    });
+    requireAuth(() => {
+      // Registra a transação de venda
+      addTransaction({
+        investmentId: '',
+        investmentName: data.name,
+        ticker: data.ticker,
+        category: data.category as Investment['category'],
+        type: 'sell',
+        quantity: data.quantity,
+        price: data.price,
+        total: data.total,
+        date: data.date,
+      });
 
-    toast({
-      title: 'Venda registrada',
-      description: `${data.quantity} unidades de ${data.name} vendidas com sucesso.`,
+      toast({
+        title: 'Venda registrada',
+        description: `${data.quantity} unidades de ${data.name} vendidas com sucesso.`,
+      });
     });
   };
 
   const handleAddClick = () => {
-    setShowRegistration(true);
+    requireAuth(() => setShowRegistration(true));
   };
 
   const handleEdit = (investment: Investment) => {
-    setEditingInvestment(investment);
+    requireAuth(() => setEditingInvestment(investment));
   };
 
   const handleSaveEdit = (id: string, data: Partial<Omit<Investment, 'id' | 'createdAt' | 'updatedAt'>>) => {
-    updateInvestment(id, data);
-    toast({
-      title: 'Investimento atualizado',
-      description: 'As alterações foram salvas com sucesso.',
+    requireAuth(() => {
+      updateInvestment(id, data);
+      toast({
+        title: 'Investimento atualizado',
+        description: 'As alterações foram salvas com sucesso.',
+      });
+      setEditingInvestment(null);
     });
-    setEditingInvestment(null);
   };
 
   const handleDeleteTransaction = (id: string) => {
-    deleteTransaction(id);
-    toast({
-      title: 'Transação removida',
-      description: 'A transação foi excluída do histórico.',
+    requireAuth(() => {
+      deleteTransaction(id);
+      toast({
+        title: 'Transação removida',
+        description: 'A transação foi excluída do histórico.',
+      });
     });
   };
 
   const handleEditTransaction = (transaction: Transaction) => {
-    setEditingTransaction(transaction);
+    requireAuth(() => setEditingTransaction(transaction));
   };
 
   const handleSaveTransaction = (id: string, data: Partial<Transaction>) => {
-    updateTransaction(id, data);
-    toast({
-      title: 'Transação atualizada',
-      description: 'As alterações foram salvas com sucesso.',
+    requireAuth(() => {
+      updateTransaction(id, data);
+      toast({
+        title: 'Transação atualizada',
+        description: 'As alterações foram salvas com sucesso.',
+      });
+      setEditingTransaction(null);
     });
-    setEditingTransaction(null);
   };
 
   const handleDelete = (id: string) => {
-    deleteInvestment(id);
-    toast({
-      title: 'Investimento removido',
-      description: 'O investimento foi excluído com sucesso.',
+    requireAuth(() => {
+      deleteInvestment(id);
+      toast({
+        title: 'Investimento removido',
+        description: 'O investimento foi excluído com sucesso.',
+      });
     });
   };
 
   const handleSell = (investment: Investment) => {
-    setSellingInvestment(investment);
+    requireAuth(() => setSellingInvestment(investment));
   };
 
   const handleConfirmSell = (data: {
@@ -277,44 +298,51 @@ const Index = () => {
   }) => {
     if (!sellingInvestment) return;
 
-    // Registra a transação de venda
-    addTransaction({
-      investmentId: sellingInvestment.id,
-      investmentName: sellingInvestment.name,
-      ticker: sellingInvestment.ticker,
-      category: sellingInvestment.category,
-      type: 'sell',
-      quantity: data.quantity,
-      price: data.price,
-      total: data.quantity * data.price,
-      profitLoss: data.profitLoss,
-      profitLossPercent: data.profitLossPercent,
-      date: data.date,
-    });
-
-    // Atualiza ou remove o investimento
-    const remainingQuantity = sellingInvestment.quantity - data.quantity;
-    
-    if (remainingQuantity <= 0) {
-      deleteInvestment(sellingInvestment.id);
-    } else {
-      updateInvestment(sellingInvestment.id, {
-        quantity: remainingQuantity,
-        investedAmount: remainingQuantity * sellingInvestment.averagePrice,
+    requireAuth(() => {
+      // Registra a transação de venda
+      addTransaction({
+        investmentId: sellingInvestment.id,
+        investmentName: sellingInvestment.name,
+        ticker: sellingInvestment.ticker,
+        category: sellingInvestment.category,
+        type: 'sell',
+        quantity: data.quantity,
+        price: data.price,
+        total: data.quantity * data.price,
+        profitLoss: data.profitLoss,
+        profitLossPercent: data.profitLossPercent,
+        date: data.date,
       });
-    }
 
-    toast({
-      title: 'Venda registrada',
-      description: `${data.quantity} unidades de ${sellingInvestment.name} vendidas com sucesso.`,
+      // Atualiza ou remove o investimento
+      const remainingQuantity = sellingInvestment.quantity - data.quantity;
+
+      if (remainingQuantity <= 0) {
+        deleteInvestment(sellingInvestment.id);
+      } else {
+        updateInvestment(sellingInvestment.id, {
+          quantity: remainingQuantity,
+          investedAmount: remainingQuantity * sellingInvestment.averagePrice,
+        });
+      }
+
+      toast({
+        title: 'Venda registrada',
+        description: `${data.quantity} unidades de ${sellingInvestment.name} vendidas com sucesso.`,
+      });
+
+      setSellingInvestment(null);
     });
-
-    setSellingInvestment(null);
   };
 
   const handleSubmit = async (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
+    if (!user) {
+      requireAuth(() => {});
+      return;
+    }
+
     const newInvestment = await addInvestment(data);
-    
+
     if (newInvestment) {
       // Registra a transação de compra
       addTransaction({
@@ -348,11 +376,6 @@ const Index = () => {
         <div className="text-primary animate-pulse text-glow">Carregando...</div>
       </div>
     );
-  }
-
-  // Não renderiza se não estiver autenticado
-  if (!user) {
-    return null;
   }
 
   return (
