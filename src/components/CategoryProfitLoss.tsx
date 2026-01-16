@@ -1,13 +1,11 @@
 import { TrendingUp, TrendingDown, Layers } from 'lucide-react';
 import { Investment, InvestmentCategory, categoryLabels, categoryColors } from '@/types/investment';
 import { cn } from '@/lib/utils';
+import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
 
 interface CategoryProfitLossProps {
   investments: Investment[];
 }
-
-// Taxa de conversão USD -> BRL
-const USD_TO_BRL = 6.15;
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
@@ -33,13 +31,15 @@ interface CategoryData {
 }
 
 export function CategoryProfitLoss({ investments }: CategoryProfitLossProps) {
+  const { rate: usdToBrl } = useUsdBrlRate();
+
   // Agrupa investimentos por categoria e calcula totais
   const categoryData: CategoryData[] = Object.entries(
     investments.reduce((acc, inv) => {
       const category = inv.category;
       const isCrypto = category === 'crypto';
-      const invested = isCrypto ? inv.investedAmount * USD_TO_BRL : inv.investedAmount;
-      const currentValue = isCrypto ? inv.currentValue * USD_TO_BRL : inv.currentValue;
+      const invested = isCrypto ? inv.investedAmount * usdToBrl : inv.investedAmount;
+      const currentValue = isCrypto ? inv.currentValue * usdToBrl : inv.currentValue;
       
       if (!acc[category]) {
         acc[category] = { invested: 0, currentValue: 0 };

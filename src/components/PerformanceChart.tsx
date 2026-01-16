@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   Area,
   AreaChart
 } from 'recharts';
 import { Investment, PriceHistory } from '@/types/investment';
+import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
 
 interface PerformanceChartProps {
   investments: Investment[];
@@ -23,9 +24,6 @@ function formatCurrency(value: number): string {
     maximumFractionDigits: 1,
   }).format(value);
 }
-
-// Taxa de conversão USD -> BRL para crypto
-const USD_TO_BRL = 6.15;
 
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 
@@ -210,7 +208,7 @@ function generateRealisticVariation(
   days: number,
   isInBRL: boolean = true
 ): number[] {
-  const currentValue = isInBRL ? investment.currentValue : investment.currentValue * USD_TO_BRL;
+  const currentValue = investment.currentValue;
   const investedAmount = investment.investedAmount;
   
   // Calcula variação total desde a compra
@@ -288,6 +286,7 @@ function calculateFixedIncomeAtTime(investment: Investment, timestamp: number): 
 }
 
 function useHistoricalData(investments: Investment[], period: string) {
+  const { rate: usdToBrl } = useUsdBrlRate();
   const [data, setData] = useState<PriceHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -369,26 +368,26 @@ function useHistoricalData(investments: Investment[], period: string) {
       return left.price + (right.price - left.price) * alpha;
     };
 
-    for (let i = 0; i < timestamps.length; i++) {
-      const timestamp = timestamps[i];
-      let portfolioValue = 0;
+      for (let i = 0; i < timestamps.length; i++) {
+        const timestamp = timestamps[i];
+        let portfolioValue = 0;
 
-      // 1. Cryptos - usa histórico real; se não houver, mantém valor atual (sem “inventar” variação)
-      for (const { inv, history } of cryptoResults) {
-        const purchaseDate = inv.purchaseDate
-          ? new Date(inv.purchaseDate).getTime()
-          : inv.createdAt.getTime();
+        // 1. Cryptos - usa histórico real; se não houver, mantém valor atual (sem “inventar” variação)
+        for (const { inv, history } of cryptoResults) {
+          const purchaseDate = inv.purchaseDate
+            ? new Date(inv.purchaseDate).getTime()
+            : inv.createdAt.getTime();
 
-        if (timestamp < purchaseDate) continue;
+          if (timestamp < purchaseDate) continue;
 
-        const priceAt = interpolatePriceAt(history, timestamp);
-        if (priceAt != null) {
-          portfolioValue += inv.quantity * priceAt * USD_TO_BRL;
-        } else {
-          // Sem histórico real disponível para esse ticker → não simulamos
-          portfolioValue += (inv.currentValue || 0) * USD_TO_BRL;
+          const priceAt = interpolatePriceAt(history, timestamp);
+          if (priceAt != null) {
+            portfolioValue += inv.quantity * priceAt * usdToBrl;
+          } else {
+            // Sem histórico real disponível para esse ticker → não simulamos
+            portfolioValue += (inv.currentValue || 0) * usdToBrl;
+          }
         }
-      }
 
       // 2. Renda fixa - calcula rendimento real
       for (const inv of fixedIncomeInvestments) {
@@ -423,7 +422,7 @@ function useHistoricalData(investments: Investment[], period: string) {
     
     // Garante que o último ponto tenha o valor atual correto
     const totalCurrentValue = investments.reduce((sum, inv) => {
-      const value = inv.category === 'crypto' ? inv.currentValue * USD_TO_BRL : inv.currentValue;
+      const value = inv.category === 'crypto' ? inv.currentValue * usdToBrl : inv.currentValue;
       return sum + value;
     }, 0);
     
@@ -436,7 +435,7 @@ function useHistoricalData(investments: Investment[], period: string) {
     
     setData(chartData);
     setIsLoading(false);
-  }, [investments, period]);
+  }, [investments, period, usdToBrl]);
   
   useEffect(() => {
     loadData();

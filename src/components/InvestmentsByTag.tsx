@@ -3,6 +3,7 @@ import { Tag, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-re
 import { Investment, categoryLabels, categoryColors } from '@/types/investment';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
 
 export type InvestmentTag = 'long-term' | 'passive-income' | 'speculation';
 
@@ -24,9 +25,6 @@ interface InvestmentsByTagProps {
   onTagChange: (investmentId: string, tag: InvestmentTag | null) => void;
 }
 
-// Taxa de conversão USD -> BRL
-const USD_TO_BRL = 6.15;
-
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -43,6 +41,7 @@ function formatPercent(value: number): string {
 }
 
 export function InvestmentsByTag({ investments, investmentTags, onTagChange }: InvestmentsByTagProps) {
+  const { rate: usdToBrl } = useUsdBrlRate();
   const [expandedTags, setExpandedTags] = useState<Record<InvestmentTag, boolean>>({
     'long-term': true,
     'passive-income': true,
@@ -81,12 +80,12 @@ export function InvestmentsByTag({ investments, investmentTags, onTagChange }: I
 
         const totalValue = tagInvestments.reduce((acc, inv) => {
           const isCrypto = inv.category === 'crypto';
-          return acc + (isCrypto ? inv.currentValue * USD_TO_BRL : inv.currentValue);
+          return acc + (isCrypto ? inv.currentValue * usdToBrl : inv.currentValue);
         }, 0);
 
         const totalProfitLoss = tagInvestments.reduce((acc, inv) => {
           const isCrypto = inv.category === 'crypto';
-          return acc + (isCrypto ? inv.profitLoss * USD_TO_BRL : inv.profitLoss);
+          return acc + (isCrypto ? inv.profitLoss * usdToBrl : inv.profitLoss);
         }, 0);
 
         const isPositive = totalProfitLoss >= 0;
@@ -132,7 +131,7 @@ export function InvestmentsByTag({ investments, investmentTags, onTagChange }: I
               <div className="space-y-2 animate-smooth-appear">
                 {tagInvestments.map((inv, index) => {
                   const isCrypto = inv.category === 'crypto';
-                  const value = isCrypto ? inv.currentValue * USD_TO_BRL : inv.currentValue;
+                  const value = isCrypto ? inv.currentValue * usdToBrl : inv.currentValue;
                   const invIsPositive = inv.profitLoss >= 0;
 
                   return (
