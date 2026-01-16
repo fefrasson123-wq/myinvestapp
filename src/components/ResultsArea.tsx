@@ -20,13 +20,11 @@ const periods: { id: Period; label: string }[] = [
   { id: 'total', label: 'Total' },
 ];
 
-// Taxa de conversão USD -> BRL
-const USD_TO_BRL = 6.15;
-
-function formatCurrency(value: number, currency: 'BRL' | 'USD' = 'BRL'): string {
-  return new Intl.NumberFormat(currency === 'BRL' ? 'pt-BR' : 'en-US', {
+function formatCurrency(value: number): string {
+  // Todos os valores agora em BRL
+  return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency,
+    currency: 'BRL',
   }).format(value);
 }
 
@@ -41,11 +39,9 @@ function formatPercent(value: number): string {
 export function ResultsArea({ investments }: ResultsAreaProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('1m');
 
-  // Ordena investimentos por lucro/prejuízo (convertendo para BRL para comparação)
+  // Ordena investimentos por lucro/prejuízo (todos já estão em BRL)
   const sortedInvestments = [...investments].sort((a, b) => {
-    const aValue = a.category === 'crypto' ? a.profitLoss * USD_TO_BRL : a.profitLoss;
-    const bValue = b.category === 'crypto' ? b.profitLoss * USD_TO_BRL : b.profitLoss;
-    return bValue - aValue;
+    return b.profitLoss - a.profitLoss;
   });
 
   return (
@@ -85,7 +81,6 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
           <div className="space-y-3">
             {sortedInvestments.map((inv, index) => {
               const isCrypto = inv.category === 'crypto';
-              const currency = isCrypto ? 'USD' : 'BRL';
               const displayProfitLoss = inv.profitLoss;
               const invIsPositive = displayProfitLoss >= 0;
               
@@ -130,7 +125,7 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
                         "font-mono font-medium transition-colors duration-300",
                         invIsPositive ? "text-success" : "text-destructive"
                       )}>
-                        {invIsPositive ? '+' : ''}{formatCurrency(displayProfitLoss, currency)}
+                        {invIsPositive ? '+' : ''}{formatCurrency(displayProfitLoss)}
                       </p>
                     </div>
                     <p className={cn(
@@ -139,11 +134,6 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
                     )}>
                       {invIsPositive ? '+' : ''}{formatPercent(inv.profitLossPercent)}
                     </p>
-                    {isCrypto && (
-                      <p className="text-xs text-muted-foreground font-mono">
-                        ≈ {formatCurrency(displayProfitLoss * USD_TO_BRL, 'BRL')}
-                      </p>
-                    )}
                   </div>
                 </div>
               );

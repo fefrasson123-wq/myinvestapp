@@ -12,10 +12,11 @@ interface EditInvestmentModalProps {
   onClose: () => void;
 }
 
-function formatCurrency(value: number, currency: 'BRL' | 'USD' = 'BRL'): string {
-  return new Intl.NumberFormat(currency === 'BRL' ? 'pt-BR' : 'en-US', {
+function formatCurrency(value: number): string {
+  // Todos os valores agora em BRL
+  return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency,
+    currency: 'BRL',
   }).format(value);
 }
 

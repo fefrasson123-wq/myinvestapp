@@ -49,9 +49,9 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
       <div className="space-y-3">
         {investments.map((investment, index) => {
           const isPositive = investment.profitLoss >= 0;
-          const isCrypto = investment.category === 'crypto';
           const isRealEstate = investment.category === 'realestate';
-          const currency = isCrypto ? 'USD' : 'BRL';
+          const currency = 'BRL'; // Todos os valores agora em BRL
+          const isCrypto = investment.category === 'crypto';
           const currentTag = investmentTags[investment.id];
           
           return (
