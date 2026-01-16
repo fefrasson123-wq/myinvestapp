@@ -234,15 +234,6 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
         </div>
 
         <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pr-2">
-          {/* Opção "Outras" no topo */}
-          <button
-            onClick={() => setStep('custom')}
-            className="flex items-center p-3 rounded-lg border border-dashed border-primary/50 bg-primary/10 hover:border-primary hover:bg-primary/20 transition-all text-left"
-          >
-            <Plus className="w-5 h-5 text-primary" />
-            <span className="ml-3 text-primary font-medium">Outras - Buscar Criptomoedas</span>
-          </button>
-
           {filteredCryptos.map((crypto) => (
             <button
               key={crypto.id}
@@ -253,6 +244,15 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
               <span className="ml-3 text-card-foreground">{crypto.name}</span>
             </button>
           ))}
+
+          {/* Opção "Outras" no final */}
+          <button
+            onClick={() => setStep('custom')}
+            className="flex items-center p-3 rounded-lg border border-dashed border-primary/50 bg-primary/10 hover:border-primary hover:bg-primary/20 transition-all text-left"
+          >
+            <Plus className="w-5 h-5 text-primary" />
+            <span className="ml-3 text-primary font-medium">Outras - Buscar Criptomoedas</span>
+          </button>
         </div>
       </div>
     );
