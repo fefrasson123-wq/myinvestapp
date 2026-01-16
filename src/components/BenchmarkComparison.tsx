@@ -1,23 +1,37 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Investment } from '@/types/investment';
-import { TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, BarChart3, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEconomicRates } from '@/hooks/useEconomicRates';
+import { useCryptoPrices } from '@/hooks/useCryptoPrices';
+import { useState, useEffect } from 'react';
 
 interface BenchmarkComparisonProps {
   investment: Investment;
   onClose: () => void;
 }
 
-// Taxas anuais aproximadas dos benchmarks (valores médios históricos)
-const BENCHMARK_RATES = {
-  cdi: 12.65, // CDI anual
-  ibov: 15.0, // IBOVESPA média histórica
-  ipca: 4.5, // IPCA anual
-  btc: 50.0, // Bitcoin média anual (muito volátil)
-};
+// Função para calcular retorno anualizado do Bitcoin (baseado em dados reais)
+function useBitcoinAnnualReturn() {
+  const { prices } = useCryptoPrices();
+  const [annualReturn, setAnnualReturn] = useState(50); // fallback
+  
+  useEffect(() => {
+    // Calcular retorno aproximado baseado na variação atual
+    const btcPrice = prices['BTC'] || prices['bitcoin'];
+    if (btcPrice && btcPrice.price_change_percentage_24h) {
+      // Extrapolar variação diária para anual (aproximação)
+      const dailyReturn = btcPrice.price_change_percentage_24h / 100;
+      const annualized = Math.pow(1 + dailyReturn, 365) - 1;
+      // Limitar entre -50% e 200% para evitar valores extremos
+      setAnnualReturn(Math.min(200, Math.max(-50, annualized * 100)));
+    }
+  }, [prices]);
+  
+  return annualReturn;
+}
 
 function formatCurrency(value: number): string {
-  // Todos os valores agora em BRL
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -41,19 +55,21 @@ function calculateBenchmarkReturn(invested: number, purchaseDate: string | undef
   
   if (years <= 0) return invested;
   
-  // Retorno composto
   return invested * Math.pow(1 + annualRate / 100, years);
 }
 
 export function BenchmarkComparison({ investment, onClose }: BenchmarkComparisonProps) {
-  const isCrypto = investment.category === 'crypto';
-  const currency = isCrypto ? 'USD' : 'BRL';
+  const { rates, isLoading: ratesLoading } = useEconomicRates();
+  const btcAnnualReturn = useBitcoinAnnualReturn();
   
+  const isCrypto = investment.category === 'crypto';
+  
+  // Usar taxas em tempo real do Banco Central
   const benchmarks = [
-    { name: 'CDI', rate: BENCHMARK_RATES.cdi, color: 'hsl(140, 100%, 50%)' },
-    { name: 'IBOVESPA', rate: BENCHMARK_RATES.ibov, color: 'hsl(200, 100%, 50%)' },
-    { name: 'IPCA', rate: BENCHMARK_RATES.ipca, color: 'hsl(30, 100%, 50%)' },
-    { name: 'Bitcoin', rate: BENCHMARK_RATES.btc, color: 'hsl(45, 100%, 50%)' },
+    { name: 'CDI', rate: rates.cdi, color: 'hsl(140, 100%, 50%)' },
+    { name: 'IBOVESPA', rate: 15.0, color: 'hsl(200, 100%, 50%)' }, // IBOV não tem API pública fácil
+    { name: 'IPCA', rate: rates.ipca, color: 'hsl(30, 100%, 50%)' },
+    { name: 'Bitcoin', rate: btcAnnualReturn, color: 'hsl(45, 100%, 50%)' },
   ];
   
   const benchmarkReturns = benchmarks.map(benchmark => {
@@ -131,9 +147,14 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
           </div>
           
           <div className="space-y-3">
-            <h4 className="text-sm font-medium text-muted-foreground">
-              Se você tivesse investido em:
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-muted-foreground">
+                Se você tivesse investido em:
+              </h4>
+              {ratesLoading && (
+                <RefreshCw className="w-3 h-3 text-muted-foreground animate-spin" />
+              )}
+            </div>
             
             {benchmarkReturns.map((benchmark, index) => (
               <div 

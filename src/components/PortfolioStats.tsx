@@ -1,6 +1,7 @@
-import { TrendingUp, TrendingDown, Wallet, PiggyBank } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, PiggyBank, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
+import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
 
 interface PortfolioStatsProps {
   totalValue: number;
@@ -10,6 +11,7 @@ interface PortfolioStatsProps {
 
 export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: PortfolioStatsProps) {
   const { showValues, formatValue, formatPercent } = useValuesVisibility();
+  const { rate: usdToBrl, isLoading: rateLoading, lastUpdated } = useUsdBrlRate();
   const profitLossPercent = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
   const isPositive = totalProfitLoss >= 0;
 
@@ -22,17 +24,35 @@ export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: P
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {/* Total Patrimônio */}
-      <div className="investment-card animate-slide-up stagger-1 group">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="p-2 rounded-lg bg-primary/20 transition-transform duration-300 group-hover:scale-110">
-            <Wallet className="w-5 h-5 text-primary" />
-          </div>
-          <span className="stat-label">Patrimônio Total</span>
-        </div>
-        <p className="stat-value number-glow">{formatCurrency(totalValue)}</p>
+    <div className="space-y-4">
+      {/* Cotação USD/BRL em tempo real */}
+      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+        <span>USD/BRL:</span>
+        <span className="font-mono font-medium text-primary">
+          {usdToBrl.toFixed(4)}
+        </span>
+        {rateLoading ? (
+          <RefreshCw className="w-3 h-3 animate-spin" />
+        ) : (
+          lastUpdated && (
+            <span className="text-[10px]">
+              ({lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})
+            </span>
+          )
+        )}
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Total Patrimônio */}
+        <div className="investment-card animate-slide-up stagger-1 group">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-lg bg-primary/20 transition-transform duration-300 group-hover:scale-110">
+              <Wallet className="w-5 h-5 text-primary" />
+            </div>
+            <span className="stat-label">Patrimônio Total</span>
+          </div>
+          <p className="stat-value number-glow">{formatCurrency(totalValue)}</p>
+        </div>
 
       {/* Total Investido */}
       <div className="investment-card animate-slide-up stagger-2 group">
@@ -73,6 +93,7 @@ export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: P
           )}>
             ({formatPercent(profitLossPercent)})
           </span>
+        </div>
         </div>
       </div>
     </div>
