@@ -1,13 +1,44 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, LogIn, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
+import { supabase } from '@/integrations/supabase/client';
 
 export function UserMenu() {
   const { user, isLoading } = useAuth();
   const { isAdmin } = useAdminCheck();
   const navigate = useNavigate();
+  const [firstName, setFirstName] = useState<string>('');
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) {
+        setFirstName('');
+        return;
+      }
+
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name, username')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profile) {
+          const fullName = profile.display_name || profile.username || '';
+          // Pega apenas o primeiro nome
+          const first = fullName.split(' ')[0];
+          setFirstName(first);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar perfil:', error);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -32,12 +63,14 @@ export function UserMenu() {
         )}
         <Button
           variant="ghost"
-          size="icon"
           onClick={() => navigate('/profile')}
-          className="rounded-full bg-primary/10 hover:bg-primary/20 transition-colors"
+          className="gap-2 bg-primary/10 hover:bg-primary/20 transition-colors rounded-full px-3"
           title="Meu Perfil"
         >
           <User className="w-5 h-5 text-primary" />
+          {firstName && (
+            <span className="hidden sm:inline text-primary font-medium">{firstName}</span>
+          )}
         </Button>
       </div>
     );
