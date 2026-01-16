@@ -38,7 +38,7 @@ interface InvestmentRegistrationProps {
   isModal?: boolean;
 }
 
-type FormType = 'menu' | 'crypto' | 'stocks' | 'fii' | 'cdb' | 'cdi' | 'treasury' | 'savings' | 'cash' | 'realestate' | 'gold';
+type FormType = 'menu' | 'crypto' | 'stocks' | 'fii' | 'cdb' | 'cdi' | 'lcilca' | 'treasury' | 'savings' | 'cash' | 'realestate' | 'gold';
 
 const investmentTypes = [
   { id: 'crypto' as const, label: 'Criptomoedas', icon: Bitcoin, color: 'hsl(45, 100%, 50%)' },
@@ -48,6 +48,7 @@ const investmentTypes = [
   { id: 'realestate' as const, label: 'Imóveis', icon: Home, color: 'hsl(220, 70%, 50%)' },
   { id: 'cash' as const, label: 'Dinheiro', icon: Wallet, color: 'hsl(120, 70%, 45%)' },
   { id: 'cdb' as const, label: 'CDB', icon: Banknote, color: 'hsl(140, 100%, 50%)' },
+  { id: 'lcilca' as const, label: 'LCI/LCA', icon: Banknote, color: 'hsl(160, 80%, 45%)' },
   { id: 'treasury' as const, label: 'Tesouro Direto', icon: Landmark, color: 'hsl(30, 100%, 50%)' },
   { id: 'savings' as const, label: 'Poupança', icon: PiggyBank, color: 'hsl(180, 100%, 40%)' },
 ];
@@ -93,6 +94,7 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
         return <GoldForm onSubmit={handleSubmit} onBack={handleBack} />;
       case 'cdb':
       case 'cdi':
+      case 'lcilca':
       case 'treasury':
       case 'savings':
         return <FixedIncomeForm category={currentForm} onSubmit={handleSubmit} onBack={handleBack} />;

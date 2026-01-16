@@ -4,6 +4,7 @@ export type InvestmentCategory =
   | 'fii'
   | 'cdb'
   | 'cdi'
+  | 'lcilca'
   | 'treasury'
   | 'savings'
   | 'cash'
@@ -75,6 +76,7 @@ export const categoryLabels: Record<InvestmentCategory, string> = {
   fii: 'Fundos Imobiliários',
   cdb: 'CDB',
   cdi: 'CDI',
+  lcilca: 'LCI/LCA',
   treasury: 'Tesouro Direto',
   savings: 'Poupança',
   cash: 'Dinheiro em Espécie',
@@ -89,6 +91,7 @@ export const categoryColors: Record<InvestmentCategory, string> = {
   fii: 'hsl(280, 100%, 60%)',
   cdb: 'hsl(140, 100%, 50%)',
   cdi: 'hsl(320, 100%, 50%)',
+  lcilca: 'hsl(160, 80%, 45%)',
   treasury: 'hsl(30, 100%, 50%)',
   savings: 'hsl(180, 100%, 40%)',
   cash: 'hsl(120, 70%, 45%)',
