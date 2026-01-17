@@ -13,11 +13,25 @@ interface FixedIncomeFormProps {
   onBack: () => void;
 }
 
-// Tipos para categorias gerais de renda fixa
-const fixedIncomeTypes: FixedIncomeType[] = ['pos', 'pre', 'ipca', 'cdi'];
+// Tipos de rentabilidade para CDB/LCI/LCA
+type RentabilidadeType = 'prefixado' | 'posfixado' | 'ipca';
+
+// Tipos de indexador para Pós-fixado
+type IndexadorType = 'cdi' | 'selic';
 
 // Tipos específicos para Tesouro Direto
 type TreasuryType = 'selic' | 'prefixado' | 'ipca';
+
+const rentabilidadeLabels: Record<RentabilidadeType, string> = {
+  prefixado: 'Prefixado',
+  posfixado: 'Pós-fixado',
+  ipca: 'IPCA+',
+};
+
+const indexadorLabels: Record<IndexadorType, string> = {
+  cdi: 'CDI',
+  selic: 'Selic',
+};
 
 const treasuryTypeLabels: Record<TreasuryType, string> = {
   selic: 'Tesouro Selic',
@@ -37,50 +51,101 @@ const categoryTitles: Record<string, string> = {
   fixedincomefund: 'Fundo de Renda Fixa',
 };
 
-const rateLabels: Record<FixedIncomeType, { label: string; placeholder: string; suffix: string }> = {
-  pos: { label: '% do CDI', placeholder: 'Ex: 110', suffix: '% do CDI' },
-  pre: { label: 'Taxa (% a.a.)', placeholder: 'Ex: 12.5', suffix: '% a.a.' },
-  ipca: { label: 'Taxa adicional (IPCA +)', placeholder: 'Ex: 5.5', suffix: '% a.a.' },
-  cdi: { label: '% do CDI', placeholder: 'Ex: 100', suffix: '% do CDI' },
-};
+// Categorias que usam o fluxo de Rentabilidade -> Indexador
+const categoriesWithRentabilidade = ['cdb', 'lci', 'lca', 'lcilca', 'debentures', 'cricra'];
 
-// Seletor de tipo para categorias gerais
-const TypeSelector = memo(({ 
+// Seletor de Tipo de Rentabilidade para CDB/LCI/LCA
+const RentabilidadeSelector = memo(({ 
   onSelect, 
   onBack,
-  types,
-  labels,
+  categoryTitle,
 }: { 
-  onSelect: (type: FixedIncomeType) => void; 
+  onSelect: (type: RentabilidadeType) => void; 
   onBack: () => void;
-  types: FixedIncomeType[];
-  labels: Record<string, string>;
-}) => (
-  <div className="space-y-4">
-    <div className="flex items-center gap-3">
-      <Button variant="ghost" size="icon" onClick={onBack} type="button">
-        <ArrowLeft className="w-5 h-5" />
-      </Button>
-      <h3 className="text-lg font-semibold text-card-foreground">Selecione o Tipo</h3>
-    </div>
+  categoryTitle: string;
+}) => {
+  const rentabilidadeTypes: RentabilidadeType[] = ['prefixado', 'posfixado', 'ipca'];
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={onBack} type="button">
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div>
+          <h3 className="text-lg font-semibold text-card-foreground">{categoryTitle}</h3>
+          <p className="text-sm text-muted-foreground">Tipo de Rentabilidade</p>
+        </div>
+      </div>
 
-    <div className="grid grid-cols-2 gap-3">
-      {types.map((type) => (
-        <button
-          key={type}
-          type="button"
-          onClick={() => onSelect(type)}
-          className="flex flex-col items-center justify-center p-4 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-colors"
-        >
-          <Percent className="w-6 h-6 text-primary mb-2" />
-          <span className="font-medium text-card-foreground text-sm">{labels[type]}</span>
-        </button>
-      ))}
+      <div className="grid grid-cols-1 gap-3">
+        {rentabilidadeTypes.map((type) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => onSelect(type)}
+            className="flex items-center gap-4 p-4 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-colors"
+          >
+            <Percent className="w-6 h-6 text-primary" />
+            <div className="text-left">
+              <span className="font-medium text-card-foreground">{rentabilidadeLabels[type]}</span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {type === 'prefixado' && 'Taxa fixa definida na aplicação'}
+                {type === 'posfixado' && 'Rendimento atrelado a CDI ou Selic'}
+                {type === 'ipca' && 'Inflação + taxa adicional'}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
     </div>
-  </div>
-));
+  );
+});
 
-TypeSelector.displayName = 'TypeSelector';
+RentabilidadeSelector.displayName = 'RentabilidadeSelector';
+
+// Seletor de Indexador para Pós-fixado
+const IndexadorSelector = memo(({ 
+  onSelect, 
+  onBack,
+  categoryTitle,
+}: { 
+  onSelect: (type: IndexadorType) => void; 
+  onBack: () => void;
+  categoryTitle: string;
+}) => {
+  const indexadorTypes: IndexadorType[] = ['cdi', 'selic'];
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={onBack} type="button">
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div>
+          <h3 className="text-lg font-semibold text-card-foreground">{categoryTitle}</h3>
+          <p className="text-sm text-muted-foreground">Pós-fixado - Indexador</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {indexadorTypes.map((type) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => onSelect(type)}
+            className="flex flex-col items-center justify-center p-4 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-colors"
+          >
+            <TrendingUp className="w-6 h-6 text-primary mb-2" />
+            <span className="font-medium text-card-foreground">{indexadorLabels[type]}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+IndexadorSelector.displayName = 'IndexadorSelector';
 
 // Seletor específico para Tesouro Direto
 const TreasuryTypeSelector = memo(({ 
@@ -127,13 +192,66 @@ const TreasuryTypeSelector = memo(({
 
 TreasuryTypeSelector.displayName = 'TreasuryTypeSelector';
 
+// Seletor genérico para outras categorias
+const GenericTypeSelector = memo(({ 
+  onSelect, 
+  onBack,
+  types,
+  labels,
+}: { 
+  onSelect: (type: FixedIncomeType) => void; 
+  onBack: () => void;
+  types: FixedIncomeType[];
+  labels: Record<string, string>;
+}) => (
+  <div className="space-y-4">
+    <div className="flex items-center gap-3">
+      <Button variant="ghost" size="icon" onClick={onBack} type="button">
+        <ArrowLeft className="w-5 h-5" />
+      </Button>
+      <h3 className="text-lg font-semibold text-card-foreground">Selecione o Tipo</h3>
+    </div>
+
+    <div className="grid grid-cols-2 gap-3">
+      {types.map((type) => (
+        <button
+          key={type}
+          type="button"
+          onClick={() => onSelect(type)}
+          className="flex flex-col items-center justify-center p-4 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-colors"
+        >
+          <Percent className="w-6 h-6 text-primary mb-2" />
+          <span className="font-medium text-card-foreground text-sm">{labels[type]}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+));
+
+GenericTypeSelector.displayName = 'GenericTypeSelector';
+
 export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormProps) {
   const isSavings = category === 'savings';
   const isTreasury = category === 'treasury';
+  const usesRentabilidade = categoriesWithRentabilidade.includes(category);
   
-  const [step, setStep] = useState<'type' | 'form'>(isSavings ? 'form' : 'type');
-  const [selectedType, setSelectedType] = useState<FixedIncomeType | null>(isSavings ? 'pos' : null);
+  // Estados de navegação
+  type StepType = 'rentabilidade' | 'indexador' | 'type' | 'form';
+  const getInitialStep = (): StepType => {
+    if (isSavings) return 'form';
+    if (usesRentabilidade) return 'rentabilidade';
+    if (isTreasury) return 'type';
+    return 'type';
+  };
+  
+  const [step, setStep] = useState<StepType>(getInitialStep());
+  
+  // Estados para cada fluxo
+  const [rentabilidade, setRentabilidade] = useState<RentabilidadeType | null>(null);
+  const [indexador, setIndexador] = useState<IndexadorType | null>(null);
   const [treasuryType, setTreasuryType] = useState<TreasuryType | null>(null);
+  const [selectedType, setSelectedType] = useState<FixedIncomeType | null>(isSavings ? 'pos' : null);
+  
   const [formData, setFormData] = useState({
     name: '',
     investedAmount: '',
@@ -145,39 +263,83 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
 
   const { rates, isLoading: ratesLoading } = useEconomicRates();
 
-  // Para Tesouro, mapeia o tipo do tesouro para o tipo de renda fixa
-  const getEffectiveSelectedType = (): FixedIncomeType | null => {
+  // Determina o tipo efetivo baseado no fluxo
+  const getEffectiveType = (): FixedIncomeType | null => {
+    if (usesRentabilidade && rentabilidade) {
+      if (rentabilidade === 'prefixado') return 'pre';
+      if (rentabilidade === 'posfixado') return indexador === 'selic' ? 'pos' : 'cdi';
+      if (rentabilidade === 'ipca') return 'ipca';
+    }
     if (isTreasury && treasuryType) {
-      if (treasuryType === 'selic') return 'pos'; // Selic = 100% da Selic
+      if (treasuryType === 'selic') return 'pos';
       if (treasuryType === 'prefixado') return 'pre';
       if (treasuryType === 'ipca') return 'ipca';
     }
     return selectedType;
   };
 
-  const effectiveSelectedType = getEffectiveSelectedType();
+  const effectiveType = getEffectiveType();
   
-  // Selic não precisa de taxa (é 100% Selic automático)
-  const needsRateInput = isTreasury 
-    ? treasuryType === 'prefixado' || treasuryType === 'ipca'
-    : true;
-
-  const isVariableRate = effectiveSelectedType === 'pos' || effectiveSelectedType === 'ipca' || effectiveSelectedType === 'cdi';
-  
+  // Configuração do campo de taxa
   const getRateConfig = () => {
-    if (isTreasury && treasuryType === 'prefixado') {
+    // CDB/LCI/LCA
+    if (usesRentabilidade && rentabilidade) {
+      if (rentabilidade === 'prefixado') {
+        return { label: 'Taxa (% a.a.)', placeholder: 'Ex: 12.5', suffix: '% a.a.' };
+      }
+      if (rentabilidade === 'posfixado') {
+        return { 
+          label: `% do ${indexador === 'selic' ? 'Selic' : 'CDI'}`, 
+          placeholder: 'Ex: 110', 
+          suffix: `% do ${indexador === 'selic' ? 'Selic' : 'CDI'}` 
+        };
+      }
+      if (rentabilidade === 'ipca') {
+        return { label: 'Taxa adicional (IPCA +)', placeholder: 'Ex: 6', suffix: '% a.a.' };
+      }
+    }
+    // Tesouro
+    if (isTreasury && treasuryType) {
+      if (treasuryType === 'prefixado') {
+        return { label: 'Taxa (% a.a.)', placeholder: 'Ex: 12.5', suffix: '% a.a.' };
+      }
+      if (treasuryType === 'ipca') {
+        return { label: 'Taxa adicional (IPCA +)', placeholder: 'Ex: 5.5', suffix: '% a.a.' };
+      }
+    }
+    // Genérico
+    if (effectiveType === 'pre') {
       return { label: 'Taxa (% a.a.)', placeholder: 'Ex: 12.5', suffix: '% a.a.' };
     }
-    if (isTreasury && treasuryType === 'ipca') {
+    if (effectiveType === 'ipca') {
       return { label: 'Taxa adicional (IPCA +)', placeholder: 'Ex: 5.5', suffix: '% a.a.' };
     }
-    return effectiveSelectedType ? rateLabels[effectiveSelectedType] : rateLabels.pre;
+    return { label: '% do CDI', placeholder: 'Ex: 110', suffix: '% do CDI' };
   };
   
   const rateConfig = getRateConfig();
+  
+  // Determina se precisa de input de taxa
+  const needsRateInput = () => {
+    if (isTreasury && treasuryType === 'selic') return false;
+    return true;
+  };
 
-  const handleSelectType = useCallback((type: FixedIncomeType) => {
-    setSelectedType(type);
+  // Determina se é taxa variável
+  const isVariableRate = effectiveType === 'pos' || effectiveType === 'ipca' || effectiveType === 'cdi';
+
+  // Handlers de seleção
+  const handleSelectRentabilidade = useCallback((type: RentabilidadeType) => {
+    setRentabilidade(type);
+    if (type === 'posfixado') {
+      setStep('indexador');
+    } else {
+      setStep('form');
+    }
+  }, []);
+
+  const handleSelectIndexador = useCallback((type: IndexadorType) => {
+    setIndexador(type);
     setStep('form');
   }, []);
 
@@ -186,25 +348,32 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     setStep('form');
   }, []);
 
+  const handleSelectGenericType = useCallback((type: FixedIncomeType) => {
+    setSelectedType(type);
+    setStep('form');
+  }, []);
+
   const handleInputChange = useCallback((field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
+  // Calcula taxa efetiva
   const effectiveRate = useMemo(() => {
-    // Para Tesouro Selic, usa 100% da Selic automaticamente
     if (isTreasury && treasuryType === 'selic') {
-      return rates.cdi; // Selic ≈ CDI
+      return rates.cdi;
     }
     
     const rate = parseFloat(formData.interestRate) || 0;
-    if (effectiveSelectedType === 'ipca') {
+    
+    if (effectiveType === 'ipca') {
       return rates.ipca + rate;
-    } else if (effectiveSelectedType === 'pos' || effectiveSelectedType === 'cdi') {
+    } else if (effectiveType === 'pos' || effectiveType === 'cdi') {
       return (rates.cdi * rate) / 100;
     }
     return rate;
-  }, [formData.interestRate, effectiveSelectedType, rates, isTreasury, treasuryType]);
+  }, [formData.interestRate, effectiveType, rates, isTreasury, treasuryType]);
 
+  // Calcula rendimento estimado
   const estimatedReturn = useMemo(() => {
     const amount = parseFloat(formData.investedAmount) || 0;
     const purchaseDate = formData.purchaseDate ? new Date(formData.purchaseDate) : new Date();
@@ -212,7 +381,6 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     
     if (!maturityDate || amount === 0) return null;
     
-    // Para Selic, não precisa de taxa informada
     if (isTreasury && treasuryType === 'selic') {
       const years = (maturityDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
       if (years <= 0) return null;
@@ -220,21 +388,22 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     }
     
     const rate = parseFloat(formData.interestRate) || 0;
-    if (rate === 0) return null;
+    if (rate === 0 && needsRateInput()) return null;
     
     const years = (maturityDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
     if (years <= 0) return null;
 
     let totalRate = rate;
-    if (effectiveSelectedType === 'ipca') {
+    if (effectiveType === 'ipca') {
       totalRate = rates.ipca + rate;
-    } else if (effectiveSelectedType === 'pos' || effectiveSelectedType === 'cdi') {
+    } else if (effectiveType === 'pos' || effectiveType === 'cdi') {
       totalRate = (rates.cdi * rate) / 100;
     }
     
     return amount * Math.pow(1 + totalRate / 100, years);
-  }, [formData, effectiveSelectedType, rates, isTreasury, treasuryType]);
+  }, [formData, effectiveType, rates, isTreasury, treasuryType]);
 
+  // Handler de submit
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
 
@@ -248,12 +417,19 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
       ? investedAmount * Math.pow(1 + effectiveRate / 100, yearsElapsed)
       : investedAmount;
 
-    // Nome baseado no tipo
+    // Gera nome padrão
     let defaultName = categoryTitles[category];
-    if (isTreasury && treasuryType) {
+    if (usesRentabilidade && rentabilidade) {
+      const rentLabel = rentabilidadeLabels[rentabilidade];
+      if (rentabilidade === 'posfixado' && indexador) {
+        defaultName = `${categoryTitles[category]} ${indexadorLabels[indexador]}`;
+      } else {
+        defaultName = `${categoryTitles[category]} ${rentLabel}`;
+      }
+    } else if (isTreasury && treasuryType) {
       defaultName = treasuryTypeLabels[treasuryType];
-    } else if (effectiveSelectedType) {
-      defaultName = `${categoryTitles[category]} ${fixedIncomeLabels[effectiveSelectedType]}`;
+    } else if (effectiveType) {
+      defaultName = `${categoryTitles[category]} ${fixedIncomeLabels[effectiveType]}`;
     }
 
     onSubmit({
@@ -263,34 +439,82 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
       averagePrice: investedAmount,
       currentPrice: currentValue,
       investedAmount,
-      fixedIncomeType: effectiveSelectedType || undefined,
+      fixedIncomeType: effectiveType || undefined,
       interestRate: effectiveRate,
       purchaseDate,
       maturityDate: formData.maturityDate || undefined,
       notes: formData.notes.trim() || undefined,
     });
-  }, [formData, effectiveRate, category, effectiveSelectedType, onSubmit, isTreasury, treasuryType]);
+  }, [formData, effectiveRate, category, effectiveType, onSubmit, usesRentabilidade, rentabilidade, indexador, isTreasury, treasuryType]);
 
-  const handleBackClick = useCallback(() => {
-    if (isSavings) {
-      onBack();
-    } else {
-      setStep('type');
-      if (isTreasury) {
-        setTreasuryType(null);
+  // Handler de voltar
+  const handleBack = useCallback(() => {
+    if (step === 'form') {
+      if (usesRentabilidade) {
+        if (rentabilidade === 'posfixado') {
+          setStep('indexador');
+        } else {
+          setStep('rentabilidade');
+        }
+      } else if (isTreasury) {
+        setStep('type');
+      } else if (!isSavings) {
+        setStep('type');
+      } else {
+        onBack();
       }
+    } else if (step === 'indexador') {
+      setStep('rentabilidade');
+      setIndexador(null);
+    } else {
+      onBack();
     }
-  }, [isSavings, isTreasury, onBack]);
+  }, [step, usesRentabilidade, rentabilidade, isTreasury, isSavings, onBack]);
 
-  // Tela de seleção de tipo
-  if (step === 'type' && !isSavings) {
-    if (isTreasury) {
-      return <TreasuryTypeSelector onSelect={handleSelectTreasuryType} onBack={onBack} />;
-    }
-    return <TypeSelector onSelect={handleSelectType} onBack={onBack} types={fixedIncomeTypes} labels={fixedIncomeLabels} />;
+  // Renderiza tela de seleção de rentabilidade
+  if (step === 'rentabilidade') {
+    return (
+      <RentabilidadeSelector 
+        onSelect={handleSelectRentabilidade} 
+        onBack={onBack}
+        categoryTitle={categoryTitles[category]}
+      />
+    );
   }
 
-  // Título do formulário
+  // Renderiza tela de seleção de indexador
+  if (step === 'indexador') {
+    return (
+      <IndexadorSelector 
+        onSelect={handleSelectIndexador} 
+        onBack={() => {
+          setStep('rentabilidade');
+          setRentabilidade(null);
+        }}
+        categoryTitle={categoryTitles[category]}
+      />
+    );
+  }
+
+  // Renderiza tela de seleção de tipo do Tesouro
+  if (step === 'type' && isTreasury) {
+    return <TreasuryTypeSelector onSelect={handleSelectTreasuryType} onBack={onBack} />;
+  }
+
+  // Renderiza seletor genérico para outras categorias
+  if (step === 'type' && !isSavings) {
+    const genericTypes: FixedIncomeType[] = ['pos', 'pre', 'ipca', 'cdi'];
+    return (
+      <GenericTypeSelector 
+        onSelect={handleSelectGenericType} 
+        onBack={onBack} 
+        types={genericTypes}
+        labels={fixedIncomeLabels}
+      />
+    );
+  }
+
+  // Gera título e subtítulo do formulário
   const getFormTitle = () => {
     if (isTreasury && treasuryType) {
       return treasuryTypeLabels[treasuryType];
@@ -299,14 +523,23 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
   };
 
   const getFormSubtitle = () => {
+    if (usesRentabilidade && rentabilidade) {
+      if (rentabilidade === 'posfixado' && indexador) {
+        return `Pós-fixado (${indexadorLabels[indexador]})`;
+      }
+      if (rentabilidade === 'ipca') {
+        return 'IPCA+';
+      }
+      return rentabilidadeLabels[rentabilidade];
+    }
     if (isTreasury && treasuryType === 'selic') {
       return '100% Selic';
     }
     if (isTreasury && treasuryType === 'ipca') {
-      return 'IPCA +';
+      return 'IPCA+';
     }
-    if (effectiveSelectedType && !isSavings && !isTreasury) {
-      return fixedIncomeLabels[effectiveSelectedType];
+    if (effectiveType && !isSavings && !usesRentabilidade && !isTreasury) {
+      return fixedIncomeLabels[effectiveType];
     }
     return null;
   };
@@ -314,7 +547,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" type="button" onClick={handleBackClick}>
+        <Button variant="ghost" size="icon" type="button" onClick={handleBack}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div>
@@ -327,7 +560,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
         </div>
       </div>
 
-      {/* Mostrar taxas atuais para tipos variáveis ou Selic */}
+      {/* Mostrar taxas atuais para tipos variáveis */}
       {(isVariableRate || (isTreasury && treasuryType === 'selic')) && (
         <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -340,7 +573,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
               <span className="text-muted-foreground">Selic/CDI:</span>
               <span className="ml-2 font-semibold text-card-foreground">{rates.cdi}% a.a.</span>
             </div>
-            {(effectiveSelectedType === 'ipca' || treasuryType === 'ipca') && (
+            {(effectiveType === 'ipca' || (usesRentabilidade && rentabilidade === 'ipca') || treasuryType === 'ipca') && (
               <div>
                 <span className="text-muted-foreground">IPCA 12m:</span>
                 <span className="ml-2 font-semibold text-card-foreground">{rates.ipca}% a.a.</span>
@@ -366,7 +599,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
           />
         </div>
 
-        <div className={needsRateInput ? '' : 'col-span-2'}>
+        <div className={needsRateInput() ? '' : 'col-span-2'}>
           <Label htmlFor="investedAmount">Valor Investido (R$) *</Label>
           <Input
             id="investedAmount"
@@ -379,7 +612,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
           />
         </div>
 
-        {needsRateInput && (
+        {needsRateInput() && (
           <div>
             <Label htmlFor="interestRate">{rateConfig.label} *</Label>
             <div className="relative">
@@ -391,13 +624,13 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
                 onChange={(e) => handleInputChange('interestRate', e.target.value)}
                 placeholder={rateConfig.placeholder}
                 required
-                className="pr-16"
+                className="pr-20"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
                 {rateConfig.suffix}
               </span>
             </div>
-            {effectiveSelectedType === 'ipca' && formData.interestRate && (
+            {isVariableRate && formData.interestRate && (
               <p className="text-xs text-muted-foreground mt-1">
                 Taxa efetiva: <span className="font-medium text-primary">{effectiveRate.toFixed(2)}% a.a.</span>
               </p>
