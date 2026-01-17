@@ -52,7 +52,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
       const ticker = inv.ticker?.trim();
       if (!ticker) return;
 
-      if (inv.category === 'stocks') stocksTickers.add(ticker.toUpperCase());
+      if (inv.category === 'stocks' || inv.category === 'bdr') stocksTickers.add(ticker.toUpperCase());
       if (inv.category === 'fii') fiiTickers.add(ticker.toUpperCase());
       if (inv.category === 'crypto') cryptoTickers.add(ticker.toUpperCase());
     });
@@ -84,14 +84,14 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
     const ticker = inv.ticker?.trim();
     if (!ticker) return null;
 
-    if (inv.category === 'stocks') return stock.getPrice(ticker);
+    if (inv.category === 'stocks' || inv.category === 'bdr') return stock.getPrice(ticker);
     if (inv.category === 'fii') return fii.getPrice(ticker);
     if (inv.category === 'crypto') return crypto.getPrice(ticker);
 
     return null;
   };
 
-  const hasLivePriceSupport = (inv: Investment) => ['stocks', 'fii', 'crypto'].includes(inv.category);
+  const hasLivePriceSupport = (inv: Investment) => ['stocks', 'fii', 'crypto', 'bdr'].includes(inv.category);
 
   if (investments.length === 0) {
     return (
