@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Check, ArrowLeft, MapPin, Info } from 'lucide-react';
+import { Check, ArrowLeft, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Investment } from '@/types/investment';
 import { cn } from '@/lib/utils';
-import { Switch } from '@/components/ui/switch';
 
 interface RealEstateFormProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
@@ -16,13 +15,19 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
   const [formData, setFormData] = useState({
     name: '',
     purchasePrice: '',
+    currentValue: '',
     purchaseDate: '',
     annualAppreciation: '7.73',
-    paysRent: false,
+    paysRent: null as boolean | null,
     monthlyRent: '',
   });
 
   const calculateCurrentValue = () => {
+    // If user provided a current value, use it
+    if (formData.currentValue && parseFloat(formData.currentValue) > 0) {
+      return parseFloat(formData.currentValue);
+    }
+
     const purchasePrice = parseFloat(formData.purchasePrice) || 0;
     const annualRate = parseFloat(formData.annualAppreciation) || 7.73;
     const purchaseDate = formData.purchaseDate ? new Date(formData.purchaseDate) : null;
@@ -130,6 +135,22 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
         />
       </div>
 
+      {/* Valor Atual do Imóvel */}
+      <div>
+        <Label htmlFor="currentValue">Valor Atual do Imóvel (R$)</Label>
+        <Input
+          id="currentValue"
+          type="number"
+          step="0.01"
+          value={formData.currentValue}
+          onChange={(e) => setFormData(prev => ({ ...prev, currentValue: e.target.value }))}
+          placeholder="550000.00"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Deixe em branco para calcular automaticamente pela valorização
+        </p>
+      </div>
+
       {/* Data de Compra */}
       <div>
         <Label htmlFor="purchaseDate">Data de Compra</Label>
@@ -160,16 +181,37 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
 
       {/* Paga aluguel? */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="paysRent" className="cursor-pointer">Paga aluguel?</Label>
-          <Switch
-            id="paysRent"
-            checked={formData.paysRent}
-            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, paysRent: checked }))}
-          />
+        <div>
+          <Label>Paga aluguel?</Label>
+          <div className="flex gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, paysRent: true }))}
+              className={cn(
+                "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all border",
+                formData.paysRent === true
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-secondary/30 text-muted-foreground border-border/50 hover:border-primary/50"
+              )}
+            >
+              Sim
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, paysRent: false, monthlyRent: '' }))}
+              className={cn(
+                "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all border",
+                formData.paysRent === false
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-secondary/30 text-muted-foreground border-border/50 hover:border-primary/50"
+              )}
+            >
+              Não
+            </button>
+          </div>
         </div>
         
-        {formData.paysRent && (
+        {formData.paysRent === true && (
           <div>
             <Label htmlFor="monthlyRent">Aluguel Mensal (R$)</Label>
             <Input
