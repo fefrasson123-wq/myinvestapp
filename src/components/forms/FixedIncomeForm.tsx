@@ -341,7 +341,6 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     maturityDate: '',
     notes: '',
     // Campos específicos para Fundos de RF
-    cnpj: '',
     gestora: '',
     taxaAdministracao: '',
   });
@@ -583,7 +582,6 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     let notesWithFundInfo = formData.notes.trim();
     if (isFundoRF) {
       const fundInfo: string[] = [];
-      if (formData.cnpj.trim()) fundInfo.push(`CNPJ: ${formData.cnpj.trim()}`);
       if (formData.gestora.trim()) fundInfo.push(`Gestora: ${formData.gestora.trim()}`);
       if (formData.taxaAdministracao.trim()) fundInfo.push(`Taxa Admin: ${formData.taxaAdministracao.trim()}% a.a.`);
       if (fundoRFType) fundInfo.push(`Tipo: ${fundoRFLabels[fundoRFType]}`);
@@ -908,15 +906,6 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
         {/* Campos específicos para Fundos de RF */}
         {isFundoRF && (
           <>
-            <div>
-              <Label htmlFor="cnpj">CNPJ do Fundo</Label>
-              <Input
-                id="cnpj"
-                value={formData.cnpj}
-                onChange={(e) => handleInputChange('cnpj', e.target.value)}
-                placeholder="Ex: 00.000.000/0001-00"
-              />
-            </div>
             <div>
               <Label htmlFor="gestora">Gestora</Label>
               <Input
