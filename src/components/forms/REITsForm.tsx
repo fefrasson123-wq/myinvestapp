@@ -220,8 +220,12 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
   }
 
   const handleBackFromSelected = () => {
-    // Volta para a lista de REITs (não limpa o ativo)
+    // Limpa a seleção e volta para a lista
     setSelectedREIT(null);
+    setQuantity('');
+    setAveragePrice('');
+    setPurchaseDate('');
+    setNotes('');
   };
 
   return (

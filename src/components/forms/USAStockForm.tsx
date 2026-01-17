@@ -219,8 +219,12 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
   }
 
   const handleBackFromSelected = () => {
-    // Volta para a lista de ações (não limpa o ativo)
+    // Limpa a seleção e volta para a lista
     setSelectedStock(null);
+    setQuantity('');
+    setAveragePrice('');
+    setPurchaseDate('');
+    setNotes('');
   };
 
   return (
