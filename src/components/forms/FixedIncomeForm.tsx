@@ -685,6 +685,25 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
         </div>
       )}
 
+      {/* Aviso sobre CRI/CRA - isentos de IR, sem FGC */}
+      {category === 'cricra' && (
+        <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+          <div className="flex items-start gap-2 text-sm">
+            <Banknote className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-emerald-600 dark:text-emerald-400">Informações: CRI / CRA</p>
+              <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                <li>• <strong>Isenção de IR:</strong> Rendimentos isentos para pessoa física</li>
+                <li>• <strong>Emissor:</strong> Securitizadoras</li>
+                <li>• <strong>Garantia FGC:</strong> Não possui</li>
+                <li>• CRI: lastro em recebíveis imobiliários</li>
+                <li>• CRA: lastro em recebíveis do agronegócio</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <Label htmlFor="name">Nome do Investimento</Label>
