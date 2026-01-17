@@ -916,7 +916,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
               />
             </div>
             <div>
-              <Label htmlFor="taxaAdministracao">Taxa de Administração (% a.a.)</Label>
+              <Label htmlFor="taxaAdministracao">Taxa de Administração</Label>
               <div className="relative">
                 <Input
                   id="taxaAdministracao"
