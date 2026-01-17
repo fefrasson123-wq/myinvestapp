@@ -18,6 +18,8 @@ function formatCurrency(value: number): string {
 export function CategoryChart({ categoryTotals, investments }: CategoryChartProps) {
   const [selectedCategory, setSelectedCategory] = useState<InvestmentCategory | null>(null);
 
+  const totalValue = Object.values(categoryTotals).reduce((sum, val) => sum + val, 0);
+
   const data = Object.entries(categoryTotals)
     .filter(([_, value]) => value > 0)
     .map(([category, value]) => ({
@@ -25,6 +27,7 @@ export function CategoryChart({ categoryTotals, investments }: CategoryChartProp
       value,
       color: categoryColors[category as InvestmentCategory],
       category: category as InvestmentCategory,
+      percent: totalValue > 0 ? (value / totalValue) * 100 : 0,
     }));
 
   if (data.length === 0) {
@@ -85,9 +88,15 @@ export function CategoryChart({ categoryTotals, investments }: CategoryChartProp
               </Pie>
               <Tooltip content={<CustomTooltip />} />
               <Legend 
-                formatter={(value) => (
-                  <span className="text-card-foreground text-sm">{value}</span>
-                )}
+                formatter={(value, entry: any) => {
+                  const item = data.find(d => d.name === value);
+                  const percent = item ? item.percent.toFixed(1) : '0.0';
+                  return (
+                    <span className="text-card-foreground text-sm">
+                      {value} <span className="text-muted-foreground font-mono">({percent}%)</span>
+                    </span>
+                  );
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
