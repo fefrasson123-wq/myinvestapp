@@ -98,7 +98,7 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
           <MapPin className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">
-              📌 Coloque a valorização anual do Imóvel, ou o Valor Atual do Imóvel para calcularmos o seu ganho
+              📌 Informe a valorização anual do imóvel ou o valor atual do imóvel para calcularmos o seu ganho.
             </p>
             <p className="text-sm text-muted-foreground">
               Média Nacional <span className="font-semibold text-primary">7,73% a.a.</span>
