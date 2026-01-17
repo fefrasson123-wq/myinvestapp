@@ -191,7 +191,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onBack}>
+          <Button variant="ghost" size="icon" type="button" onClick={handleBackFromForm}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <h3 className="text-lg font-semibold text-card-foreground">Selecione a Criptomoeda</h3>
