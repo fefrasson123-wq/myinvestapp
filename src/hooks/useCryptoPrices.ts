@@ -79,8 +79,14 @@ export function useCryptoPrices() {
   const lastValidPrices = useRef<Record<string, CryptoPrice>>({});
   const retryCount = useRef(0);
   const maxRetries = 3;
+  const isFetching = useRef(false);
+  const hasFetchedOnce = useRef(false);
 
   const fetchPrices = useCallback(async (symbols?: string[]) => {
+    // Prevent concurrent fetches
+    if (isFetching.current) return;
+    isFetching.current = true;
+    
     setIsLoading(true);
     setError(null);
 
@@ -121,22 +127,26 @@ export function useCryptoPrices() {
         priceMap[symbol.toUpperCase()] = {
           symbol: symbol.toUpperCase(),
           name: q.name,
-          current_price: q.price,
-          price_change_24h: q.change,
-          price_change_percentage_24h: q.changePercent,
-          high_24h: q.high24h,
-          low_24h: q.low24h,
-          last_updated: q.lastUpdated,
+          current_price: q.price ?? 0,
+          price_change_24h: q.change ?? 0,
+          price_change_percentage_24h: q.changePercent ?? 0,
+          high_24h: q.high24h ?? 0,
+          low_24h: q.low24h ?? 0,
+          last_updated: q.lastUpdated ?? new Date().toISOString(),
         };
       }
 
-      const newPrices = { ...prices, ...priceMap };
-      setCachedPrices(newPrices);
-      lastValidPrices.current = newPrices;
-      retryCount.current = 0;
+      // Use functional update to avoid dependency on prices
+      setPrices(prevPrices => {
+        const newPrices = { ...prevPrices, ...priceMap };
+        setCachedPrices(newPrices);
+        lastValidPrices.current = newPrices;
+        return newPrices;
+      });
       
-      setPrices(newPrices);
+      retryCount.current = 0;
       setLastUpdate(new Date());
+      hasFetchedOnce.current = true;
       console.log('Crypto prices updated from Yahoo Finance:', Object.keys(priceMap).length, 'coins');
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -158,15 +168,12 @@ export function useCryptoPrices() {
         console.warn('Using stale cached crypto prices');
         setPrices(cached.prices);
         setLastUpdate(new Date(cached.timestamp));
-        
-        if (retryCount.current < maxRetries) {
-          setTimeout(() => fetchPrices(symbols), 10000);
-        }
       }
     } finally {
       setIsLoading(false);
+      isFetching.current = false;
     }
-  }, [prices]);
+  }, []); // No dependencies - use refs and functional updates
 
   const getPrice = useCallback((symbol: string): number | null => {
     const upperSymbol = symbol.toUpperCase();
@@ -179,8 +186,8 @@ export function useCryptoPrices() {
     const price = prices[upperSymbol];
     if (!price) return null;
     return {
-      change: price.price_change_24h,
-      percent: price.price_change_percentage_24h,
+      change: price.price_change_24h ?? 0,
+      percent: price.price_change_percentage_24h ?? 0,
     };
   }, [prices]);
 
@@ -193,7 +200,8 @@ export function useCryptoPrices() {
       setPrices(cached.prices);
       setLastUpdate(new Date(cached.timestamp));
       lastValidPrices.current = cached.prices;
-    } else {
+      hasFetchedOnce.current = true;
+    } else if (!hasFetchedOnce.current) {
       fetchPrices();
     }
     
@@ -203,7 +211,7 @@ export function useCryptoPrices() {
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [fetchPrices]);
+  }, []); // Run only once on mount
 
   return {
     prices,
@@ -241,7 +249,24 @@ export async function searchCryptoOnYahoo(query: string): Promise<Array<{
       return [];
     }
 
-    return data?.results || [];
+    // Ensure all values have defaults to prevent null errors
+    return (data?.results || []).map((r: {
+      symbol?: string;
+      name?: string;
+      price?: number;
+      change?: number;
+      changePercent?: number;
+      high24h?: number;
+      low24h?: number;
+    }) => ({
+      symbol: r.symbol || 'UNKNOWN',
+      name: r.name || r.symbol || 'Unknown',
+      price: r.price ?? 0,
+      change: r.change ?? 0,
+      changePercent: r.changePercent ?? 0,
+      high24h: r.high24h ?? 0,
+      low24h: r.low24h ?? 0,
+    }));
   } catch (err) {
     console.error('Error searching crypto:', err);
     return [];
