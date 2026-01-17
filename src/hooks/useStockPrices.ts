@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { stocksList, fiiList, StockAsset } from '@/data/stocksList';
+import { bdrList, BDRAsset } from '@/data/bdrList';
 
 interface StockPrice {
   symbol: string;
@@ -55,10 +56,10 @@ function isCacheStale(timestamp: number): boolean {
   return Date.now() - timestamp > STALE_THRESHOLD_MS;
 }
 
-// Fallback prices from local data
-function getLocalPrices(): Record<string, StockAsset> {
-  const allAssets = [...stocksList, ...fiiList];
-  const priceMap: Record<string, StockAsset> = {};
+// Fallback prices from local data (stocks, FIIs, and BDRs)
+function getLocalPrices(): Record<string, StockAsset | BDRAsset> {
+  const allAssets = [...stocksList, ...fiiList, ...bdrList];
+  const priceMap: Record<string, StockAsset | BDRAsset> = {};
   allAssets.forEach(asset => {
     priceMap[asset.ticker] = asset;
   });
