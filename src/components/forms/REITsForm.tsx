@@ -219,13 +219,19 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
     );
   }
 
+  const handleBackFromSelected = () => {
+    // Quando um ativo está aberto, o usuário espera voltar para a categoria anterior (Bolsa Americana)
+    setSelectedREIT(null);
+    onBack();
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Button
         type="button"
         variant="ghost"
         size="sm"
-        onClick={() => setSelectedREIT(null)}
+        onClick={handleBackFromSelected}
         className="gap-2 text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="w-4 h-4" />
