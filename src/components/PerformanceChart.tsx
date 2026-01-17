@@ -479,6 +479,15 @@ function useHistoricalData(investments: Investment[], period: string) {
 
 export function PerformanceChart({ investments, period }: PerformanceChartProps) {
   const { data, isLoading } = useHistoricalData(investments, period);
+  const { rate: usdToBrl } = useUsdBrlRate();
+  
+  // Calcula o total investido (para comparar lucro/prejuízo real)
+  const totalInvested = investments.reduce((sum, inv) => {
+    const isCrypto = inv.category === 'crypto';
+    const isUSA = inv.category === 'usastocks' || inv.category === 'reits';
+    const value = (isCrypto || isUSA) ? inv.investedAmount * usdToBrl : inv.investedAmount;
+    return sum + value;
+  }, 0);
   
   if (isLoading) {
     return (
@@ -499,16 +508,17 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
     );
   }
 
-  const firstValue = data[0]?.value || 0;
   const lastValue = data[data.length - 1]?.value || 0;
-  const isPositive = lastValue >= firstValue;
+  // Cor baseada em lucro/prejuízo REAL (valor atual vs valor investido)
+  const isPositive = lastValue >= totalInvested;
   const lineColor = isPositive ? '#22c55e' : '#ef4444';
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const value = payload[0].value;
-      const change = value - firstValue;
-      const changePercent = firstValue > 0 ? ((change / firstValue) * 100) : 0;
+      // Mostra variação em relação ao valor INVESTIDO, não ao primeiro ponto
+      const change = value - totalInvested;
+      const changePercent = totalInvested > 0 ? ((change / totalInvested) * 100) : 0;
       const changeIsPositive = change >= 0;
       
       return (
