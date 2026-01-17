@@ -906,7 +906,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
         {/* Campos específicos para Fundos de RF */}
         {isFundoRF && (
           <>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="gestora">Gestora</Label>
               <Input
                 id="gestora"
@@ -915,7 +915,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
                 placeholder="Ex: XP Asset Management"
               />
             </div>
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="taxaAdministracao">Taxa de Administração (% a.a.)</Label>
               <div className="relative">
                 <Input
