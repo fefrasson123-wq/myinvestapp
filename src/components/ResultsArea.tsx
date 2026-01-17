@@ -4,6 +4,7 @@ import { Investment, categoryLabels, categoryColors } from '@/types/investment';
 import { PerformanceChart } from './PerformanceChart';
 import { CategoryProfitLoss } from './CategoryProfitLoss';
 import { cn } from '@/lib/utils';
+import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 
 interface ResultsAreaProps {
   investments: Investment[];
@@ -20,29 +21,9 @@ const periods: { id: Period; label: string }[] = [
   { id: 'total', label: 'Total' },
 ];
 
-function formatCurrency(value: number, currency: 'BRL' | 'USD' = 'BRL'): string {
-  if (currency === 'USD') {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value);
-  }
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
-}
-
-function formatPercent(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'percent',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value / 100);
-}
-
 export function ResultsArea({ investments }: ResultsAreaProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('1m');
+  const { formatCurrencyValue, formatPercent } = useValuesVisibility();
 
   // Calcula o valor total da carteira para percentuais
   const totalPortfolioValue = investments.reduce((sum, inv) => sum + inv.currentValue, 0);
@@ -139,14 +120,14 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
                         "font-mono font-medium transition-colors duration-300",
                         invIsPositive ? "text-success" : "text-destructive"
                       )}>
-                        {invIsPositive ? '+' : ''}{formatCurrency(displayProfitLoss, isCrypto ? 'USD' : 'BRL')}
+                        {invIsPositive ? '+' : ''}{formatCurrencyValue(displayProfitLoss)}
                       </p>
                     </div>
                     <p className={cn(
                       "text-sm font-mono transition-colors duration-300",
                       invIsPositive ? "text-success/70" : "text-destructive/70"
                     )}>
-                      {invIsPositive ? '+' : ''}{formatPercent(inv.profitLossPercent)}
+                      {formatPercent(inv.profitLossPercent)}
                     </p>
                   </div>
                 </div>
