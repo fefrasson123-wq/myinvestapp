@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   XAxis,
   YAxis,
@@ -289,7 +289,8 @@ function useHistoricalData(investments: Investment[], period: string) {
   const { rate: usdToBrl } = useUsdBrlRate();
   const [data, setData] = useState<PriceHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const hasLoadedOnceRef = useRef(false);
+  const lastPeriodRef = useRef(period);
   
   // Create stable keys to compare investments without reference changes
   const investmentsKey = investments
@@ -300,6 +301,12 @@ function useHistoricalData(investments: Investment[], period: string) {
   useEffect(() => {
     let cancelled = false;
     
+    // Reset loading state when period changes
+    const periodChanged = lastPeriodRef.current !== period;
+    if (periodChanged) {
+      lastPeriodRef.current = period;
+    }
+    
     const loadData = async () => {
       if (investments.length === 0) {
         setData([]);
@@ -307,8 +314,8 @@ function useHistoricalData(investments: Investment[], period: string) {
         return;
       }
       
-      // Only show loading on first load, not on updates
-      if (!hasLoadedOnce) {
+      // Show loading on first load OR when period changes
+      if (!hasLoadedOnceRef.current || periodChanged) {
         setIsLoading(true);
       }
       
@@ -451,7 +458,7 @@ function useHistoricalData(investments: Investment[], period: string) {
       if (!cancelled) {
         setData(chartData);
         setIsLoading(false);
-        setHasLoadedOnce(true);
+        hasLoadedOnceRef.current = true;
       }
     };
     
@@ -460,7 +467,7 @@ function useHistoricalData(investments: Investment[], period: string) {
     return () => {
       cancelled = true;
     };
-  }, [investmentsKey, period, usdToBrl, hasLoadedOnce]);
+  }, [investmentsKey, period, usdToBrl, investments]);
   
   return { data, isLoading };
 }
