@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Investment } from '@/types/investment';
 import { Card, CardContent } from '@/components/ui/card';
 import { useUSAStockPrices } from '@/hooks/useUSAStockPrices';
+import { AssetPriceChart } from '@/components/AssetPriceChart';
 
 interface REITsFormProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
@@ -231,25 +232,40 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
         Voltar
       </Button>
 
-      <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10 border border-purple-500/30">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
-            <Building2 className="w-6 h-6 text-purple-400" />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10 border border-purple-500/30">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <Building2 className="w-6 h-6 text-purple-400" />
+            </div>
+            <div>
+              <p className="font-bold text-card-foreground">{selectedREIT.ticker}</p>
+              <p className="text-sm text-muted-foreground">{selectedREIT.name}</p>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-card-foreground">{selectedREIT.ticker}</p>
-            <p className="text-sm text-muted-foreground">{selectedREIT.name}</p>
+          <div className="text-right">
+            <p className="text-lg font-bold text-primary">
+              {formatPrice(getPrice(selectedREIT.ticker))}
+            </p>
+            {renderPriceChange(selectedREIT.ticker)}
+            {isLoading && (
+              <RefreshCw className="w-3 h-3 animate-spin text-muted-foreground inline ml-1" />
+            )}
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-lg font-bold text-primary">
-            {formatPrice(getPrice(selectedREIT.ticker))}
-          </p>
-          {renderPriceChange(selectedREIT.ticker)}
-          {isLoading && (
-            <RefreshCw className="w-3 h-3 animate-spin text-muted-foreground inline ml-1" />
-          )}
-        </div>
+
+        {/* Gráfico de variação 24h com máxima, mínima e atual */}
+        {prices[selectedREIT.ticker] && (
+          <AssetPriceChart
+            symbol={selectedREIT.ticker}
+            currentPrice={prices[selectedREIT.ticker].price}
+            change24h={prices[selectedREIT.ticker].change}
+            changePercent24h={prices[selectedREIT.ticker].changePercent}
+            high24h={prices[selectedREIT.ticker].high24h}
+            low24h={prices[selectedREIT.ticker].low24h}
+            currency="USD"
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
