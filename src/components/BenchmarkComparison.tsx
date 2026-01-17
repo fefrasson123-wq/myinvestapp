@@ -79,13 +79,13 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
   const { rates, isLoading: ratesLoading } = useEconomicRates();
   const { return12m: btcReturn, isLoading: btcLoading } = useBitcoin12MonthReturn();
   
-  // Usar taxas em tempo real do Banco Central + S&P 500 média histórica + Bitcoin 12 meses
+  // Usar taxas em tempo real - todas são retornos dos últimos 12 meses
   const benchmarks = [
-    { name: 'CDI', rate: rates.cdi, color: 'hsl(140, 100%, 50%)' },
-    { name: 'IBOVESPA', rate: 15.0, color: 'hsl(200, 100%, 50%)' },
-    { name: 'IPCA', rate: rates.ipca, color: 'hsl(30, 100%, 50%)' },
-    { name: 'S&P 500', rate: 12.0, color: 'hsl(280, 100%, 50%)' }, // Média histórica ~10-12% a.a.
-    { name: 'Bitcoin (12m)', rate: btcReturn ?? 50, color: 'hsl(45, 100%, 50%)' }, // Retorno real dos últimos 12 meses
+    { name: 'CDI', rate: rates.cdi, color: 'hsl(140, 100%, 50%)', label: 'a.a.' },
+    { name: 'IBOVESPA', rate: rates.ibovespa, color: 'hsl(200, 100%, 50%)', label: '12m' },
+    { name: 'IPCA', rate: rates.ipca, color: 'hsl(30, 100%, 50%)', label: '12m' },
+    { name: 'S&P 500', rate: rates.sp500, color: 'hsl(280, 100%, 50%)', label: '12m' },
+    { name: 'Bitcoin', rate: btcReturn ?? 50, color: 'hsl(45, 100%, 50%)', label: '12m' },
   ];
   
   const benchmarkReturns = benchmarks.map(benchmark => {
@@ -186,7 +186,7 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
                   <div>
                     <p className="font-medium text-card-foreground">{benchmark.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {typeof benchmark.rate === 'number' ? benchmark.rate.toFixed(1) : benchmark.rate}% a.a.
+                      {typeof benchmark.rate === 'number' ? benchmark.rate.toFixed(1) : benchmark.rate}% {benchmark.label}
                     </p>
                   </div>
                 </div>
