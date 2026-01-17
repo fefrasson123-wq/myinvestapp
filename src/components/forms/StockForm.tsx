@@ -214,23 +214,28 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
                 <span className="ml-1 text-card-foreground text-xs">{selectedStock.name}</span>
               </div>
               <div className="flex items-center gap-1">
-                {isPriceLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
-                <span className="font-mono text-foreground text-xs">
-                  R$ {(currentLivePrice?.price ?? selectedStock.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-                {currentLivePrice && (
-                  <span className={cn(
-                    "text-[10px] font-mono",
-                    currentLivePrice.changePercent >= 0 ? "text-success" : "text-destructive"
-                  )}>
-                    {currentLivePrice.changePercent >= 0 ? '+' : ''}{currentLivePrice.changePercent.toFixed(2)}%
-                  </span>
+                {isPriceLoading && !currentLivePrice ? (
+                  <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+                ) : currentLivePrice ? (
+                  <>
+                    <span className="font-mono text-foreground text-xs">
+                      R$ {currentLivePrice.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className={cn(
+                      "text-[10px] font-mono",
+                      currentLivePrice.changePercent >= 0 ? "text-success" : "text-destructive"
+                    )}>
+                      {currentLivePrice.changePercent >= 0 ? '+' : ''}{currentLivePrice.changePercent.toFixed(2)}%
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Carregando...</span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Gráfico de variação 24h - sempre mostra, usando dados disponíveis */}
+          {/* Gráfico de variação 24h - mostra loading até ter o preço real */}
           <AssetPriceChart
             symbol={selectedStock.ticker}
             currentPrice={currentLivePrice?.price ?? selectedStock.price}
@@ -239,6 +244,7 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
             high24h={currentLivePrice?.high24h}
             low24h={currentLivePrice?.low24h}
             currency="BRL"
+            isLoading={isPriceLoading && !currentLivePrice}
           />
         </div>
       )}

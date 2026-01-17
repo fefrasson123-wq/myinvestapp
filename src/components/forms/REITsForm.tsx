@@ -264,17 +264,16 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
         </div>
 
         {/* Gráfico de variação 24h com máxima, mínima e atual */}
-        {prices[selectedREIT.ticker] && (
-          <AssetPriceChart
-            symbol={selectedREIT.ticker}
-            currentPrice={prices[selectedREIT.ticker].price}
-            change24h={prices[selectedREIT.ticker].change}
-            changePercent24h={prices[selectedREIT.ticker].changePercent}
-            high24h={prices[selectedREIT.ticker].high24h}
-            low24h={prices[selectedREIT.ticker].low24h}
-            currency="USD"
-          />
-        )}
+        <AssetPriceChart
+          symbol={selectedREIT.ticker}
+          currentPrice={prices[selectedREIT.ticker]?.price ?? 0}
+          change24h={prices[selectedREIT.ticker]?.change}
+          changePercent24h={prices[selectedREIT.ticker]?.changePercent}
+          high24h={prices[selectedREIT.ticker]?.high24h}
+          low24h={prices[selectedREIT.ticker]?.low24h}
+          currency="USD"
+          isLoading={isLoading || !prices[selectedREIT.ticker]}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">

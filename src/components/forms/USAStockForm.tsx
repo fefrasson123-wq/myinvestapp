@@ -263,17 +263,16 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
         </div>
 
         {/* Gráfico de variação 24h com máxima, mínima e atual */}
-        {prices[selectedStock.ticker] && (
-          <AssetPriceChart
-            symbol={selectedStock.ticker}
-            currentPrice={prices[selectedStock.ticker].price}
-            change24h={prices[selectedStock.ticker].change}
-            changePercent24h={prices[selectedStock.ticker].changePercent}
-            high24h={prices[selectedStock.ticker].high24h}
-            low24h={prices[selectedStock.ticker].low24h}
-            currency="USD"
-          />
-        )}
+        <AssetPriceChart
+          symbol={selectedStock.ticker}
+          currentPrice={prices[selectedStock.ticker]?.price ?? 0}
+          change24h={prices[selectedStock.ticker]?.change}
+          changePercent24h={prices[selectedStock.ticker]?.changePercent}
+          high24h={prices[selectedStock.ticker]?.high24h}
+          low24h={prices[selectedStock.ticker]?.low24h}
+          currency="USD"
+          isLoading={isLoading || !prices[selectedStock.ticker]}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
