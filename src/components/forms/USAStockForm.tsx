@@ -101,7 +101,6 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
               <div className="text-sm text-blue-200">
                 <p>• Cotações em dólares (USD)</p>
                 <p>• Bolsas: NYSE e NASDAQ</p>
-                <p>• Tributação: 15% sobre ganho de capital</p>
               </div>
             </CardContent>
           </Card>

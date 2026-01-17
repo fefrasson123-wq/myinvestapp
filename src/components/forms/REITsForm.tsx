@@ -102,7 +102,6 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
                 <p>• Fundos imobiliários americanos</p>
                 <p>• Cotações em dólares (USD)</p>
                 <p>• Dividendos mensais ou trimestrais</p>
-                <p>• Tributação: 30% sobre dividendos (retido na fonte)</p>
               </div>
             </CardContent>
           </Card>
