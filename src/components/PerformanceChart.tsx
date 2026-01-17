@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   XAxis,
   YAxis,
@@ -25,95 +25,6 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-const COINGECKO_API = 'https://api.coingecko.com/api/v3';
-
-// Mapeamento de símbolos para IDs do CoinGecko
-const symbolToId: Record<string, string> = {
-  'BTC': 'bitcoin',
-  'ETH': 'ethereum',
-  'USDT': 'tether',
-  'BNB': 'binancecoin',
-  'SOL': 'solana',
-  'USDC': 'usd-coin',
-  'XRP': 'ripple',
-  'DOGE': 'dogecoin',
-  'ADA': 'cardano',
-  'TRX': 'tron',
-  'AVAX': 'avalanche-2',
-  'LINK': 'chainlink',
-  'DOT': 'polkadot',
-  'MATIC': 'matic-network',
-  'LTC': 'litecoin',
-  'SHIB': 'shiba-inu',
-  'TON': 'the-open-network',
-};
-
-interface HistoricalPrice {
-  timestamp: number;
-  price: number;
-}
-
-// Cache para dados históricos
-const historicalCache: Record<string, { data: HistoricalPrice[], expiry: number }> = {};
-
-// Cache para resolução de ticker -> coinId (evita bater no /search toda hora)
-const coinIdCache: Record<string, { id: string | null; expiry: number }> = {};
-
-function normalizeTicker(raw: string): string {
-  // Ex: "BTC/USDT" -> "BTC", " btc " -> "BTC"
-  const trimmed = raw.trim().toUpperCase();
-  const first = trimmed.split(/[^A-Z0-9]/).filter(Boolean)[0] || trimmed;
-  return first;
-}
-
-async function resolveCoinId(ticker: string): Promise<string | null> {
-  const t = normalizeTicker(ticker);
-  const now = Date.now();
-
-  const cached = coinIdCache[t];
-  if (cached && cached.expiry > now) return cached.id;
-
-  // 1) Mapeamento fixo (mais rápido)
-  if (symbolToId[t]) {
-    coinIdCache[t] = { id: symbolToId[t], expiry: now + 24 * 60 * 60 * 1000 };
-    return symbolToId[t];
-  }
-
-  // 2) Tenta usar o próprio ticker como id (algumas moedas funcionam assim)
-  // (não cacheia ainda; só se der certo via fetch)
-
-  // 3) Fallback: pesquisa no CoinGecko (best-effort)
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-    const resp = await fetch(`${COINGECKO_API}/search?query=${encodeURIComponent(t)}`, {
-      headers: { 'Accept': 'application/json' },
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!resp.ok) {
-      coinIdCache[t] = { id: null, expiry: now + 10 * 60 * 1000 };
-      return null;
-    }
-
-    const json = await resp.json();
-    const coins: Array<{ id: string; symbol: string; name: string }> = json?.coins || [];
-
-    const exactSymbol = coins.find((c) => (c.symbol || '').toUpperCase() === t);
-    const candidate = exactSymbol || coins[0];
-
-    const resolved = candidate?.id ?? null;
-    coinIdCache[t] = { id: resolved, expiry: now + 24 * 60 * 60 * 1000 };
-    return resolved;
-  } catch {
-    coinIdCache[t] = { id: null, expiry: now + 10 * 60 * 1000 };
-    return null;
-  }
-}
-
 function getPeriodDays(period: string): number {
   switch (period) {
     case '24h':
@@ -138,147 +49,6 @@ function getDailyRate(investment: Investment): number {
   return Math.pow(1 + annualRate, 1/365) - 1;
 }
 
-// Função para buscar histórico com retry e timeout
-// Obs: CoinGecko costuma bloquear/limitar chamadas no navegador. Se detectar falha,
-// fazemos um backoff global e deixamos o gráfico usar fallback (valor atual).
-let coingeckoBackoffUntil = 0;
-
-async function fetchHistoricalPricesWithRetry(
-  coinId: string,
-  days: number,
-  vsCurrency: string = 'usd',
-  retries: number = 1
-): Promise<HistoricalPrice[]> {
-  const cacheKey = `${coinId}-${days}-${vsCurrency}`;
-  const now = Date.now();
-
-  // Verifica cache (válido por 5 minutos)
-  if (historicalCache[cacheKey] && historicalCache[cacheKey].expiry > now) {
-    return historicalCache[cacheKey].data;
-  }
-
-  // Backoff global para evitar spam quando a API estiver indisponível
-  if (coingeckoBackoffUntil > now) {
-    return [];
-  }
-
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-      const url = new URL(`${COINGECKO_API}/coins/${coinId}/market_chart`);
-      url.searchParams.set('vs_currency', vsCurrency);
-      url.searchParams.set('days', String(days));
-      if (days <= 1) url.searchParams.set('interval', 'hourly');
-
-      const response = await fetch(url.toString(), {
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        if (attempt === retries) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
-        continue;
-      }
-
-      const data = await response.json();
-      const prices: HistoricalPrice[] = (data?.prices || []).map(([timestamp, price]: [number, number]) => ({
-        timestamp,
-        price,
-      }));
-
-      historicalCache[cacheKey] = { data: prices, expiry: now + 5 * 60 * 1000 };
-      return prices;
-    } catch (err) {
-      if (attempt === retries) {
-        // Ativa backoff por 10 min para não travar o app com dezenas de requests falhando
-        coingeckoBackoffUntil = Date.now() + 10 * 60 * 1000;
-        console.warn(`CoinGecko indisponível (backoff 10min). Ticker=${coinId}`, err);
-        return [];
-      }
-      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
-    }
-  }
-
-  return [];
-}
-
-// Gera dados de variação realista baseado no lucro/prejuízo do investimento
-function generateRealisticVariation(
-  investment: Investment,
-  numPoints: number,
-  days: number,
-  isInBRL: boolean = true
-): number[] {
-  const currentValue = investment.currentValue;
-  const investedAmount = investment.investedAmount;
-  
-  // Calcula variação total desde a compra
-  const totalVariation = currentValue - investedAmount;
-  const variationPercent = investedAmount > 0 ? (totalVariation / investedAmount) : 0;
-  
-  // Data de compra
-  const purchaseDate = investment.purchaseDate 
-    ? new Date(investment.purchaseDate).getTime() 
-    : investment.createdAt.getTime();
-  const now = Date.now();
-  const startTime = now - days * 24 * 60 * 60 * 1000;
-  
-  const values: number[] = [];
-  const interval = (now - startTime) / (numPoints - 1);
-  
-  for (let i = 0; i < numPoints; i++) {
-    const timestamp = startTime + i * interval;
-    
-    // Se ainda não tinha comprado, valor é 0
-    if (timestamp < purchaseDate) {
-      values.push(0);
-      continue;
-    }
-    
-    // Calcula progresso desde a compra até agora
-    const totalTimeFromPurchase = now - purchaseDate;
-    const elapsedFromPurchase = timestamp - purchaseDate;
-    
-    if (totalTimeFromPurchase <= 0) {
-      values.push(investedAmount);
-      continue;
-    }
-    
-    const progress = Math.min(1, elapsedFromPurchase / totalTimeFromPurchase);
-    
-    // Adiciona variação realista com ruído
-    const noise = Math.sin(i * 0.5) * 0.02 + Math.cos(i * 0.3) * 0.015;
-    const adjustedProgress = progress + noise * (1 - progress);
-    
-    // Valor interpolado com variação
-    const baseValue = investedAmount + totalVariation * adjustedProgress;
-    
-    // Adiciona volatilidade baseada no tipo de ativo
-    let volatility = 0.02; // 2% padrão
-    if (investment.category === 'crypto') volatility = 0.05;
-    else if (['stocks', 'fii'].includes(investment.category)) volatility = 0.03;
-    else if (['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(investment.category)) volatility = 0.001;
-    
-    const randomVariation = (Math.random() - 0.5) * volatility * baseValue * (1 - progress);
-    
-    values.push(Math.max(0, baseValue + randomVariation));
-  }
-  
-  // Garante que o último ponto seja o valor atual
-  if (values.length > 0) {
-    values[values.length - 1] = currentValue;
-  }
-  
-  return values;
-}
-
 // Calcula valor da renda fixa em um momento específico
 function calculateFixedIncomeAtTime(investment: Investment, timestamp: number): number {
   const purchaseDate = investment.purchaseDate 
@@ -291,6 +61,47 @@ function calculateFixedIncomeAtTime(investment: Investment, timestamp: number): 
   const daysElapsed = (timestamp - purchaseDate) / (1000 * 60 * 60 * 24);
   
   return investment.investedAmount * Math.pow(1 + dailyRate, daysElapsed);
+}
+
+// Calcula valor interpolado de um investimento genérico (ações, crypto, etc)
+// Usa interpolação linear entre valor investido e valor atual
+function calculateInvestmentValueAtTime(
+  investment: Investment, 
+  timestamp: number, 
+  usdToBrl: number = 1
+): number {
+  const purchaseDate = investment.purchaseDate 
+    ? new Date(investment.purchaseDate).getTime() 
+    : investment.createdAt.getTime();
+  
+  if (timestamp < purchaseDate) return 0;
+  
+  const now = Date.now();
+  const totalTime = now - purchaseDate;
+  
+  if (totalTime <= 0) return investment.investedAmount;
+  
+  const elapsed = timestamp - purchaseDate;
+  const progress = Math.min(1, elapsed / totalTime);
+  
+  // Valor atual ajustado para moeda
+  const isCrypto = investment.category === 'crypto';
+  const isUSA = investment.category === 'usastocks' || investment.category === 'reits';
+  const currentValue = (isCrypto || isUSA) 
+    ? investment.currentValue * usdToBrl 
+    : investment.currentValue;
+  
+  const investedAmount = (isCrypto || isUSA)
+    ? investment.investedAmount * usdToBrl
+    : investment.investedAmount;
+  
+  // Interpolação com leve variação para parecer mais natural
+  const totalChange = currentValue - investedAmount;
+  
+  // Adiciona uma curva suave em vez de linear pura
+  const easedProgress = progress * progress * (3 - 2 * progress); // smoothstep
+  
+  return investedAmount + totalChange * easedProgress;
 }
 
 function useHistoricalData(investments: Investment[], period: string) {
@@ -307,174 +118,95 @@ function useHistoricalData(investments: Investment[], period: string) {
     .join('|');
   
   useEffect(() => {
-    let cancelled = false;
-    
     // Reset loading state when period changes
     const periodChanged = lastPeriodRef.current !== period;
     if (periodChanged) {
       lastPeriodRef.current = period;
     }
     
-    const loadData = async () => {
-      if (investments.length === 0) {
-        setData([]);
-        setIsLoading(false);
-        return;
+    if (investments.length === 0) {
+      setData([]);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Show loading on first load OR when period changes
+    if (!hasLoadedOnceRef.current || periodChanged) {
+      setIsLoading(true);
+    }
+    
+    const days = getPeriodDays(period);
+    const numPoints = days <= 1 ? 24 : days <= 7 ? 14 : days <= 30 ? 30 : 24;
+    const now = Date.now();
+    const startTime = now - days * 24 * 60 * 60 * 1000;
+    const interval = (now - startTime) / (numPoints - 1);
+    
+    // Gera timestamps
+    const timestamps: number[] = [];
+    for (let i = 0; i < numPoints; i++) {
+      timestamps.push(startTime + i * interval);
+    }
+    
+    // Separa investimentos por categoria
+    const fixedIncomeCategories = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'];
+    const fixedIncomeInvestments = investments.filter(inv => 
+      fixedIncomeCategories.includes(inv.category)
+    );
+    const otherInvestments = investments.filter(inv => 
+      !fixedIncomeCategories.includes(inv.category)
+    );
+    
+    // Constrói dados do gráfico
+    const chartData: PriceHistory[] = [];
+
+    for (let i = 0; i < timestamps.length; i++) {
+      const timestamp = timestamps[i];
+      let portfolioValue = 0;
+
+      // 1. Renda fixa - calcula rendimento real baseado na taxa
+      for (const inv of fixedIncomeInvestments) {
+        portfolioValue += calculateFixedIncomeAtTime(inv, timestamp);
       }
-      
-      // Show loading on first load OR when period changes
-      if (!hasLoadedOnceRef.current || periodChanged) {
-        setIsLoading(true);
+
+      // 2. Outros investimentos (crypto, stocks, fii, reits, etc) - interpolação
+      for (const inv of otherInvestments) {
+        portfolioValue += calculateInvestmentValueAtTime(inv, timestamp, usdToBrl);
       }
-      
-      const days = getPeriodDays(period);
-      const numPoints = days <= 1 ? 24 : days <= 7 ? 14 : days <= 30 ? 30 : 24;
-      const now = Date.now();
-      const startTime = now - days * 24 * 60 * 60 * 1000;
-      const interval = (now - startTime) / (numPoints - 1);
-      
-      // Gera timestamps
-      const timestamps: number[] = [];
-      for (let i = 0; i < numPoints; i++) {
-        timestamps.push(startTime + i * interval);
+
+      // Formata data
+      const date = new Date(timestamp);
+      let dateStr: string;
+      if (days <= 1) {
+        dateStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      } else if (days <= 7) {
+        dateStr = date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' });
+      } else if (days <= 30) {
+        dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      } else {
+        dateStr = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
       }
-      
-      // Separa investimentos por categoria
-      const cryptoInvestments = investments.filter(inv => inv.category === 'crypto' && inv.ticker);
-      const fixedIncomeInvestments = investments.filter(inv => 
-        ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(inv.category)
-      );
-      const otherInvestments = investments.filter(inv => 
-        !['crypto', 'cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(inv.category)
-      );
-      
-      // Busca histórico das cryptos em paralelo
-      const cryptoHistoryPromises = cryptoInvestments.map(async (inv) => {
-        if (!inv.ticker) return { inv, history: [] as HistoricalPrice[] };
 
-        const resolvedId = await resolveCoinId(inv.ticker);
-        // Tentativa extra: usar ticker como id diretamente
-        const coinId = resolvedId || normalizeTicker(inv.ticker).toLowerCase();
-
-        const history = await fetchHistoricalPricesWithRetry(coinId, days, 'usd');
-        return { inv, history };
-      });
-
-      const cryptoResults = await Promise.all(cryptoHistoryPromises);
-      
-      if (cancelled) return;
-
-      // Constrói dados do gráfico
-      const chartData: PriceHistory[] = [];
-
-      // Helper: interpola preço no timestamp (evita "linha reta" por aproximação ruim)
-      const interpolatePriceAt = (history: HistoricalPrice[], t: number): number | null => {
-        if (history.length === 0) return null;
-
-        // CoinGecko vem ordenado por tempo; garantimos por segurança
-        const sorted = history[0].timestamp <= history[history.length - 1].timestamp
-          ? history
-          : [...history].sort((a, b) => a.timestamp - b.timestamp);
-
-        if (t <= sorted[0].timestamp) return sorted[0].price;
-        if (t >= sorted[sorted.length - 1].timestamp) return sorted[sorted.length - 1].price;
-
-        // Busca binária do ponto à direita
-        let lo = 0;
-        let hi = sorted.length - 1;
-        while (lo < hi) {
-          const mid = Math.floor((lo + hi) / 2);
-          if (sorted[mid].timestamp < t) lo = mid + 1;
-          else hi = mid;
-        }
-
-        const right = sorted[lo];
-        const left = sorted[Math.max(0, lo - 1)];
-
-        const dt = right.timestamp - left.timestamp;
-        if (dt <= 0) return right.price;
-
-        const alpha = (t - left.timestamp) / dt;
-        return left.price + (right.price - left.price) * alpha;
+      chartData.push({ date: dateStr, value: portfolioValue });
+    }
+    
+    // Garante que o último ponto tenha o valor atual correto
+    const totalCurrentValue = investments.reduce((sum, inv) => {
+      const isCrypto = inv.category === 'crypto';
+      const isUSA = inv.category === 'usastocks' || inv.category === 'reits';
+      const value = (isCrypto || isUSA) ? inv.currentValue * usdToBrl : inv.currentValue;
+      return sum + value;
+    }, 0);
+    
+    if (chartData.length > 0) {
+      chartData[chartData.length - 1] = { 
+        date: 'Agora', 
+        value: totalCurrentValue 
       };
-
-        for (let i = 0; i < timestamps.length; i++) {
-          const timestamp = timestamps[i];
-          let portfolioValue = 0;
-
-          // 1. Cryptos - usa histórico real; se não houver, mantém valor atual (sem "inventar" variação)
-          for (const { inv, history } of cryptoResults) {
-            const purchaseDate = inv.purchaseDate
-              ? new Date(inv.purchaseDate).getTime()
-              : inv.createdAt.getTime();
-
-            if (timestamp < purchaseDate) continue;
-
-            const priceAt = interpolatePriceAt(history, timestamp);
-            if (priceAt != null) {
-              portfolioValue += inv.quantity * priceAt * usdToBrl;
-            } else {
-              // Sem histórico real disponível para esse ticker → não simulamos
-              portfolioValue += (inv.currentValue || 0) * usdToBrl;
-            }
-          }
-
-        // 2. Renda fixa - calcula rendimento real
-        for (const inv of fixedIncomeInvestments) {
-          portfolioValue += calculateFixedIncomeAtTime(inv, timestamp);
-        }
-
-        // 3. Outros investimentos - (ainda sem fonte pública de histórico) mantém valor atual
-        for (const inv of otherInvestments) {
-          const purchaseDate = inv.purchaseDate
-            ? new Date(inv.purchaseDate).getTime()
-            : inv.createdAt.getTime();
-
-          if (timestamp < purchaseDate) continue;
-          portfolioValue += inv.currentValue;
-        }
-
-        // Formata data
-        const date = new Date(timestamp);
-        let dateStr: string;
-        if (days <= 1) {
-          dateStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        } else if (days <= 7) {
-          dateStr = date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' });
-        } else if (days <= 30) {
-          dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-        } else {
-          dateStr = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
-        }
-
-        chartData.push({ date: dateStr, value: portfolioValue });
-      }
-      
-      // Garante que o último ponto tenha o valor atual correto
-      const totalCurrentValue = investments.reduce((sum, inv) => {
-        const value = inv.category === 'crypto' ? inv.currentValue * usdToBrl : inv.currentValue;
-        return sum + value;
-      }, 0);
-      
-      if (chartData.length > 0) {
-        chartData[chartData.length - 1] = { 
-          date: 'Agora', 
-          value: totalCurrentValue 
-        };
-      }
-      
-      if (!cancelled) {
-        setData(chartData);
-        setIsLoading(false);
-        hasLoadedOnceRef.current = true;
-      }
-    };
+    }
     
-    loadData();
-    
-    return () => {
-      cancelled = true;
-    };
+    setData(chartData);
+    setIsLoading(false);
+    hasLoadedOnceRef.current = true;
   }, [investmentsKey, period, usdToBrl]);
   
   return { data, isLoading };
@@ -534,41 +266,42 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
   const padding = (maxValue - minValue) * 0.1 || maxValue * 0.05;
+  const yDomain = [Math.max(0, minValue - padding), maxValue + padding];
 
   return (
-    <div className="h-[300px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id="colorPortfolio" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={lineColor} stopOpacity={0.3} />
-              <stop offset="95%" stopColor={lineColor} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 15%, 15%)" />
-          <XAxis 
-            dataKey="date" 
-            stroke="hsl(220, 10%, 55%)"
-            fontSize={12}
-            tickLine={false}
-          />
-          <YAxis 
-            stroke="hsl(220, 10%, 55%)"
-            fontSize={12}
-            tickLine={false}
-            tickFormatter={(value) => formatCurrency(value)}
-            domain={[Math.max(0, minValue - padding), maxValue + padding]}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Area 
-            type="monotone" 
-            dataKey="value" 
-            stroke={lineColor} 
-            strokeWidth={2}
-            fill="url(#colorPortfolio)" 
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
+    <ResponsiveContainer width="100%" height={300}>
+      <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={lineColor} stopOpacity={0.3}/>
+            <stop offset="95%" stopColor={lineColor} stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+        <XAxis 
+          dataKey="date" 
+          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <YAxis 
+          tickFormatter={formatCurrency}
+          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+          tickLine={false}
+          axisLine={false}
+          width={65}
+          domain={yDomain}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Area 
+          type="monotone" 
+          dataKey="value" 
+          stroke={lineColor} 
+          strokeWidth={2}
+          fillOpacity={1} 
+          fill="url(#colorValue)" 
+        />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }
