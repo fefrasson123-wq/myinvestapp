@@ -93,7 +93,14 @@ export function ETFForm({ onSubmit, onSell, onBack }: ETFFormProps) {
   };
 
   const handleBackFromForm = () => {
-    // Se tem tipo selecionado, volta para seleção de tipo (não limpa o ETF)
+    // Limpa a seleção e volta para a etapa anterior
+    setSelectedETF(null);
+    setSearchQuery('');
+    setQuantity('');
+    setAveragePrice('');
+    setPurchaseDate('');
+    setNotes('');
+    
     if (etfType) {
       setEtfType(null);
     } else {

@@ -184,7 +184,17 @@ export function BDRForm({ onSubmit, onSell, onBack }: BDRFormProps) {
   }
 
   const handleBackFromForm = () => {
-    // Volta para seleção de tipo de BDR (não limpa o ativo)
+    // Limpa a seleção e volta para seleção de tipo de BDR
+    setSelectedBDR(null);
+    setSearchQuery('');
+    setFormData({
+      quantity: '',
+      averagePrice: '',
+      purchaseDate: '',
+      dividends: '',
+      notes: '',
+    });
+    
     if (bdrType) {
       setBdrType(null);
     } else {
