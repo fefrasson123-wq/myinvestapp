@@ -141,12 +141,12 @@ export function AssetPriceChart({
               <linearGradient id={`gradient-${symbol}`} x1="0" y1="0" x2="0" y2="1">
                 <stop 
                   offset="0%" 
-                  stopColor={isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'} 
+                  stopColor="hsl(var(--success))" 
                   stopOpacity={0.3}
                 />
                 <stop 
                   offset="100%" 
-                  stopColor={isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'} 
+                  stopColor="hsl(var(--success))" 
                   stopOpacity={0}
                 />
               </linearGradient>
@@ -182,7 +182,7 @@ export function AssetPriceChart({
             <Line
               type="monotone"
               dataKey="price"
-              stroke={isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'}
+              stroke="hsl(var(--success))"
               strokeWidth={2}
               dot={false}
               fill={`url(#gradient-${symbol})`}
