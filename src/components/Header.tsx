@@ -17,8 +17,8 @@ export function Header({ onAddClick }: HeaderProps) {
   };
 
   return (
-    <header className="border-b border-border/50 bg-card/80 backdrop-blur-md relative z-30">
-      <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+    <header className="border-b border-border/50 bg-card/80 backdrop-blur-md relative z-30 w-full">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
         <div className="flex items-center justify-between">
           <button 
             onClick={handleLogoClick}
