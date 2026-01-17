@@ -114,7 +114,7 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
           id="name"
           value={formData.name}
           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-          placeholder="Ex: Casa na Praia, Apartamento Centro..."
+          placeholder="Ex: Casa na Praia, Apartamento, Terreno..."
           required
         />
       </div>
