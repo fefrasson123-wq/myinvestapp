@@ -184,8 +184,8 @@ export function BDRForm({ onSubmit, onSell, onBack }: BDRFormProps) {
   }
 
   const handleBackFromForm = () => {
-    if (bdrType) {
-      setBdrType(null);
+    // Se tem um BDR selecionado, limpa a seleção mas mantém no tipo
+    if (selectedBDR) {
       setSelectedBDR(null);
       setSearchQuery('');
       setFormData({
@@ -195,6 +195,10 @@ export function BDRForm({ onSubmit, onSell, onBack }: BDRFormProps) {
         dividends: '',
         notes: '',
       });
+    } else if (bdrType) {
+      // Se não tem BDR selecionado mas tem tipo, volta para o menu principal
+      setBdrType(null);
+      onBack();
     } else {
       onBack();
     }
