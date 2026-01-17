@@ -167,11 +167,9 @@ export function ETFForm({ onSubmit, onSell, onBack }: ETFFormProps) {
         Voltar
       </Button>
 
-      <div className="text-center mb-2">
-        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium" style={{ backgroundColor: etfTypeOptions.find(o => o.id === etfType)?.color + '20', color: etfTypeOptions.find(o => o.id === etfType)?.color }}>
-          {etfTypeLabels[etfType]}
-        </span>
-      </div>
+      <h3 className="text-lg font-semibold text-card-foreground text-center mb-2">
+        {etfTypeLabels[etfType]}
+      </h3>
 
       {/* Campo de busca */}
       <div className="space-y-2">
