@@ -16,7 +16,10 @@ export type InvestmentCategory =
   | 'gold'
   | 'usastocks'
   | 'reits'
+  | 'bdr'
   | 'other';
+
+export type BDRType = 'stock' | 'etf';
 
 export type FixedIncomeType = 'pos' | 'pre' | 'ipca' | 'cdi';
 
@@ -67,6 +70,8 @@ export interface Investment {
   // Gold specific fields
   weightGrams?: number;
   purity?: number; // karats or percentage
+  // BDR specific fields
+  bdrType?: BDRType;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -94,6 +99,7 @@ export const categoryLabels: Record<InvestmentCategory, string> = {
   gold: 'Ouro',
   usastocks: 'Ações Americanas',
   reits: 'REITs',
+  bdr: 'BDR',
   other: 'Outros',
 };
 
@@ -115,6 +121,7 @@ export const categoryColors: Record<InvestmentCategory, string> = {
   gold: 'hsl(50, 100%, 45%)',
   usastocks: 'hsl(210, 100%, 45%)',
   reits: 'hsl(250, 80%, 55%)',
+  bdr: 'hsl(190, 90%, 45%)',
   other: 'hsl(0, 0%, 50%)',
 };
 
@@ -136,4 +143,9 @@ export const realEstateLabels: Record<RealEstateType, string> = {
 export const transactionLabels: Record<TransactionType, string> = {
   buy: 'Compra',
   sell: 'Venda',
+};
+
+export const bdrTypeLabels: Record<BDRType, string> = {
+  stock: 'BDR de Ação',
+  etf: 'BDR de ETF',
 };
