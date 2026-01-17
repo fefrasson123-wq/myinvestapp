@@ -605,14 +605,25 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     if (step === 'form') {
       if (usesRentabilidade) {
         if (rentabilidade === 'posfixado') {
-          setStep('indexador');
+          // Para categorias com apenas CDI como indexador (debentures, cricra),
+          // voltar direto para rentabilidade já que o indexador é selecionado automaticamente
+          if (category === 'debentures' || category === 'cricra') {
+            setStep('rentabilidade');
+            setRentabilidade(null);
+            setIndexador(null);
+          } else {
+            setStep('indexador');
+          }
         } else {
           setStep('rentabilidade');
+          setRentabilidade(null);
         }
       } else if (isTreasury) {
         setStep('type');
+        setTreasuryType(null);
       } else if (isFundoRF) {
         setStep('fundotype');
+        setFundoRFType(null);
       } else if (!isSavings) {
         setStep('type');
       } else {
@@ -620,13 +631,14 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
       }
     } else if (step === 'indexador') {
       setStep('rentabilidade');
+      setRentabilidade(null);
       setIndexador(null);
     } else if (step === 'fundotype') {
       onBack();
     } else {
       onBack();
     }
-  }, [step, usesRentabilidade, rentabilidade, isTreasury, isFundoRF, isSavings, onBack]);
+  }, [step, usesRentabilidade, rentabilidade, isTreasury, isFundoRF, isSavings, onBack, category]);
 
   // Renderiza tela de seleção de rentabilidade
   if (step === 'rentabilidade') {
