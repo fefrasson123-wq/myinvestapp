@@ -158,8 +158,8 @@ export const bdrTypeLabels: Record<BDRType, string> = {
 };
 
 export const etfTypeLabels: Record<ETFType, string> = {
-  etf_acoes_brasil: 'ETF de Ações Brasil',
-  etf_acoes_exterior: 'ETF de Ações Exterior',
+  etf_acoes_brasil: 'ETF de Ações Brasileiras',
+  etf_acoes_exterior: 'ETF de Ações do Exterior',
   etf_renda_fixa: 'ETF de Renda Fixa',
   etf_indice: 'ETF de Índice',
   etf_cripto: 'ETF de Criptomoedas',
