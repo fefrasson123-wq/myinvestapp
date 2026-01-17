@@ -72,7 +72,10 @@ export function AssetPriceChart({
   useEffect(() => {
     const data = generate24hData(currentPrice, changePercent24h);
     setChartData(data);
-  }, [currentPrice, changePercent24h]);
+    // Debug: helps verify render + data generation in production logs
+    // eslint-disable-next-line no-console
+    console.debug('[AssetPriceChart]', { symbol, currentPrice, changePercent24h, points: data.length });
+  }, [symbol, currentPrice, changePercent24h]);
 
   const openPrice = chartData.length > 0 ? chartData[0].price : currentPrice;
 
@@ -100,7 +103,7 @@ export function AssetPriceChart({
       </div>
 
       {/* Gráfico */}
-      <div className="h-32">
+      <div className="h-32 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <defs>
