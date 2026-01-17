@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { TrendingUp, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { TrendingUp, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Loader2, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,7 @@ const loginSchema = z.object({
 const signupSchema = z.object({
   username: z.string().min(3, 'Nome de usuário deve ter pelo menos 3 caracteres').max(50),
   email: z.string().email('E-mail inválido'),
+  whatsapp: z.string().min(10, 'WhatsApp deve ter pelo menos 10 dígitos').max(15, 'WhatsApp deve ter no máximo 15 dígitos').regex(/^[0-9]+$/, 'WhatsApp deve conter apenas números'),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -32,11 +33,15 @@ const resetPasswordSchema = z.object({
 type AuthMode = 'login' | 'signup' | 'forgot-password';
 
 export default function Auth() {
-  const [mode, setMode] = useState<AuthMode>('login');
+  const [searchParams] = useSearchParams();
+  const defaultMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
+  
+  const [mode, setMode] = useState<AuthMode>(defaultMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -155,7 +160,7 @@ export default function Auth() {
           navigate('/');
         }
       } else if (mode === 'signup') {
-        const result = signupSchema.safeParse({ username, email, password, confirmPassword });
+        const result = signupSchema.safeParse({ username, email, whatsapp, password, confirmPassword });
         if (!result.success) {
           const fieldErrors: Record<string, string> = {};
           result.error.errors.forEach((err) => {
@@ -168,7 +173,7 @@ export default function Auth() {
           return;
         }
 
-        const { error } = await signUp(email, password, username);
+        const { error } = await signUp(email, password, username, whatsapp);
         if (error) {
           if (error.message.includes('User already registered')) {
             toast({
@@ -327,6 +332,27 @@ export default function Auth() {
                       />
                       {errors.username && (
                         <p className="text-xs text-destructive">{errors.username}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {mode === 'signup' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp" className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-muted-foreground" />
+                        WhatsApp
+                      </Label>
+                      <Input
+                        id="whatsapp"
+                        type="tel"
+                        placeholder="11999999999"
+                        value={whatsapp}
+                        onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ''))}
+                        className={errors.whatsapp ? 'border-destructive' : ''}
+                        maxLength={15}
+                      />
+                      {errors.whatsapp && (
+                        <p className="text-xs text-destructive">{errors.whatsapp}</p>
                       )}
                     </div>
                   )}

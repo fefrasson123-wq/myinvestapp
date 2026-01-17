@@ -61,10 +61,10 @@ const Index = () => {
       if (!user) {
         toast({
           variant: 'destructive',
-          title: 'Faça login para continuar',
-          description: 'Entre na sua conta para realizar ações no app.',
+          title: 'Crie sua conta para continuar',
+          description: 'Cadastre-se para realizar ações no app.',
         });
-        navigate('/auth');
+        navigate('/auth?mode=signup');
         return;
       }
       action();

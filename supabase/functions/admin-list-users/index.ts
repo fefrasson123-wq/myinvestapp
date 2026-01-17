@@ -85,6 +85,8 @@ Deno.serve(async (req) => {
         id: u.id,
         email: u.email,
         display_name: profile?.display_name || profile?.username || 'Sem nome',
+        username: profile?.username || null,
+        whatsapp: profile?.whatsapp || null,
         created_at: u.created_at,
         last_sign_in_at: u.last_sign_in_at,
         roles: userRoles,
