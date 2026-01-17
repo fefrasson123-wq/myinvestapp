@@ -3,10 +3,49 @@ import { Investment } from '@/types/investment';
 import { TrendingUp, TrendingDown, BarChart3, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEconomicRates } from '@/hooks/useEconomicRates';
+import { useState, useEffect } from 'react';
 
 interface BenchmarkComparisonProps {
   investment: Investment;
   onClose: () => void;
+}
+
+// Hook para buscar retorno de 12 meses do Bitcoin
+function useBitcoin12MonthReturn() {
+  const [return12m, setReturn12m] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchBitcoinHistory() {
+      try {
+        // Buscar preço atual e de 365 dias atrás
+        const response = await fetch(
+          'https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=brl&days=365&interval=daily'
+        );
+        
+        if (!response.ok) throw new Error('Failed to fetch');
+        
+        const data = await response.json();
+        const prices = data.prices as [number, number][];
+        
+        if (prices && prices.length >= 2) {
+          const priceNow = prices[prices.length - 1][1];
+          const price12MonthsAgo = prices[0][1];
+          const returnPercent = ((priceNow - price12MonthsAgo) / price12MonthsAgo) * 100;
+          setReturn12m(returnPercent);
+        }
+      } catch (error) {
+        console.error('Error fetching Bitcoin 12m return:', error);
+        setReturn12m(null);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchBitcoinHistory();
+  }, []);
+
+  return { return12m, isLoading };
 }
 
 function formatCurrency(value: number): string {
@@ -38,13 +77,15 @@ function calculateBenchmarkReturn(invested: number, purchaseDate: string | undef
 
 export function BenchmarkComparison({ investment, onClose }: BenchmarkComparisonProps) {
   const { rates, isLoading: ratesLoading } = useEconomicRates();
+  const { return12m: btcReturn, isLoading: btcLoading } = useBitcoin12MonthReturn();
   
-  // Usar taxas em tempo real do Banco Central + S&P 500 média histórica
+  // Usar taxas em tempo real do Banco Central + S&P 500 média histórica + Bitcoin 12 meses
   const benchmarks = [
     { name: 'CDI', rate: rates.cdi, color: 'hsl(140, 100%, 50%)' },
     { name: 'IBOVESPA', rate: 15.0, color: 'hsl(200, 100%, 50%)' },
     { name: 'IPCA', rate: rates.ipca, color: 'hsl(30, 100%, 50%)' },
     { name: 'S&P 500', rate: 12.0, color: 'hsl(280, 100%, 50%)' }, // Média histórica ~10-12% a.a.
+    { name: 'Bitcoin (12m)', rate: btcReturn ?? 50, color: 'hsl(45, 100%, 50%)' }, // Retorno real dos últimos 12 meses
   ];
   
   const benchmarkReturns = benchmarks.map(benchmark => {
@@ -126,7 +167,7 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
               <h4 className="text-sm font-medium text-muted-foreground">
                 Se você tivesse investido em:
               </h4>
-              {ratesLoading && (
+              {(ratesLoading || btcLoading) && (
                 <RefreshCw className="w-3 h-3 text-muted-foreground animate-spin" />
               )}
             </div>
