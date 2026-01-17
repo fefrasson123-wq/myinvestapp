@@ -23,7 +23,7 @@ const periods: { id: Period; label: string }[] = [
 
 export function ResultsArea({ investments }: ResultsAreaProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('1m');
-  const { formatCurrencyValue, formatPercent } = useValuesVisibility();
+  const { formatCurrencyValue, formatPercent, usdBrlRate } = useValuesVisibility();
 
   // Calcula o valor total da carteira para percentuais
   const totalPortfolioValue = investments.reduce((sum, inv) => sum + inv.currentValue, 0);
@@ -70,7 +70,8 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
           <div className="space-y-3">
             {sortedInvestments.map((inv, index) => {
               const isCrypto = inv.category === 'crypto';
-              const displayProfitLoss = inv.profitLoss;
+              // Converte lucro/prejuízo de crypto de USD para BRL
+              const displayProfitLoss = isCrypto ? inv.profitLoss * usdBrlRate : inv.profitLoss;
               const invIsPositive = displayProfitLoss >= 0;
               const portfolioPercent = totalPortfolioValue > 0 ? (inv.currentValue / totalPortfolioValue) * 100 : 0;
               
