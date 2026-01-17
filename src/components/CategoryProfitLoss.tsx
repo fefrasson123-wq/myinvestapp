@@ -60,9 +60,18 @@ export function CategoryProfitLoss({ investments }: CategoryProfitLossProps) {
       profitLoss,
       profitLossPercent,
     };
-  }).sort((a, b) => b.profitLoss - a.profitLoss);
+  }).sort((a, b) => b.currentValue - a.currentValue);
 
-  if (categoryData.length === 0) {
+  // Calcula o total da carteira para percentual
+  const totalPortfolioValue = categoryData.reduce((sum, cat) => sum + cat.currentValue, 0);
+
+  // Adiciona percentual de cada categoria
+  const categoryDataWithPercent = categoryData.map(data => ({
+    ...data,
+    portfolioPercent: totalPortfolioValue > 0 ? (data.currentValue / totalPortfolioValue) * 100 : 0,
+  }));
+
+  if (categoryDataWithPercent.length === 0) {
     return null;
   }
 
@@ -73,7 +82,7 @@ export function CategoryProfitLoss({ investments }: CategoryProfitLossProps) {
         <h3 className="text-lg font-semibold text-card-foreground">Lucro/Prejuízo por Classe</h3>
       </div>
       <div className="space-y-3">
-        {categoryData.map((data, index) => {
+        {categoryDataWithPercent.map((data, index) => {
           const isPositive = data.profitLoss >= 0;
           
           return (
@@ -88,9 +97,14 @@ export function CategoryProfitLoss({ investments }: CategoryProfitLossProps) {
                   style={{ backgroundColor: categoryColors[data.category] }}
                 />
                 <div>
-                  <p className="font-medium text-card-foreground">
-                    {categoryLabels[data.category]}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-card-foreground">
+                      {categoryLabels[data.category]}
+                    </p>
+                    <span className="text-xs font-mono text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
+                      {data.portfolioPercent.toFixed(1)}%
+                    </span>
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     Investido: {formatCurrency(data.invested)}
                   </p>
