@@ -874,13 +874,15 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
                   <span className="text-muted-foreground">Indexador:</span>
                   <span className="ml-1 font-semibold text-card-foreground">{fundoRFIndexadores[fundoRFType]}</span>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Taxa atual:</span>
-                  <span className="ml-1 font-semibold text-card-foreground">
-                    {fundoRFType === 'fundo_ipca' ? `${rates.ipca}%` : `${rates.cdi}%`} a.a.
-                  </span>
-                  {ratesLoading && <RefreshCw className="w-3 h-3 inline ml-1 animate-spin" />}
-                </div>
+                {fundoRFType !== 'fundo_prefixado' && (
+                  <div>
+                    <span className="text-muted-foreground">Taxa atual:</span>
+                    <span className="ml-1 font-semibold text-card-foreground">
+                      {fundoRFType === 'fundo_ipca' ? `${rates.ipca}%` : `${rates.cdi}%`} a.a.
+                    </span>
+                    {ratesLoading && <RefreshCw className="w-3 h-3 inline ml-1 animate-spin" />}
+                  </div>
+                )}
               </div>
               <ul className="text-xs text-muted-foreground mt-2 space-y-0.5">
                 <li>• <strong>Garantia FGC:</strong> Não possui</li>
