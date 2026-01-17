@@ -439,6 +439,8 @@ export function useInvestments() {
       cash: 0,
       realestate: 0,
       gold: 0,
+      usastocks: 0,
+      reits: 0,
       other: 0,
     };
 
