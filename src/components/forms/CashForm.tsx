@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Check, ArrowLeft, Banknote, Building2, CircleDollarSign } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Check, ArrowLeft, Banknote, Building2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Investment } from '@/types/investment';
 import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
 import { useEurBrlRate } from '@/hooks/useEurBrlRate';
+import { useEconomicRates } from '@/hooks/useEconomicRates';
 
 interface CashFormProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
@@ -37,6 +38,16 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
 
   const { rate: usdRate } = useUsdBrlRate();
   const { rate: eurRate } = useEurBrlRate();
+  const { rates, isLoading: ratesLoading } = useEconomicRates();
+
+  // Calcula taxa efetiva do CDI
+  const effectiveRate = useMemo(() => {
+    if (formData.yieldType === 'cdi' && formData.cdiPercent) {
+      const percent = parseFloat(formData.cdiPercent) || 0;
+      return (rates.cdi * percent) / 100;
+    }
+    return null;
+  }, [formData.yieldType, formData.cdiPercent, rates.cdi]);
 
   const getExchangeRate = (curr: CurrencyType): number => {
     switch (curr) {
@@ -221,6 +232,17 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
           )}
         </div>
 
+        {cashType === 'banco' && currency === 'BRL' && (
+          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="flex items-center gap-2">
+              <RefreshCw className={`w-4 h-4 text-primary ${ratesLoading ? 'animate-spin' : ''}`} />
+              <span className="text-sm font-medium text-primary">
+                CDI Atual: {rates.cdi.toFixed(2)}% a.a.
+              </span>
+            </div>
+          </div>
+        )}
+
         {cashType === 'banco' && (
           <div className="space-y-4 p-4 rounded-lg bg-muted/50">
             <div>
@@ -293,8 +315,13 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
                   step="0.01"
                   value={formData.cdiPercent}
                   onChange={(e) => setFormData(prev => ({ ...prev, cdiPercent: e.target.value }))}
-                  placeholder="Ex: 100% CDI a.a."
+                  placeholder="Ex: 100"
                 />
+                {formData.cdiPercent && effectiveRate !== null && (
+                  <p className="text-xs text-primary mt-1 font-medium">
+                    ≈ {effectiveRate.toFixed(2)}% a.a. ({formData.cdiPercent}% de {rates.cdi.toFixed(2)}%)
+                  </p>
+                )}
               </div>
             )}
 
