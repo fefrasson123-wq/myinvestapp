@@ -242,7 +242,7 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
                   step="0.01"
                   value={formData.cdiPercent}
                   onChange={(e) => setFormData(prev => ({ ...prev, cdiPercent: e.target.value }))}
-                  placeholder="Ex: % de Rendimento Anual"
+                  placeholder="Ex: 14%"
                 />
               </div>
             )}
