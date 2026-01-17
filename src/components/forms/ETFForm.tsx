@@ -16,8 +16,8 @@ interface ETFFormProps {
 }
 
 const etfTypeOptions: { id: ETFType; label: string; icon: React.ElementType; color: string }[] = [
-  { id: 'etf_acoes_brasil', label: 'ETF de Ações Brasil', icon: TrendingUp, color: 'hsl(200, 100%, 50%)' },
-  { id: 'etf_acoes_exterior', label: 'ETF de Ações Exterior', icon: Globe, color: 'hsl(280, 80%, 55%)' },
+  { id: 'etf_acoes_brasil', label: 'ETF de Ações Brasileiras', icon: TrendingUp, color: 'hsl(200, 100%, 50%)' },
+  { id: 'etf_acoes_exterior', label: 'ETF de Ações do Exterior', icon: Globe, color: 'hsl(280, 80%, 55%)' },
   { id: 'etf_renda_fixa', label: 'ETF de Renda Fixa', icon: Landmark, color: 'hsl(140, 80%, 45%)' },
   { id: 'etf_indice', label: 'ETF de Índice', icon: Activity, color: 'hsl(30, 100%, 50%)' },
   { id: 'etf_cripto', label: 'ETF de Criptomoedas', icon: Bitcoin, color: 'hsl(45, 100%, 50%)' },
