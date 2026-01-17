@@ -109,13 +109,13 @@ const IndexadorSelector = memo(({
   onSelect, 
   onBack,
   categoryTitle,
+  availableIndexadores,
 }: { 
   onSelect: (type: IndexadorType) => void; 
   onBack: () => void;
   categoryTitle: string;
+  availableIndexadores: IndexadorType[];
 }) => {
-  const indexadorTypes: IndexadorType[] = ['cdi', 'selic'];
-  
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
@@ -128,8 +128,8 @@ const IndexadorSelector = memo(({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        {indexadorTypes.map((type) => (
+      <div className={`grid gap-3 ${availableIndexadores.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+        {availableIndexadores.map((type) => (
           <button
             key={type}
             type="button"
@@ -512,7 +512,23 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
   }
 
   // Renderiza tela de seleção de indexador
+  // Debêntures e CRI/CRA só usam CDI como indexador
+  const getAvailableIndexadores = (): IndexadorType[] => {
+    if (category === 'debentures' || category === 'cricra') {
+      return ['cdi'];
+    }
+    return ['cdi', 'selic'];
+  };
+
   if (step === 'indexador') {
+    const availableIndexadores = getAvailableIndexadores();
+    
+    // Se só tem um indexador, seleciona automaticamente
+    if (availableIndexadores.length === 1) {
+      handleSelectIndexador(availableIndexadores[0]);
+      return null;
+    }
+    
     return (
       <IndexadorSelector 
         onSelect={handleSelectIndexador} 
@@ -521,6 +537,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
           setRentabilidade(null);
         }}
         categoryTitle={categoryTitles[category]}
+        availableIndexadores={availableIndexadores}
       />
     );
   }
@@ -648,6 +665,23 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
               O Tesouro Selic rende automaticamente 100% da taxa Selic
             </p>
           )}
+        </div>
+      )}
+
+      {/* Aviso sobre Debêntures - sem FGC */}
+      {category === 'debentures' && (
+        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+          <div className="flex items-start gap-2 text-sm">
+            <Banknote className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-amber-600 dark:text-amber-400">Atenção: Debêntures</p>
+              <ul className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                <li>• <strong>Emissor:</strong> Empresas privadas</li>
+                <li>• <strong>Garantia FGC:</strong> Não possui</li>
+                <li>• Avalie o risco de crédito da empresa emissora</li>
+              </ul>
+            </div>
+          </div>
         </div>
       )}
 
