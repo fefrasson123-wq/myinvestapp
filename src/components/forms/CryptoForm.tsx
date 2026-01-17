@@ -341,13 +341,13 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-muted-foreground">
-                        ${result.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+                        ${(result.price ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
                       </span>
                       <span className={cn(
                         "text-xs font-mono",
-                        result.changePercent >= 0 ? "text-success" : "text-destructive"
+                        (result.changePercent ?? 0) >= 0 ? "text-success" : "text-destructive"
                       )}>
-                        {result.changePercent >= 0 ? '+' : ''}{result.changePercent.toFixed(2)}%
+                        {(result.changePercent ?? 0) >= 0 ? '+' : ''}{(result.changePercent ?? 0).toFixed(2)}%
                       </span>
                     </div>
                   </button>
