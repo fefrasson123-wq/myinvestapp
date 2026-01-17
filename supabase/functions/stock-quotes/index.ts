@@ -133,6 +133,90 @@ async function fetchYahooFinanceQuote(originalSymbol: string, market: 'br' | 'us
   }
 }
 
+// Busca histórico de preços do Yahoo Finance
+async function fetchHistoricalPrices(
+  symbols: string[], 
+  market: 'br' | 'usa' | 'crypto',
+  range: string = '1mo'
+): Promise<Record<string, Array<{ date: string; price: number }>>> {
+  const result: Record<string, Array<{ date: string; price: number }>> = {};
+  
+  // Mapeia range para intervalo Yahoo
+  const intervalMap: Record<string, string> = {
+    '1d': '5m',
+    '1w': '1h',
+    '1mo': '1d',
+    '6mo': '1d',
+    '1y': '1d',
+    '2y': '1wk',
+    'max': '1mo'
+  };
+  
+  const interval = intervalMap[range] || '1d';
+  
+  await Promise.all(symbols.map(async (originalSymbol) => {
+    try {
+      let yahooSymbol: string;
+      
+      if (market === 'crypto') {
+        yahooSymbol = getCryptoYahooSymbol(originalSymbol);
+      } else if (market === 'usa') {
+        yahooSymbol = originalSymbol.toUpperCase();
+      } else {
+        const normalizedSymbol = normalizeToYahooSymbol(originalSymbol);
+        yahooSymbol = `${normalizedSymbol}.SA`;
+      }
+      
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=${interval}&range=${range}`;
+      
+      console.log(`Fetching historical for: ${yahooSymbol} (range: ${range}, interval: ${interval})`);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`Yahoo historical error for ${originalSymbol}: ${response.status}`);
+        return;
+      }
+
+      const data = await response.json();
+      
+      if (!data?.chart?.result?.[0]) {
+        console.error(`No historical data for ${originalSymbol}`);
+        return;
+      }
+
+      const chartResult = data.chart.result[0];
+      const timestamps = chartResult.timestamp || [];
+      const closes = chartResult.indicators?.quote?.[0]?.close || [];
+      
+      const history: Array<{ date: string; price: number }> = [];
+      
+      for (let i = 0; i < timestamps.length; i++) {
+        const price = closes[i];
+        if (price !== null && price !== undefined) {
+          const date = new Date(timestamps[i] * 1000).toISOString();
+          history.push({ date, price });
+        }
+      }
+      
+      const symbol = originalSymbol.toUpperCase().replace('.SA', '').replace('-USD', '');
+      result[symbol] = history;
+      
+      console.log(`Got ${history.length} historical points for ${symbol}`);
+    } catch (error) {
+      console.error(`Error fetching historical for ${originalSymbol}:`, error);
+    }
+  }));
+  
+  return result;
+}
+
 // Busca criptomoedas no Yahoo Finance por nome/símbolo
 async function searchCryptos(query: string): Promise<Array<{
   symbol: string;
@@ -220,6 +304,22 @@ serve(async (req) => {
       const results = await searchCryptos(query);
       
       return new Response(JSON.stringify({ results }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Handle historical prices action
+    if (action === 'historical') {
+      if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
+        throw new Error('Símbolos inválidos para histórico');
+      }
+      
+      const range = body.range || '1mo';
+      console.log(`Fetching historical for: ${symbols.join(', ')} (market: ${market}, range: ${range})`);
+      
+      const history = await fetchHistoricalPrices(symbols, market, range);
+      
+      return new Response(JSON.stringify({ history }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
