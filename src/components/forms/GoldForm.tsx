@@ -106,7 +106,7 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
         )}
       </div>
 
-      <div>
+      <div className="col-span-2">
         <Label htmlFor="name">Descrição</Label>
         <Input
           id="name"
@@ -183,7 +183,7 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
         </div>
       </div>
 
-      <div>
+      <div className="col-span-2">
         <Label htmlFor="notes">Observações</Label>
         <Textarea
           id="notes"
