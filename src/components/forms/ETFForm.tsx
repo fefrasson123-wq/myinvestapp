@@ -156,20 +156,21 @@ export function ETFForm({ onSubmit, onSell, onBack }: ETFFormProps) {
   // Formulário de cadastro após seleção do tipo
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={handleBackToTypeSelection}
-        className="gap-2 text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Voltar
-      </Button>
-
-      <h3 className="text-lg font-semibold text-card-foreground text-center mb-2">
-        {etfTypeLabels[etfType]}
-      </h3>
+      <div className="flex items-center justify-between mb-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={handleBackToTypeSelection}
+          className="gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Voltar
+        </Button>
+        <span className="text-sm font-medium text-card-foreground">
+          {etfTypeLabels[etfType]}
+        </span>
+      </div>
 
       {/* Campo de busca */}
       <div className="space-y-2">
