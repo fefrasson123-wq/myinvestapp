@@ -235,7 +235,7 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
 
             {formData.isYielding && (
               <div>
-                <Label htmlFor="cdiPercent">Percentual de Rendimento (%)</Label>
+                <Label htmlFor="cdiPercent">Percentual de Rendimento ao ano (%)</Label>
                 <Input
                   id="cdiPercent"
                   type="number"
