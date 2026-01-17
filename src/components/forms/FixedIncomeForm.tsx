@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, memo } from 'react';
-import { Check, ArrowLeft, Percent, Banknote, TrendingUp, RefreshCw, Landmark } from 'lucide-react';
+import { Check, ArrowLeft, Percent, Banknote, TrendingUp, RefreshCw, Landmark, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,9 @@ type IndexadorType = 'cdi' | 'selic';
 // Tipos específicos para Tesouro Direto
 type TreasuryType = 'selic' | 'prefixado' | 'ipca';
 
+// Tipos de Fundo de Renda Fixa
+type FundoRFType = 'fundo_di' | 'fundo_selic' | 'fundo_ipca' | 'fundo_prefixado' | 'fundo_multi';
+
 const rentabilidadeLabels: Record<RentabilidadeType, string> = {
   prefixado: 'Prefixado',
   posfixado: 'Pós-fixado',
@@ -37,6 +40,30 @@ const treasuryTypeLabels: Record<TreasuryType, string> = {
   selic: 'Tesouro Selic',
   prefixado: 'Tesouro Prefixado',
   ipca: 'Tesouro IPCA+',
+};
+
+const fundoRFLabels: Record<FundoRFType, string> = {
+  fundo_di: 'Fundo DI (CDI)',
+  fundo_selic: 'Fundo Selic',
+  fundo_ipca: 'Fundo IPCA',
+  fundo_prefixado: 'Fundo Prefixado',
+  fundo_multi: 'Fundo Multiestratégia RF',
+};
+
+const fundoRFDescriptions: Record<FundoRFType, string> = {
+  fundo_di: 'Indexado ao CDI, alta liquidez',
+  fundo_selic: 'Indexado à taxa Selic',
+  fundo_ipca: 'Protege contra inflação (IPCA)',
+  fundo_prefixado: 'Taxa definida no momento da aplicação',
+  fundo_multi: 'Diversas estratégias de renda fixa',
+};
+
+const fundoRFIndexadores: Record<FundoRFType, string> = {
+  fundo_di: 'CDI',
+  fundo_selic: 'Selic',
+  fundo_ipca: 'IPCA',
+  fundo_prefixado: 'Taxa Prefixada',
+  fundo_multi: 'Múltiplos',
 };
 
 const categoryTitles: Record<string, string> = {
@@ -192,6 +219,57 @@ const TreasuryTypeSelector = memo(({
 
 TreasuryTypeSelector.displayName = 'TreasuryTypeSelector';
 
+// Seletor de Tipo de Fundo de Renda Fixa
+const FundoRFTypeSelector = memo(({ 
+  onSelect, 
+  onBack,
+}: { 
+  onSelect: (type: FundoRFType) => void; 
+  onBack: () => void;
+}) => {
+  const fundoTypes: FundoRFType[] = ['fundo_di', 'fundo_selic', 'fundo_ipca', 'fundo_prefixado', 'fundo_multi'];
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={onBack} type="button">
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <div>
+          <h3 className="text-lg font-semibold text-card-foreground">Fundo de Renda Fixa</h3>
+          <p className="text-sm text-muted-foreground">Selecione o tipo de fundo</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3">
+        {fundoTypes.map((type) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => onSelect(type)}
+            className="flex items-center gap-4 p-4 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-colors"
+          >
+            <Building2 className="w-6 h-6 text-primary" />
+            <div className="text-left flex-1">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-card-foreground">{fundoRFLabels[type]}</span>
+                <span className="text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">
+                  {fundoRFIndexadores[type]}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {fundoRFDescriptions[type]}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+});
+
+FundoRFTypeSelector.displayName = 'FundoRFTypeSelector';
+
 // Seletor genérico para outras categorias
 const GenericTypeSelector = memo(({ 
   onSelect, 
@@ -233,14 +311,16 @@ GenericTypeSelector.displayName = 'GenericTypeSelector';
 export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormProps) {
   const isSavings = category === 'savings';
   const isTreasury = category === 'treasury';
+  const isFundoRF = category === 'fixedincomefund';
   const usesRentabilidade = categoriesWithRentabilidade.includes(category);
   
   // Estados de navegação
-  type StepType = 'rentabilidade' | 'indexador' | 'type' | 'form';
+  type StepType = 'rentabilidade' | 'indexador' | 'type' | 'fundotype' | 'form';
   const getInitialStep = (): StepType => {
     if (isSavings) return 'form';
     if (usesRentabilidade) return 'rentabilidade';
     if (isTreasury) return 'type';
+    if (isFundoRF) return 'fundotype';
     return 'type';
   };
   
@@ -250,6 +330,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
   const [rentabilidade, setRentabilidade] = useState<RentabilidadeType | null>(null);
   const [indexador, setIndexador] = useState<IndexadorType | null>(null);
   const [treasuryType, setTreasuryType] = useState<TreasuryType | null>(null);
+  const [fundoRFType, setFundoRFType] = useState<FundoRFType | null>(null);
   const [selectedType, setSelectedType] = useState<FixedIncomeType | null>(isSavings ? 'pos' : null);
   
   const [formData, setFormData] = useState({
@@ -259,6 +340,10 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     purchaseDate: '',
     maturityDate: '',
     notes: '',
+    // Campos específicos para Fundos de RF
+    cnpj: '',
+    gestora: '',
+    taxaAdministracao: '',
   });
 
   const { rates, isLoading: ratesLoading } = useEconomicRates();
@@ -323,6 +408,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
   const needsRateInput = () => {
     if (isSavings) return false; // Poupança tem regras próprias automáticas
     if (isTreasury && treasuryType === 'selic') return false;
+    if (isFundoRF) return false; // Fundos não usam taxa manual
     return true;
   };
 
@@ -346,6 +432,11 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
 
   const handleSelectTreasuryType = useCallback((type: TreasuryType) => {
     setTreasuryType(type);
+    setStep('form');
+  }, []);
+
+  const handleSelectFundoRFType = useCallback((type: FundoRFType) => {
+    setFundoRFType(type);
     setStep('form');
   }, []);
 
@@ -442,8 +533,26 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     const now = new Date();
     const yearsElapsed = Math.max(0, (now.getTime() - purchaseDateObj.getTime()) / (1000 * 60 * 60 * 24 * 365));
     
-    const currentValue = yearsElapsed > 0 && effectiveRate > 0 
-      ? investedAmount * Math.pow(1 + effectiveRate / 100, yearsElapsed)
+    // Para fundos RF, usamos taxa implícita baseada no tipo
+    let fundoEffectiveRate = 0;
+    if (isFundoRF && fundoRFType) {
+      const taxaAdmin = parseFloat(formData.taxaAdministracao) || 0;
+      if (fundoRFType === 'fundo_di' || fundoRFType === 'fundo_selic') {
+        fundoEffectiveRate = rates.cdi - taxaAdmin;
+      } else if (fundoRFType === 'fundo_ipca') {
+        fundoEffectiveRate = rates.ipca - taxaAdmin;
+      } else if (fundoRFType === 'fundo_prefixado') {
+        // Prefixado: não temos taxa, usamos uma estimativa
+        fundoEffectiveRate = rates.cdi - taxaAdmin;
+      } else {
+        fundoEffectiveRate = rates.cdi - taxaAdmin;
+      }
+    }
+    
+    const rateToUse = isFundoRF ? fundoEffectiveRate : effectiveRate;
+    
+    const currentValue = yearsElapsed > 0 && rateToUse > 0 
+      ? investedAmount * Math.pow(1 + rateToUse / 100, yearsElapsed)
       : investedAmount;
 
     // Gera nome padrão
@@ -457,8 +566,23 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
       }
     } else if (isTreasury && treasuryType) {
       defaultName = treasuryTypeLabels[treasuryType];
+    } else if (isFundoRF && fundoRFType) {
+      defaultName = fundoRFLabels[fundoRFType];
     } else if (effectiveType) {
       defaultName = `${categoryTitles[category]} ${fixedIncomeLabels[effectiveType]}`;
+    }
+
+    // Monta notas adicionais para fundos
+    let notesWithFundInfo = formData.notes.trim();
+    if (isFundoRF) {
+      const fundInfo: string[] = [];
+      if (formData.cnpj.trim()) fundInfo.push(`CNPJ: ${formData.cnpj.trim()}`);
+      if (formData.gestora.trim()) fundInfo.push(`Gestora: ${formData.gestora.trim()}`);
+      if (formData.taxaAdministracao.trim()) fundInfo.push(`Taxa Admin: ${formData.taxaAdministracao.trim()}% a.a.`);
+      if (fundoRFType) fundInfo.push(`Tipo: ${fundoRFLabels[fundoRFType]}`);
+      if (fundInfo.length > 0) {
+        notesWithFundInfo = fundInfo.join(' | ') + (notesWithFundInfo ? ` | ${notesWithFundInfo}` : '');
+      }
     }
 
     onSubmit({
@@ -469,12 +593,12 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
       currentPrice: currentValue,
       investedAmount,
       fixedIncomeType: effectiveType || undefined,
-      interestRate: effectiveRate,
+      interestRate: rateToUse,
       purchaseDate,
       maturityDate: formData.maturityDate || undefined,
-      notes: formData.notes.trim() || undefined,
+      notes: notesWithFundInfo || undefined,
     });
-  }, [formData, effectiveRate, category, effectiveType, onSubmit, usesRentabilidade, rentabilidade, indexador, isTreasury, treasuryType]);
+  }, [formData, effectiveRate, category, effectiveType, onSubmit, usesRentabilidade, rentabilidade, indexador, isTreasury, treasuryType, isFundoRF, fundoRFType, rates]);
 
   // Handler de voltar
   const handleBack = useCallback(() => {
@@ -487,6 +611,8 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
         }
       } else if (isTreasury) {
         setStep('type');
+      } else if (isFundoRF) {
+        setStep('fundotype');
       } else if (!isSavings) {
         setStep('type');
       } else {
@@ -495,10 +621,12 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     } else if (step === 'indexador') {
       setStep('rentabilidade');
       setIndexador(null);
+    } else if (step === 'fundotype') {
+      onBack();
     } else {
       onBack();
     }
-  }, [step, usesRentabilidade, rentabilidade, isTreasury, isSavings, onBack]);
+  }, [step, usesRentabilidade, rentabilidade, isTreasury, isFundoRF, isSavings, onBack]);
 
   // Renderiza tela de seleção de rentabilidade
   if (step === 'rentabilidade') {
@@ -547,6 +675,11 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     return <TreasuryTypeSelector onSelect={handleSelectTreasuryType} onBack={onBack} />;
   }
 
+  // Renderiza seletor de tipo de Fundo de Renda Fixa
+  if (step === 'fundotype') {
+    return <FundoRFTypeSelector onSelect={handleSelectFundoRFType} onBack={onBack} />;
+  }
+
   // Renderiza seletor genérico para outras categorias
   if (step === 'type' && !isSavings) {
     const genericTypes: FixedIncomeType[] = ['pos', 'pre', 'ipca', 'cdi'];
@@ -564,6 +697,9 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
   const getFormTitle = () => {
     if (isTreasury && treasuryType) {
       return treasuryTypeLabels[treasuryType];
+    }
+    if (isFundoRF && fundoRFType) {
+      return fundoRFLabels[fundoRFType];
     }
     return categoryTitles[category];
   };
@@ -583,6 +719,9 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     }
     if (isTreasury && treasuryType === 'ipca') {
       return 'IPCA+';
+    }
+    if (isFundoRF && fundoRFType) {
+      return `Indexador: ${fundoRFIndexadores[fundoRFType]}`;
     }
     if (effectiveType && !isSavings && !usesRentabilidade && !isTreasury) {
       return fixedIncomeLabels[effectiveType];
@@ -704,18 +843,89 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
         </div>
       )}
 
+      {/* Informações sobre Fundo de Renda Fixa */}
+      {isFundoRF && fundoRFType && (
+        <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+          <div className="flex items-start gap-2 text-sm">
+            <Building2 className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-medium text-blue-600 dark:text-blue-400">Fundo de Renda Fixa</p>
+              <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                <div>
+                  <span className="text-muted-foreground">Indexador:</span>
+                  <span className="ml-1 font-semibold text-card-foreground">{fundoRFIndexadores[fundoRFType]}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Taxa atual:</span>
+                  <span className="ml-1 font-semibold text-card-foreground">
+                    {fundoRFType === 'fundo_ipca' ? `${rates.ipca}%` : `${rates.cdi}%`} a.a.
+                  </span>
+                  {ratesLoading && <RefreshCw className="w-3 h-3 inline ml-1 animate-spin" />}
+                </div>
+              </div>
+              <ul className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                <li>• <strong>Garantia FGC:</strong> Não possui</li>
+                <li>• <strong>Come-cotas:</strong> Pode haver incidência semestral</li>
+                <li>• Rentabilidade segue o índice do tipo de fundo</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
-          <Label htmlFor="name">Nome do Investimento</Label>
+          <Label htmlFor="name">Nome do {isFundoRF ? 'Fundo' : 'Investimento'}</Label>
           <Input
             id="name"
             value={formData.name}
             onChange={(e) => handleInputChange('name', e.target.value)}
-            placeholder={`Ex: ${getFormTitle()} 2029`}
+            placeholder={isFundoRF ? 'Ex: XP Referenciado DI FI' : `Ex: ${getFormTitle()} 2029`}
           />
         </div>
 
-        <div className={needsRateInput() ? '' : 'col-span-2'}>
+        {/* Campos específicos para Fundos de RF */}
+        {isFundoRF && (
+          <>
+            <div>
+              <Label htmlFor="cnpj">CNPJ do Fundo</Label>
+              <Input
+                id="cnpj"
+                value={formData.cnpj}
+                onChange={(e) => handleInputChange('cnpj', e.target.value)}
+                placeholder="Ex: 00.000.000/0001-00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="gestora">Gestora</Label>
+              <Input
+                id="gestora"
+                value={formData.gestora}
+                onChange={(e) => handleInputChange('gestora', e.target.value)}
+                placeholder="Ex: XP Asset Management"
+              />
+            </div>
+            <div>
+              <Label htmlFor="taxaAdministracao">Taxa de Administração (% a.a.)</Label>
+              <div className="relative">
+                <Input
+                  id="taxaAdministracao"
+                  type="number"
+                  step="any"
+                  value={formData.taxaAdministracao}
+                  onChange={(e) => handleInputChange('taxaAdministracao', e.target.value)}
+                  placeholder="Ex: 0.5"
+                  className="pr-16"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                  % a.a.
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className={needsRateInput() || isFundoRF ? '' : 'col-span-2'}>
           <Label htmlFor="investedAmount">Valor Investido (R$) *</Label>
           <Input
             id="investedAmount"
