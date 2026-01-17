@@ -76,7 +76,7 @@ export function useInvestments() {
   }, [user]);
 
   const calculateFixedIncomeValue = useCallback((investment: Investment) => {
-    const isFixedIncome = ['cdb', 'cdi', 'treasury', 'savings'].includes(investment.category);
+    const isFixedIncome = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(investment.category);
     
     if (!isFixedIncome || !investment.interestRate || !investment.purchaseDate) {
       return investment.quantity * investment.currentPrice;
@@ -97,14 +97,14 @@ export function useInvestments() {
   useEffect(() => {
     if (investments.length > 0 && !isLoading) {
       const needsUpdate = investments.some(inv => 
-        ['cdb', 'cdi', 'treasury', 'savings'].includes(inv.category) && 
+        ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(inv.category) &&
         inv.interestRate && 
         inv.purchaseDate
       );
 
       if (needsUpdate) {
         const updated = investments.map(inv => {
-          if (!['cdb', 'cdi', 'treasury', 'savings'].includes(inv.category)) return inv;
+          if (!['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(inv.category)) return inv;
           
           const currentValue = calculateFixedIncomeValue(inv);
           const profitLoss = currentValue - inv.investedAmount;
@@ -160,7 +160,7 @@ export function useInvestments() {
       updatedInv.investedAmount = updatedInv.quantity * updatedInv.averagePrice;
     }
     
-    const isFixedIncome = ['cdb', 'cdi', 'treasury', 'savings'].includes(updatedInv.category);
+    const isFixedIncome = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(updatedInv.category);
     
     if (isFixedIncome && updatedInv.interestRate && updatedInv.purchaseDate) {
       const purchaseDate = new Date(updatedInv.purchaseDate);
@@ -220,7 +220,7 @@ export function useInvestments() {
   }, [user, investments, saveToStorage]);
 
   const addInvestment = useCallback(async (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
-    const isFixedIncome = ['cdb', 'cdi', 'treasury', 'savings'].includes(data.category);
+    const isFixedIncome = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(data.category);
     
     // Verifica se já existe um investimento com esse ticker/nome
     const existingInvestment = findExistingInvestment(data);
@@ -428,10 +428,14 @@ export function useInvestments() {
       stocks: 0,
       fii: 0,
       cdb: 0,
-      cdi: 0,
+      lci: 0,
+      lca: 0,
       lcilca: 0,
       treasury: 0,
       savings: 0,
+      debentures: 0,
+      cricra: 0,
+      fixedincomefund: 0,
       cash: 0,
       realestate: 0,
       gold: 0,

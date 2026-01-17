@@ -20,7 +20,7 @@ interface InvestmentFormProps {
 }
 
 const categories: InvestmentCategory[] = [
-  'crypto', 'stocks', 'fii', 'cdb', 'cdi', 'lcilca', 'treasury', 'savings', 'other'
+  'crypto', 'stocks', 'fii', 'cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund', 'cash', 'realestate', 'gold', 'other'
 ];
 
 export function InvestmentForm({ investment, onSubmit, onClose }: InvestmentFormProps) {
