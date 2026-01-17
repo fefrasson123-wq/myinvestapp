@@ -186,7 +186,7 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
                   <div>
                     <p className="font-medium text-card-foreground">{benchmark.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {benchmark.rate}% a.a.
+                      {typeof benchmark.rate === 'number' ? benchmark.rate.toFixed(1) : benchmark.rate}% a.a.
                     </p>
                   </div>
                 </div>
