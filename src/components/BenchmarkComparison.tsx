@@ -3,32 +3,10 @@ import { Investment } from '@/types/investment';
 import { TrendingUp, TrendingDown, BarChart3, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEconomicRates } from '@/hooks/useEconomicRates';
-import { useCryptoPrices } from '@/hooks/useCryptoPrices';
-import { useState, useEffect } from 'react';
 
 interface BenchmarkComparisonProps {
   investment: Investment;
   onClose: () => void;
-}
-
-// Função para calcular retorno anualizado do Bitcoin (baseado em dados reais)
-function useBitcoinAnnualReturn() {
-  const { prices } = useCryptoPrices();
-  const [annualReturn, setAnnualReturn] = useState(50); // fallback
-  
-  useEffect(() => {
-    // Calcular retorno aproximado baseado na variação atual
-    const btcPrice = prices['BTC'] || prices['bitcoin'];
-    if (btcPrice && btcPrice.price_change_percentage_24h) {
-      // Extrapolar variação diária para anual (aproximação)
-      const dailyReturn = btcPrice.price_change_percentage_24h / 100;
-      const annualized = Math.pow(1 + dailyReturn, 365) - 1;
-      // Limitar entre -50% e 200% para evitar valores extremos
-      setAnnualReturn(Math.min(200, Math.max(-50, annualized * 100)));
-    }
-  }, [prices]);
-  
-  return annualReturn;
 }
 
 function formatCurrency(value: number): string {
@@ -60,16 +38,13 @@ function calculateBenchmarkReturn(invested: number, purchaseDate: string | undef
 
 export function BenchmarkComparison({ investment, onClose }: BenchmarkComparisonProps) {
   const { rates, isLoading: ratesLoading } = useEconomicRates();
-  const btcAnnualReturn = useBitcoinAnnualReturn();
   
-  const isCrypto = investment.category === 'crypto';
-  
-  // Usar taxas em tempo real do Banco Central
+  // Usar taxas em tempo real do Banco Central + S&P 500 média histórica
   const benchmarks = [
     { name: 'CDI', rate: rates.cdi, color: 'hsl(140, 100%, 50%)' },
-    { name: 'IBOVESPA', rate: 15.0, color: 'hsl(200, 100%, 50%)' }, // IBOV não tem API pública fácil
+    { name: 'IBOVESPA', rate: 15.0, color: 'hsl(200, 100%, 50%)' },
     { name: 'IPCA', rate: rates.ipca, color: 'hsl(30, 100%, 50%)' },
-    { name: 'Bitcoin', rate: btcAnnualReturn, color: 'hsl(45, 100%, 50%)' },
+    { name: 'S&P 500', rate: 12.0, color: 'hsl(280, 100%, 50%)' }, // Média histórica ~10-12% a.a.
   ];
   
   const benchmarkReturns = benchmarks.map(benchmark => {
