@@ -31,6 +31,7 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
     amount: '',
     notes: '',
     isYielding: false,
+    yieldType: '' as '' | 'cdi' | 'prefixado',
     cdiPercent: '',
   });
 
@@ -78,6 +79,7 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
         amount: '',
         notes: '',
         isYielding: false,
+        yieldType: '',
         cdiPercent: '',
       });
     } else if (cashType !== 'menu') {
@@ -239,7 +241,7 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, isYielding: false, cdiPercent: '' }))}
+                  onClick={() => setFormData(prev => ({ ...prev, isYielding: false, yieldType: '', cdiPercent: '' }))}
                   className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-md border-2 transition-all duration-200 text-sm ${
                     !formData.isYielding 
                       ? 'border-red-500 bg-red-500/10 text-red-600' 
@@ -251,18 +253,61 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
               </div>
             </div>
 
-            {formData.isYielding && (
+            {formData.isYielding && currency === 'BRL' && (
               <div>
-                <Label htmlFor="cdiPercent">
-                  {currency === 'BRL' ? 'Percentual do CDI (%)' : 'Percentual de Rendimento ao ano (%)'}
-                </Label>
+                <Label className="text-base">Tipo de Rendimento</Label>
+                <p className="text-xs text-muted-foreground mb-3">Selecione como seu dinheiro está rendendo</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, yieldType: 'cdi', cdiPercent: '' }))}
+                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-md border-2 transition-all duration-200 text-sm ${
+                      formData.yieldType === 'cdi'
+                        ? 'border-primary bg-primary/10 text-primary' 
+                        : 'border-border hover:border-primary hover:bg-primary/5'
+                    }`}
+                  >
+                    <span className="font-medium">CDI</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, yieldType: 'prefixado', cdiPercent: '' }))}
+                    className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-md border-2 transition-all duration-200 text-sm ${
+                      formData.yieldType === 'prefixado'
+                        ? 'border-primary bg-primary/10 text-primary' 
+                        : 'border-border hover:border-primary hover:bg-primary/5'
+                    }`}
+                  >
+                    <span className="font-medium">Prefixado</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {formData.isYielding && formData.yieldType === 'cdi' && currency === 'BRL' && (
+              <div>
+                <Label htmlFor="cdiPercent">Percentual do CDI (%)</Label>
                 <Input
                   id="cdiPercent"
                   type="number"
                   step="0.01"
                   value={formData.cdiPercent}
                   onChange={(e) => setFormData(prev => ({ ...prev, cdiPercent: e.target.value }))}
-                  placeholder={currency === 'BRL' ? 'Ex: 100% CDI a.a.' : 'Ex: 14% a.a.'}
+                  placeholder="Ex: 100% CDI a.a."
+                />
+              </div>
+            )}
+
+            {formData.isYielding && (formData.yieldType === 'prefixado' || currency !== 'BRL') && (
+              <div>
+                <Label htmlFor="cdiPercent">Percentual de Rendimento ao ano (%)</Label>
+                <Input
+                  id="cdiPercent"
+                  type="number"
+                  step="0.01"
+                  value={formData.cdiPercent}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cdiPercent: e.target.value }))}
+                  placeholder="Ex: 14% a.a."
                 />
               </div>
             )}
