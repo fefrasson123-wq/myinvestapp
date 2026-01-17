@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { TrendingUp, TrendingDown, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface AssetPriceChartProps {
   symbol: string;
@@ -11,6 +12,7 @@ interface AssetPriceChartProps {
   high24h?: number;
   low24h?: number;
   currency?: 'BRL' | 'USD';
+  isLoading?: boolean;
 }
 
 interface ChartDataPoint {
@@ -53,9 +55,12 @@ export function AssetPriceChart({
   changePercent24h = 0,
   high24h: propHigh24h,
   low24h: propLow24h,
-  currency = 'BRL' 
+  currency = 'BRL',
+  isLoading = false
 }: AssetPriceChartProps) {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const lastPriceRef = useRef<number | null>(null);
   
   const isPositive = changePercent24h >= 0;
   const formatPrice = (value: number) => {
@@ -70,14 +75,40 @@ export function AssetPriceChart({
   const low24h = propLow24h ?? (chartData.length > 0 ? Math.min(...chartData.map(d => d.price)) : currentPrice);
 
   useEffect(() => {
-    const data = generate24hData(currentPrice, changePercent24h);
-    setChartData(data);
-    // Debug: helps verify render + data generation in production logs
-    // eslint-disable-next-line no-console
-    console.debug('[AssetPriceChart]', { symbol, currentPrice, changePercent24h, points: data.length });
+    // Só gera o gráfico quando temos um preço válido diferente do anterior
+    // Isso evita regenerar com preço estático antes do real carregar
+    if (currentPrice > 0 && currentPrice !== lastPriceRef.current) {
+      lastPriceRef.current = currentPrice;
+      const data = generate24hData(currentPrice, changePercent24h);
+      setChartData(data);
+      setIsInitialized(true);
+    }
   }, [symbol, currentPrice, changePercent24h]);
 
   const openPrice = chartData.length > 0 ? chartData[0].price : currentPrice;
+
+  // Mostra skeleton enquanto não temos dados ou está carregando
+  if (isLoading || !isInitialized) {
+    return (
+      <div className="p-4 rounded-xl bg-secondary/30 border border-border/50 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium text-card-foreground">Variação 24h</span>
+          </div>
+          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+        </div>
+        <div className="h-32 w-full flex items-center justify-center">
+          <Skeleton className="h-24 w-full rounded-lg" />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <Skeleton className="h-14 rounded-lg" />
+          <Skeleton className="h-14 rounded-lg" />
+          <Skeleton className="h-14 rounded-lg" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 rounded-xl bg-secondary/30 border border-border/50 space-y-4">

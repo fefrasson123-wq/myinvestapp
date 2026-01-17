@@ -412,15 +412,23 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
             <span className="ml-2 text-primary font-mono text-sm">({selectedCrypto?.symbol})</span>
           </h3>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {isPriceLoading && <Loader2 className="w-3 h-3 animate-spin" />}
-            <span>Preço atual: $ {(currentLivePrice?.current_price ?? selectedCrypto?.price ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
-            {currentLivePrice && (
-              <span className={cn(
-                "font-mono",
-                currentLivePrice.price_change_percentage_24h >= 0 ? "text-success" : "text-destructive"
-              )}>
-                {currentLivePrice.price_change_percentage_24h >= 0 ? '+' : ''}{currentLivePrice.price_change_percentage_24h.toFixed(2)}%
-              </span>
+            {isPriceLoading && !currentLivePrice ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Carregando preço...</span>
+              </>
+            ) : currentLivePrice ? (
+              <>
+                <span>Preço atual: $ {currentLivePrice.current_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
+                <span className={cn(
+                  "font-mono",
+                  currentLivePrice.price_change_percentage_24h >= 0 ? "text-success" : "text-destructive"
+                )}>
+                  {currentLivePrice.price_change_percentage_24h >= 0 ? '+' : ''}{currentLivePrice.price_change_percentage_24h.toFixed(2)}%
+                </span>
+              </>
+            ) : (
+              <span>Carregando preço...</span>
             )}
           </div>
         </div>
@@ -436,15 +444,16 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
       </div>
 
       {/* Gráfico de variação 24h */}
-      {currentLivePrice && selectedCrypto && (
+      {selectedCrypto && (
         <AssetPriceChart
           symbol={selectedCrypto.symbol}
-          currentPrice={currentLivePrice.current_price}
-          change24h={currentLivePrice.price_change_24h}
-          changePercent24h={currentLivePrice.price_change_percentage_24h}
-          high24h={currentLivePrice.high_24h}
-          low24h={currentLivePrice.low_24h}
+          currentPrice={currentLivePrice?.current_price ?? 0}
+          change24h={currentLivePrice?.price_change_24h}
+          changePercent24h={currentLivePrice?.price_change_percentage_24h}
+          high24h={currentLivePrice?.high_24h}
+          low24h={currentLivePrice?.low_24h}
           currency="USD"
+          isLoading={isPriceLoading || !currentLivePrice}
         />
       )}
 

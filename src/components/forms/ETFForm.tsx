@@ -240,6 +240,7 @@ export function ETFForm({ onSubmit, onSell, onBack }: ETFFormProps) {
             high24h={(currentLivePrice?.price || selectedETF.price) * 1.02}
             low24h={(currentLivePrice?.price || selectedETF.price) * 0.98}
             currency="BRL"
+            isLoading={!currentLivePrice}
           />
         </div>
       )}

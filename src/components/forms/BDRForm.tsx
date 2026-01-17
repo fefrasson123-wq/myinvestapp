@@ -289,17 +289,22 @@ export function BDRForm({ onSubmit, onSell, onBack }: BDRFormProps) {
                 <span className="ml-2 text-xs text-muted-foreground">({selectedBDR.underlyingTicker})</span>
               </div>
               <div className="flex items-center gap-2">
-                {isPriceLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-                <span className="font-mono text-foreground">
-                  R$ {(currentLivePrice?.price ?? selectedBDR.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-                {currentLivePrice && (
-                  <span className={cn(
-                    "text-xs font-mono",
-                    currentLivePrice.changePercent >= 0 ? "text-success" : "text-destructive"
-                  )}>
-                    {currentLivePrice.changePercent >= 0 ? '+' : ''}{currentLivePrice.changePercent.toFixed(2)}%
-                  </span>
+                {isPriceLoading && !currentLivePrice ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                ) : currentLivePrice ? (
+                  <>
+                    <span className="font-mono text-foreground">
+                      R$ {currentLivePrice.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className={cn(
+                      "text-xs font-mono",
+                      currentLivePrice.changePercent >= 0 ? "text-success" : "text-destructive"
+                    )}>
+                      {currentLivePrice.changePercent >= 0 ? '+' : ''}{currentLivePrice.changePercent.toFixed(2)}%
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Carregando...</span>
                 )}
               </div>
             </div>
@@ -314,6 +319,7 @@ export function BDRForm({ onSubmit, onSell, onBack }: BDRFormProps) {
             high24h={currentLivePrice?.high24h}
             low24h={currentLivePrice?.low24h}
             currency="BRL"
+            isLoading={isPriceLoading && !currentLivePrice}
           />
 
           <div className="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
