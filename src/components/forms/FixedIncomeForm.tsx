@@ -392,6 +392,10 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
         return { label: 'Taxa adicional (IPCA +)', placeholder: 'Ex: 5.5', suffix: '% a.a.' };
       }
     }
+    // Fundo RF Prefixado
+    if (isFundoRF && fundoRFType === 'fundo_prefixado') {
+      return { label: 'Taxa Prefixada (% a.a.)', placeholder: 'Ex: 12.5', suffix: '% a.a.' };
+    }
     // Genérico
     if (effectiveType === 'pre') {
       return { label: 'Taxa (% a.a.)', placeholder: 'Ex: 12.5', suffix: '% a.a.' };
@@ -408,7 +412,9 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
   const needsRateInput = () => {
     if (isSavings) return false; // Poupança tem regras próprias automáticas
     if (isTreasury && treasuryType === 'selic') return false;
-    if (isFundoRF) return false; // Fundos não usam taxa manual
+    // Fundo Prefixado precisa de input de taxa (a taxa do ativo comprado)
+    if (isFundoRF && fundoRFType === 'fundo_prefixado') return true;
+    if (isFundoRF) return false; // Outros fundos não usam taxa manual
     return true;
   };
 
@@ -542,8 +548,9 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
       } else if (fundoRFType === 'fundo_ipca') {
         fundoEffectiveRate = rates.ipca - taxaAdmin;
       } else if (fundoRFType === 'fundo_prefixado') {
-        // Prefixado: não temos taxa, usamos uma estimativa
-        fundoEffectiveRate = rates.cdi - taxaAdmin;
+        // Prefixado: usa a taxa informada pelo usuário
+        const userRate = parseFloat(formData.interestRate) || 0;
+        fundoEffectiveRate = userRate - taxaAdmin;
       } else {
         fundoEffectiveRate = rates.cdi - taxaAdmin;
       }
