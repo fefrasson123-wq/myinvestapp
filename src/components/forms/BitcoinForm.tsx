@@ -106,7 +106,7 @@ export function BitcoinForm({ onSubmit, onSell, onBack }: BitcoinFormProps) {
                   "font-mono",
                   currentLivePrice.price_change_percentage_24h >= 0 ? "text-success" : "text-destructive"
                 )}>
-                  {currentLivePrice.price_change_percentage_24h >= 0 ? '+' : ''}{currentLivePrice.price_change_percentage_24h.toFixed(2)}%
+                  {currentLivePrice.price_change_percentage_24h >= 0 ? '+' : ''}{currentLivePrice.price_change_percentage_24h.toFixed(2)}% (24h)
                 </span>
               </>
             ) : (
