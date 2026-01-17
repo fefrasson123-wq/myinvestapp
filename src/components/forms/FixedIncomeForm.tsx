@@ -343,6 +343,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     // Campos específicos para Fundos de RF
     gestora: '',
     taxaAdministracao: '',
+    taxaContratada: '',
   });
 
   const { rates, isLoading: ratesLoading } = useEconomicRates();
@@ -947,6 +948,28 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
             required
           />
         </div>
+
+        {/* Campo de taxa contratada apenas para fundo multiestratégia */}
+        {isFundoRF && fundoRFType === 'fundo_multi' && (
+          <div>
+            <Label htmlFor="taxaContratada">Taxa Contratada (% a.a.) *</Label>
+            <div className="relative">
+              <Input
+                id="taxaContratada"
+                type="number"
+                step="any"
+                value={formData.taxaContratada}
+                onChange={(e) => handleInputChange('taxaContratada', e.target.value)}
+                placeholder="Ex: 12.5"
+                required
+                className="pr-16"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">
+                % a.a.
+              </span>
+            </div>
+          </div>
+        )}
 
         {needsRateInput() && (
           <div>
