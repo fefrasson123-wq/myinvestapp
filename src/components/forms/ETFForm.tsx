@@ -102,9 +102,8 @@ export function ETFForm({ onSubmit, onSell, onBack }: ETFFormProps) {
       setPurchaseDate('');
       setNotes('');
     } else if (etfType) {
-      // Se não tem ETF selecionado mas tem tipo, volta para o menu principal
+      // Se não tem ETF selecionado mas tem tipo, volta para seleção de tipo
       setEtfType(null);
-      onBack();
     } else {
       onBack();
     }
