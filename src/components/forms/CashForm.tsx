@@ -235,14 +235,16 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
 
             {formData.isYielding && (
               <div>
-                <Label htmlFor="cdiPercent">Percentual de Rendimento ao ano (%)</Label>
+                <Label htmlFor="cdiPercent">
+                  {currency === 'BRL' ? 'Percentual do CDI (%)' : 'Percentual de Rendimento ao ano (%)'}
+                </Label>
                 <Input
                   id="cdiPercent"
                   type="number"
                   step="0.01"
                   value={formData.cdiPercent}
                   onChange={(e) => setFormData(prev => ({ ...prev, cdiPercent: e.target.value }))}
-                  placeholder="Ex: 14% a.a."
+                  placeholder={currency === 'BRL' ? 'Ex: 100% CDI a.a.' : 'Ex: 14% a.a.'}
                 />
               </div>
             )}
