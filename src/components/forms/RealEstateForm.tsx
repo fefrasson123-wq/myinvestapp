@@ -1,171 +1,79 @@
 import { useState } from 'react';
-import { Check, ArrowLeft, MapPin } from 'lucide-react';
+import { Check, ArrowLeft, MapPin, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Investment, RealEstateType, realEstateLabels } from '@/types/investment';
+import { Investment } from '@/types/investment';
 import { cn } from '@/lib/utils';
-import { RealEstateValueChart } from '@/components/RealEstateValueChart';
+import { Switch } from '@/components/ui/switch';
 
 interface RealEstateFormProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
   onBack: () => void;
 }
 
-// Preço médio por m² por estado (estimativa 2025)
-const pricePerM2ByState: Record<string, number> = {
-  'SP': 10500,
-  'RJ': 9800,
-  'DF': 9200,
-  'SC': 8500,
-  'RS': 7200,
-  'PR': 7800,
-  'MG': 6500,
-  'BA': 5800,
-  'PE': 5500,
-  'CE': 5200,
-  'GO': 6000,
-  'ES': 6800,
-  'MT': 5500,
-  'MS': 5000,
-  'PA': 4500,
-  'AM': 4800,
-  'MA': 4200,
-  'RN': 4800,
-  'PB': 4500,
-  'PI': 4000,
-  'AL': 4500,
-  'SE': 4800,
-  'TO': 4200,
-  'RO': 4000,
-  'AC': 3800,
-  'AP': 3500,
-  'RR': 3500,
-};
-
-// Multiplicadores por tipo de imóvel
-const typeMultipliers: Record<RealEstateType, number> = {
-  apartment: 1.2,
-  house: 1.0,
-  commercial: 0.9,
-  lot: 0.5,
-  land: 0.3,
-};
-
-const realEstateTypes: { id: RealEstateType; label: string }[] = [
-  { id: 'house', label: 'Casa' },
-  { id: 'apartment', label: 'Apartamento' },
-  { id: 'lot', label: 'Lote' },
-  { id: 'land', label: 'Terreno' },
-  { id: 'commercial', label: 'Comercial' },
-];
-
-const brazilianStates = [
-  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
-  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 
-  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
-];
-
-type ValuationMode = 'estimate' | 'manual_m2' | 'direct';
-
 export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
-  const [valuationMode, setValuationMode] = useState<ValuationMode>('estimate');
   const [formData, setFormData] = useState({
     name: '',
-    type: 'house' as RealEstateType,
-    address: '',
-    city: '',
-    state: 'SP',
-    areaM2: '',
     purchasePrice: '',
     purchaseDate: '',
-    notes: '',
-    manualPricePerM2: '',
-    directValue: '',
+    annualAppreciation: '7.73',
+    paysRent: false,
+    monthlyRent: '',
   });
 
-  const [estimatedValue, setEstimatedValue] = useState<number | null>(null);
-
-  // Calcula valor estimado baseado em área e localização
-  const calculateEstimatedValue = () => {
-    const area = parseFloat(formData.areaM2) || 0;
+  const calculateCurrentValue = () => {
+    const purchasePrice = parseFloat(formData.purchasePrice) || 0;
+    const annualRate = parseFloat(formData.annualAppreciation) || 7.73;
+    const purchaseDate = formData.purchaseDate ? new Date(formData.purchaseDate) : null;
     
-    if (valuationMode === 'manual_m2') {
-      const manualPrice = parseFloat(formData.manualPricePerM2) || 0;
-      const estimated = area * manualPrice;
-      setEstimatedValue(estimated);
-      return estimated;
+    if (!purchaseDate || purchasePrice === 0) {
+      return purchasePrice;
     }
+
+    const now = new Date();
+    const yearsHeld = (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
     
-    const basePrice = pricePerM2ByState[formData.state] || 5000;
-    const multiplier = typeMultipliers[formData.type];
-    
-    const estimated = area * basePrice * multiplier;
-    setEstimatedValue(estimated);
-    return estimated;
-  };
-
-  const handleAreaChange = (value: string) => {
-    setFormData(prev => ({ ...prev, areaM2: value }));
-    if (value && parseFloat(value) > 0) {
-      setTimeout(calculateEstimatedValue, 100);
-    } else {
-      setEstimatedValue(null);
+    if (yearsHeld <= 0) {
+      return purchasePrice;
     }
-  };
 
-  const handleManualPriceChange = (value: string) => {
-    setFormData(prev => ({ ...prev, manualPricePerM2: value }));
-    setTimeout(calculateEstimatedValue, 100);
-  };
-
-  const handleStateChange = (value: string) => {
-    setFormData(prev => ({ ...prev, state: value }));
-    setTimeout(calculateEstimatedValue, 100);
-  };
-
-  const handleTypeChange = (type: RealEstateType) => {
-    setFormData(prev => ({ ...prev, type }));
-    setTimeout(calculateEstimatedValue, 100);
-  };
-
-  const getCurrentValue = () => {
-    if (valuationMode === 'direct') {
-      return parseFloat(formData.directValue) || 0;
-    }
-    return estimatedValue || parseFloat(formData.purchasePrice) || 0;
+    // Compound appreciation
+    const currentValue = purchasePrice * Math.pow(1 + annualRate / 100, yearsHeld);
+    return currentValue;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const area = parseFloat(formData.areaM2) || 0;
     const purchasePrice = parseFloat(formData.purchasePrice) || 0;
-    const currentValue = getCurrentValue();
+    const currentValue = calculateCurrentValue();
+    
+    // Build notes with rent info if applicable
+    let notes = `Valorização anual: ${formData.annualAppreciation}% a.a.`;
+    if (formData.paysRent && formData.monthlyRent) {
+      notes += ` | Aluguel mensal: R$ ${parseFloat(formData.monthlyRent).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    }
     
     onSubmit({
-      name: formData.name || `${realEstateLabels[formData.type]} - ${formData.city || formData.state}`,
+      name: formData.name,
       category: 'realestate',
       quantity: 1,
-      averagePrice: purchasePrice || currentValue,
+      averagePrice: purchasePrice,
       currentPrice: currentValue,
-      investedAmount: purchasePrice || currentValue,
-      realEstateType: valuationMode === 'direct' ? formData.type : formData.type,
-      address: formData.address || undefined,
-      areaM2: area || undefined,
-      city: formData.city || undefined,
-      state: formData.state || undefined,
+      investedAmount: purchasePrice,
       purchaseDate: formData.purchaseDate || undefined,
-      notes: formData.notes.trim() || undefined,
+      interestRate: parseFloat(formData.annualAppreciation) || 7.73,
+      dividends: formData.paysRent ? parseFloat(formData.monthlyRent) || 0 : undefined,
+      notes: notes,
     });
   };
 
-  const valuationModes = [
-    { id: 'estimate' as ValuationMode, label: 'Estimar por Estado', description: 'Usa média de preço/m² do estado' },
-    { id: 'manual_m2' as ValuationMode, label: 'Informar Valor/m²', description: 'Você informa o preço por m²' },
-    { id: 'direct' as ValuationMode, label: 'Valor Avaliado', description: 'Você já sabe quanto vale' },
-  ];
+  const currentValue = calculateCurrentValue();
+  const profitLoss = currentValue - (parseFloat(formData.purchasePrice) || 0);
+  const profitLossPercent = parseFloat(formData.purchasePrice) > 0 
+    ? (profitLoss / parseFloat(formData.purchasePrice)) * 100 
+    : 0;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -178,232 +86,123 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
         </h3>
       </div>
 
-      {/* Modo de Avaliação */}
-      <div>
-        <Label>Como deseja informar o valor? *</Label>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
-          {valuationModes.map((mode) => (
-            <button
-              key={mode.id}
-              type="button"
-              onClick={() => setValuationMode(mode.id)}
-              className={cn(
-                "py-3 px-3 rounded-lg text-sm font-medium transition-all border text-left",
-                valuationMode === mode.id
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-secondary/30 text-muted-foreground border-border/50 hover:border-primary/50"
-              )}
-            >
-              <div>{mode.label}</div>
-              <div className={cn(
-                "text-xs mt-1",
-                valuationMode === mode.id ? "text-primary-foreground/80" : "text-muted-foreground/70"
-              )}>
-                {mode.description}
-              </div>
-            </button>
-          ))}
+      {/* Observações sobre valorização */}
+      <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <MapPin className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">
+              📌 Observações: Coloque a valorização anual do Imóvel.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Média Nacional <span className="font-semibold text-primary">7,73% a.a.</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Mas tem regiões que podem superar <span className="font-semibold text-success">10%</span>.
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Tipo de Imóvel */}
+      {/* Nome */}
       <div>
-        <Label>Tipo de Imóvel *</Label>
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-2">
-          {realEstateTypes.map((type) => (
-            <button
-              key={type.id}
-              type="button"
-              onClick={() => handleTypeChange(type.id)}
-              className={cn(
-                "py-2 px-3 rounded-lg text-sm font-medium transition-all border",
-                formData.type === type.id
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-secondary/30 text-muted-foreground border-border/50 hover:border-primary/50"
-              )}
-            >
-              {type.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="name">Nome/Descrição</Label>
+        <Label htmlFor="name">Nome *</Label>
         <Input
           id="name"
           value={formData.name}
           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
           placeholder="Ex: Casa na Praia, Apartamento Centro..."
+          required
         />
       </div>
 
-      {/* Campos condicionais baseados no modo */}
-      {valuationMode === 'direct' ? (
-        <>
-          <div>
-            <Label htmlFor="directValue">Valor Avaliado (R$) *</Label>
-            <Input
-              id="directValue"
-              type="number"
-              step="0.01"
-              value={formData.directValue}
-              onChange={(e) => setFormData(prev => ({ ...prev, directValue: e.target.value }))}
-              placeholder="500000.00"
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="purchasePrice">Preço de Compra (R$)</Label>
-            <Input
-              id="purchasePrice"
-              type="number"
-              step="0.01"
-              value={formData.purchasePrice}
-              onChange={(e) => setFormData(prev => ({ ...prev, purchasePrice: e.target.value }))}
-              placeholder="0.00"
-            />
-          </div>
-        </>
-      ) : (
-        <>
-          <div>
-            <Label htmlFor="address">Endereço</Label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="Rua, número, bairro..."
-                className="pl-10"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="city">Cidade</Label>
-              <Input
-                id="city"
-                value={formData.city}
-                onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                placeholder="São Paulo"
-              />
-            </div>
-
-            {valuationMode === 'estimate' && (
-              <div>
-                <Label htmlFor="state">Estado *</Label>
-                <select
-                  id="state"
-                  value={formData.state}
-                  onChange={(e) => handleStateChange(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                >
-                  {brazilianStates.map(state => (
-                    <option key={state} value={state}>{state}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {valuationMode === 'manual_m2' && (
-              <div>
-                <Label htmlFor="manualPricePerM2">Valor por m² (R$) *</Label>
-                <Input
-                  id="manualPricePerM2"
-                  type="number"
-                  step="0.01"
-                  value={formData.manualPricePerM2}
-                  onChange={(e) => handleManualPriceChange(e.target.value)}
-                  placeholder="8000.00"
-                  required
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="areaM2">Área (m²) *</Label>
-              <Input
-                id="areaM2"
-                type="number"
-                step="0.01"
-                value={formData.areaM2}
-                onChange={(e) => handleAreaChange(e.target.value)}
-                placeholder="0.00"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="purchasePrice">Preço de Compra (R$)</Label>
-              <Input
-                id="purchasePrice"
-                type="number"
-                step="0.01"
-                value={formData.purchasePrice}
-                onChange={(e) => setFormData(prev => ({ ...prev, purchasePrice: e.target.value }))}
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-
-          {/* Gráfico de Valorização do Imóvel */}
-          {estimatedValue && estimatedValue > 0 && (
-            <>
-              <RealEstateValueChart
-                purchasePrice={parseFloat(formData.purchasePrice) || estimatedValue * 0.85}
-                currentValue={estimatedValue}
-                purchaseDate={formData.purchaseDate}
-                expanded={false}
-              />
-              <div className="text-xs text-muted-foreground text-center">
-                {valuationMode === 'manual_m2' 
-                  ? `Baseado em R$ ${parseFloat(formData.manualPricePerM2).toLocaleString('pt-BR')}/m²`
-                  : `Baseado em R$ ${(pricePerM2ByState[formData.state] * typeMultipliers[formData.type]).toLocaleString('pt-BR')}/m² para ${realEstateLabels[formData.type].toLowerCase()} em ${formData.state}`
-                }
-              </div>
-            </>
-          )}
-        </>
-      )}
-
-      {/* Gráfico de Valorização - Modo Direto */}
-      {valuationMode === 'direct' && formData.directValue && parseFloat(formData.directValue) > 0 && (
-        <RealEstateValueChart
-          purchasePrice={parseFloat(formData.purchasePrice) || parseFloat(formData.directValue) * 0.85}
-          currentValue={parseFloat(formData.directValue)}
-          purchaseDate={formData.purchaseDate}
-          expanded={false}
+      {/* Valor de Compra */}
+      <div>
+        <Label htmlFor="purchasePrice">Valor de Compra (R$) *</Label>
+        <Input
+          id="purchasePrice"
+          type="number"
+          step="0.01"
+          value={formData.purchasePrice}
+          onChange={(e) => setFormData(prev => ({ ...prev, purchasePrice: e.target.value }))}
+          placeholder="500000.00"
+          required
         />
-      )}
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="purchaseDate">Data da Compra</Label>
-          <Input
-            id="purchaseDate"
-            type="date"
-            value={formData.purchaseDate}
-            onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
-          />
-        </div>
-
-        <div className="col-span-2">
-          <Label htmlFor="notes">Observações</Label>
-          <Textarea
-            id="notes"
-            value={formData.notes}
-            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            placeholder="Detalhes adicionais sobre o imóvel..."
-            rows={2}
-          />
-        </div>
       </div>
+
+      {/* Data de Compra */}
+      <div>
+        <Label htmlFor="purchaseDate">Data de Compra</Label>
+        <Input
+          id="purchaseDate"
+          type="date"
+          value={formData.purchaseDate}
+          onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
+        />
+      </div>
+
+      {/* Valorização Anual */}
+      <div>
+        <Label htmlFor="annualAppreciation">Valorização Anual (% a.a.) *</Label>
+        <Input
+          id="annualAppreciation"
+          type="number"
+          step="0.01"
+          value={formData.annualAppreciation}
+          onChange={(e) => setFormData(prev => ({ ...prev, annualAppreciation: e.target.value }))}
+          placeholder="7.73"
+          required
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Padrão: 7,73% a.a. (média nacional)
+        </p>
+      </div>
+
+      {/* Paga aluguel? */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="paysRent" className="cursor-pointer">Paga aluguel?</Label>
+          <Switch
+            id="paysRent"
+            checked={formData.paysRent}
+            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, paysRent: checked }))}
+          />
+        </div>
+        
+        {formData.paysRent && (
+          <div>
+            <Label htmlFor="monthlyRent">Aluguel Mensal (R$)</Label>
+            <Input
+              id="monthlyRent"
+              type="number"
+              step="0.01"
+              value={formData.monthlyRent}
+              onChange={(e) => setFormData(prev => ({ ...prev, monthlyRent: e.target.value }))}
+              placeholder="2500.00"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Preview de valorização */}
+      {formData.purchasePrice && parseFloat(formData.purchasePrice) > 0 && formData.purchaseDate && (
+        <div className="bg-secondary/30 rounded-lg p-4 space-y-2">
+          <p className="text-sm font-medium text-foreground">Valor Estimado Atual</p>
+          <p className="text-2xl font-bold text-primary">
+            R$ {currentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <p className={cn(
+            "text-sm font-medium",
+            profitLoss >= 0 ? "text-success" : "text-destructive"
+          )}>
+            {profitLoss >= 0 ? '+' : ''}R$ {profitLoss.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} 
+            ({profitLoss >= 0 ? '+' : ''}{profitLossPercent.toFixed(2)}%)
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Baseado em {formData.annualAppreciation}% a.a. desde a data de compra
+          </p>
+        </div>
+      )}
 
       <div className="flex gap-3 pt-4">
         <Button type="button" variant="outline" className="flex-1" onClick={onBack}>
