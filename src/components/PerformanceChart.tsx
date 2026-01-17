@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   XAxis,
   YAxis,
@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import { Investment, PriceHistory } from '@/types/investment';
 import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PerformanceChartProps {
   investments: Investment[];
@@ -43,6 +44,24 @@ function getPeriodDays(period: string): number {
   }
 }
 
+function getYahooRange(period: string): string {
+  switch (period) {
+    case '24h':
+      return '1d';
+    case '1w':
+      return '1w';
+    case '1m':
+      return '1mo';
+    case '6m':
+      return '6mo';
+    case '1y':
+      return '1y';
+    case 'total':
+    default:
+      return '1y';
+  }
+}
+
 // Calcula taxa diária baseada no tipo de renda fixa
 function getDailyRate(investment: Investment): number {
   const annualRate = (investment.interestRate || 10) / 100;
@@ -63,12 +82,84 @@ function calculateFixedIncomeAtTime(investment: Investment, timestamp: number): 
   return investment.investedAmount * Math.pow(1 + dailyRate, daysElapsed);
 }
 
-// Calcula valor interpolado de um investimento genérico (ações, crypto, etc)
-// Usa interpolação linear entre valor investido e valor atual
-function calculateInvestmentValueAtTime(
-  investment: Investment, 
-  timestamp: number, 
-  usdToBrl: number = 1
+// Tipo para histórico de preços
+type HistoricalPrices = Record<string, Array<{ date: string; price: number }>>;
+
+// Busca histórico via edge function
+async function fetchHistoricalFromYahoo(
+  symbols: string[],
+  market: 'br' | 'usa' | 'crypto',
+  range: string
+): Promise<HistoricalPrices> {
+  if (symbols.length === 0) return {};
+  
+  try {
+    const { data, error } = await supabase.functions.invoke('stock-quotes', {
+      body: { 
+        symbols, 
+        market, 
+        action: 'historical',
+        range
+      }
+    });
+    
+    if (error) {
+      console.error('Error fetching historical:', error);
+      return {};
+    }
+    
+    return data?.history || {};
+  } catch (e) {
+    console.error('Error fetching historical:', e);
+    return {};
+  }
+}
+
+// Interpola preço para um timestamp específico usando histórico real
+function getInterpolatedPrice(
+  history: Array<{ date: string; price: number }>,
+  timestamp: number
+): number | null {
+  if (!history || history.length === 0) return null;
+  
+  // Converte todas as datas para timestamps
+  const dataPoints = history.map(h => ({
+    time: new Date(h.date).getTime(),
+    price: h.price
+  })).sort((a, b) => a.time - b.time);
+  
+  // Se timestamp é antes do primeiro ponto, usa o primeiro
+  if (timestamp <= dataPoints[0].time) {
+    return dataPoints[0].price;
+  }
+  
+  // Se timestamp é depois do último ponto, usa o último
+  if (timestamp >= dataPoints[dataPoints.length - 1].time) {
+    return dataPoints[dataPoints.length - 1].price;
+  }
+  
+  // Encontra os dois pontos mais próximos e interpola
+  for (let i = 0; i < dataPoints.length - 1; i++) {
+    if (timestamp >= dataPoints[i].time && timestamp <= dataPoints[i + 1].time) {
+      const t1 = dataPoints[i].time;
+      const t2 = dataPoints[i + 1].time;
+      const p1 = dataPoints[i].price;
+      const p2 = dataPoints[i + 1].price;
+      
+      const progress = (timestamp - t1) / (t2 - t1);
+      return p1 + (p2 - p1) * progress;
+    }
+  }
+  
+  return dataPoints[dataPoints.length - 1].price;
+}
+
+// Calcula valor do investimento usando histórico real
+function calculateValueAtTime(
+  investment: Investment,
+  timestamp: number,
+  historicalPrices: HistoricalPrices,
+  usdToBrl: number
 ): number {
   const purchaseDate = investment.purchaseDate 
     ? new Date(investment.purchaseDate).getTime() 
@@ -76,6 +167,25 @@ function calculateInvestmentValueAtTime(
   
   if (timestamp < purchaseDate) return 0;
   
+  const isCrypto = investment.category === 'crypto';
+  const isUSA = investment.category === 'usastocks' || investment.category === 'reits';
+  const isBRStock = investment.category === 'stocks' || investment.category === 'fii';
+  
+  // Para ativos com ticker, busca preço histórico real
+  if (investment.ticker && (isCrypto || isUSA || isBRStock)) {
+    const symbol = investment.ticker.toUpperCase().replace('.SA', '').replace('-USD', '');
+    const history = historicalPrices[symbol];
+    
+    if (history && history.length > 0) {
+      const price = getInterpolatedPrice(history, timestamp);
+      if (price !== null) {
+        const multiplier = (isCrypto || isUSA) ? usdToBrl : 1;
+        return investment.quantity * price * multiplier;
+      }
+    }
+  }
+  
+  // Fallback: interpolação entre valor investido e atual
   const now = Date.now();
   const totalTime = now - purchaseDate;
   
@@ -84,9 +194,6 @@ function calculateInvestmentValueAtTime(
   const elapsed = timestamp - purchaseDate;
   const progress = Math.min(1, elapsed / totalTime);
   
-  // Valor atual ajustado para moeda
-  const isCrypto = investment.category === 'crypto';
-  const isUSA = investment.category === 'usastocks' || investment.category === 'reits';
   const currentValue = (isCrypto || isUSA) 
     ? investment.currentValue * usdToBrl 
     : investment.currentValue;
@@ -95,11 +202,8 @@ function calculateInvestmentValueAtTime(
     ? investment.investedAmount * usdToBrl
     : investment.investedAmount;
   
-  // Interpolação com leve variação para parecer mais natural
   const totalChange = currentValue - investedAmount;
-  
-  // Adiciona uma curva suave em vez de linear pura
-  const easedProgress = progress * progress * (3 - 2 * progress); // smoothstep
+  const easedProgress = progress * progress * (3 - 2 * progress);
   
   return investedAmount + totalChange * easedProgress;
 }
@@ -110,6 +214,7 @@ function useHistoricalData(investments: Investment[], period: string) {
   const [isLoading, setIsLoading] = useState(true);
   const hasLoadedOnceRef = useRef(false);
   const lastPeriodRef = useRef(period);
+  const lastInvestmentsKeyRef = useRef('');
   
   // Create stable keys to compare investments without reference changes
   const investmentsKey = investments
@@ -117,35 +222,15 @@ function useHistoricalData(investments: Investment[], period: string) {
     .sort()
     .join('|');
   
-  useEffect(() => {
-    // Reset loading state when period changes
-    const periodChanged = lastPeriodRef.current !== period;
-    if (periodChanged) {
-      lastPeriodRef.current = period;
-    }
-    
+  const loadData = useCallback(async () => {
     if (investments.length === 0) {
       setData([]);
       setIsLoading(false);
       return;
     }
     
-    // Show loading on first load OR when period changes
-    if (!hasLoadedOnceRef.current || periodChanged) {
-      setIsLoading(true);
-    }
-    
     const days = getPeriodDays(period);
-    const numPoints = days <= 1 ? 24 : days <= 7 ? 14 : days <= 30 ? 30 : 24;
-    const now = Date.now();
-    const startTime = now - days * 24 * 60 * 60 * 1000;
-    const interval = (now - startTime) / (numPoints - 1);
-    
-    // Gera timestamps
-    const timestamps: number[] = [];
-    for (let i = 0; i < numPoints; i++) {
-      timestamps.push(startTime + i * interval);
-    }
+    const range = getYahooRange(period);
     
     // Separa investimentos por categoria
     const fixedIncomeCategories = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'];
@@ -155,6 +240,46 @@ function useHistoricalData(investments: Investment[], period: string) {
     const otherInvestments = investments.filter(inv => 
       !fixedIncomeCategories.includes(inv.category)
     );
+    
+    // Separa por mercado para buscar histórico
+    const cryptoTickers: string[] = [];
+    const usaTickers: string[] = [];
+    const brTickers: string[] = [];
+    
+    for (const inv of otherInvestments) {
+      if (inv.ticker) {
+        const ticker = inv.ticker.toUpperCase().replace('.SA', '').replace('-USD', '');
+        if (inv.category === 'crypto') {
+          cryptoTickers.push(ticker);
+        } else if (inv.category === 'usastocks' || inv.category === 'reits') {
+          usaTickers.push(ticker);
+        } else if (inv.category === 'stocks' || inv.category === 'fii') {
+          brTickers.push(ticker);
+        }
+      }
+    }
+    
+    // Busca histórico em paralelo
+    const [cryptoHistory, usaHistory, brHistory] = await Promise.all([
+      cryptoTickers.length > 0 ? fetchHistoricalFromYahoo(cryptoTickers, 'crypto', range) : {},
+      usaTickers.length > 0 ? fetchHistoricalFromYahoo(usaTickers, 'usa', range) : {},
+      brTickers.length > 0 ? fetchHistoricalFromYahoo(brTickers, 'br', range) : {}
+    ]);
+    
+    const allHistory: HistoricalPrices = { ...cryptoHistory, ...usaHistory, ...brHistory };
+    
+    console.log(`Loaded historical for ${Object.keys(allHistory).length} symbols`);
+    
+    // Gera timestamps para o gráfico
+    const numPoints = days <= 1 ? 24 : days <= 7 ? 14 : days <= 30 ? 30 : 24;
+    const now = Date.now();
+    const startTime = now - days * 24 * 60 * 60 * 1000;
+    const interval = (now - startTime) / (numPoints - 1);
+    
+    const timestamps: number[] = [];
+    for (let i = 0; i < numPoints; i++) {
+      timestamps.push(startTime + i * interval);
+    }
     
     // Constrói dados do gráfico
     const chartData: PriceHistory[] = [];
@@ -168,9 +293,9 @@ function useHistoricalData(investments: Investment[], period: string) {
         portfolioValue += calculateFixedIncomeAtTime(inv, timestamp);
       }
 
-      // 2. Outros investimentos (crypto, stocks, fii, reits, etc) - interpolação
+      // 2. Outros investimentos - usa histórico real quando disponível
       for (const inv of otherInvestments) {
-        portfolioValue += calculateInvestmentValueAtTime(inv, timestamp, usdToBrl);
+        portfolioValue += calculateValueAtTime(inv, timestamp, allHistory, usdToBrl);
       }
 
       // Formata data
@@ -207,7 +332,24 @@ function useHistoricalData(investments: Investment[], period: string) {
     setData(chartData);
     setIsLoading(false);
     hasLoadedOnceRef.current = true;
-  }, [investmentsKey, period, usdToBrl]);
+  }, [investments, period, usdToBrl]);
+  
+  useEffect(() => {
+    // Reset loading state when period or investments change
+    const periodChanged = lastPeriodRef.current !== period;
+    const investmentsChanged = lastInvestmentsKeyRef.current !== investmentsKey;
+    
+    if (periodChanged || investmentsChanged) {
+      lastPeriodRef.current = period;
+      lastInvestmentsKeyRef.current = investmentsKey;
+      
+      if (!hasLoadedOnceRef.current || periodChanged) {
+        setIsLoading(true);
+      }
+    }
+    
+    loadData();
+  }, [investmentsKey, period, loadData]);
   
   return { data, isLoading };
 }
