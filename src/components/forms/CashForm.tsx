@@ -45,8 +45,8 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
         </h3>
       </div>
 
-      <div className="space-y-4">
-        <div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="col-span-2">
           <Label htmlFor="name">Descrição</Label>
           <Input
             id="name"
@@ -56,7 +56,7 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
           />
         </div>
 
-        <div>
+        <div className="col-span-2">
           <Label htmlFor="amount">Valor Total (R$) *</Label>
           <Input
             id="amount"
@@ -69,7 +69,7 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
           />
         </div>
 
-        <div>
+        <div className="col-span-2">
           <Label htmlFor="notes">Observações</Label>
           <Textarea
             id="notes"

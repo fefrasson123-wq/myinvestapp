@@ -382,25 +382,27 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
         />
       )}
 
-      <div>
-        <Label htmlFor="purchaseDate">Data da Compra</Label>
-        <Input
-          id="purchaseDate"
-          type="date"
-          value={formData.purchaseDate}
-          onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
-        />
-      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="purchaseDate">Data da Compra</Label>
+          <Input
+            id="purchaseDate"
+            type="date"
+            value={formData.purchaseDate}
+            onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
+          />
+        </div>
 
-      <div>
-        <Label htmlFor="notes">Observações</Label>
-        <Textarea
-          id="notes"
-          value={formData.notes}
-          onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-          placeholder="Detalhes adicionais sobre o imóvel..."
-          rows={2}
-        />
+        <div className="col-span-2">
+          <Label htmlFor="notes">Observações</Label>
+          <Textarea
+            id="notes"
+            value={formData.notes}
+            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+            placeholder="Detalhes adicionais sobre o imóvel..."
+            rows={2}
+          />
+        </div>
       </div>
 
       <div className="flex gap-3 pt-4">
