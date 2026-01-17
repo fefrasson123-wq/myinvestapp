@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,26 +17,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const sessionCheckedRef = useRef(false);
+
+  // Função para renovar a sessão quando o usuário volta à aba
+  const refreshSession = useCallback(async () => {
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (currentSession) {
+        // Tenta renovar o token se necessário
+        const { data: { session: refreshedSession } } = await supabase.auth.refreshSession();
+        if (refreshedSession) {
+          setSession(refreshedSession);
+          setUser(refreshedSession.user);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing session:', error);
+    }
+  }, []);
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      (event, currentSession) => {
+        // Ignora eventos duplicados durante a inicialização
+        if (event === 'INITIAL_SESSION' && sessionCheckedRef.current) {
+          return;
+        }
+        
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
         setIsLoading(false);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      setSession(existingSession);
+      setUser(existingSession?.user ?? null);
       setIsLoading(false);
+      sessionCheckedRef.current = true;
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    // Listener para quando o usuário volta à aba (visibilitychange)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Pequeno delay para evitar race conditions
+        setTimeout(() => {
+          refreshSession();
+        }, 100);
+      }
+    };
+
+    // Listener para quando a janela ganha foco
+    const handleFocus = () => {
+      refreshSession();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [refreshSession]);
 
   const signUp = async (email: string, password: string, username?: string, whatsapp?: string) => {
     const redirectUrl = `${window.location.origin}/`;
