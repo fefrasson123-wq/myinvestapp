@@ -20,8 +20,13 @@ const periods: { id: Period; label: string }[] = [
   { id: 'total', label: 'Total' },
 ];
 
-function formatCurrency(value: number): string {
-  // Todos os valores agora em BRL
+function formatCurrency(value: number, currency: 'BRL' | 'USD' = 'BRL'): string {
+  if (currency === 'USD') {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(value);
+  }
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
@@ -134,7 +139,7 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
                         "font-mono font-medium transition-colors duration-300",
                         invIsPositive ? "text-success" : "text-destructive"
                       )}>
-                        {invIsPositive ? '+' : ''}{formatCurrency(displayProfitLoss)}
+                        {invIsPositive ? '+' : ''}{formatCurrency(displayProfitLoss, isCrypto ? 'USD' : 'BRL')}
                       </p>
                     </div>
                     <p className={cn(
