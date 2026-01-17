@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
-interface CryptoPrice {
-  id: string;
+export interface CryptoPrice {
   symbol: string;
+  name?: string;
   current_price: number;
   price_change_24h: number;
   price_change_percentage_24h: number;
@@ -16,152 +17,9 @@ interface CachedCryptoPrices {
   timestamp: number;
 }
 
-const COINGECKO_API = 'https://api.coingecko.com/api/v3';
-const CACHE_KEY = 'crypto_prices_cache';
-const MAX_CACHE_AGE_MS = 10 * 60 * 1000; // 10 minutos - cache válido
-const STALE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutos - força atualização
-
-// Mapeamento de símbolos para IDs do CoinGecko
-const symbolToId: Record<string, string> = {
-  // Top 20 por market cap
-  'BTC': 'bitcoin',
-  'ETH': 'ethereum',
-  'USDT': 'tether',
-  'BNB': 'binancecoin',
-  'SOL': 'solana',
-  'USDC': 'usd-coin',
-  'XRP': 'ripple',
-  'DOGE': 'dogecoin',
-  'ADA': 'cardano',
-  'TRX': 'tron',
-  'AVAX': 'avalanche-2',
-  'LINK': 'chainlink',
-  'DOT': 'polkadot',
-  'MATIC': 'matic-network',
-  'LTC': 'litecoin',
-  'SHIB': 'shiba-inu',
-  'BCH': 'bitcoin-cash',
-  'UNI': 'uniswap',
-  'XLM': 'stellar',
-  'NEAR': 'near',
-  
-  // Layer 2 & Scaling
-  'ARB': 'arbitrum',
-  'OP': 'optimism',
-  'IMX': 'immutable-x',
-  'STRK': 'starknet',
-  
-  // DeFi
-  'AAVE': 'aave',
-  'MKR': 'maker',
-  'LDO': 'lido-dao',
-  'CRV': 'curve-dao-token',
-  'COMP': 'compound-governance-token',
-  'SUSHI': 'sushi',
-  '1INCH': '1inch',
-  'CAKE': 'pancakeswap-token',
-  
-  // Gaming & Metaverse
-  'AXS': 'axie-infinity',
-  'SAND': 'the-sandbox',
-  'MANA': 'decentraland',
-  'GALA': 'gala',
-  'ENJ': 'enjincoin',
-  'ILV': 'illuvium',
-  
-  // AI & Data
-  'RNDR': 'render-token',
-  'RENDER': 'render-token',
-  'FET': 'fetch-ai',
-  'OCEAN': 'ocean-protocol',
-  'AGIX': 'singularitynet',
-  'WLD': 'worldcoin-wld',
-  
-  // Privacy Coins
-  'XMR': 'monero',
-  'ZEC': 'zcash',
-  
-  // Exchange Tokens
-  'OKB': 'okb',
-  'KCS': 'kucoin-shares',
-  'GT': 'gatechain-token',
-  'CRO': 'crypto-com-chain',
-  
-  // Infrastructure
-  'ATOM': 'cosmos',
-  'FIL': 'filecoin',
-  'THETA': 'theta-token',
-  'HBAR': 'hedera-hashgraph',
-  'IOTA': 'iota',
-  'VET': 'vechain',
-  'FTM': 'fantom',
-  
-  // Meme Coins
-  'PEPE': 'pepe',
-  'FLOKI': 'floki',
-  'BONK': 'bonk',
-  'WOJAK': 'wojak',
-  'WIF': 'dogwifcoin',
-  
-  // Outros populares
-  'APT': 'aptos',
-  'SUI': 'sui',
-  'SEI': 'sei-network',
-  'INJ': 'injective-protocol',
-  'KAS': 'kaspa',
-  'ALGO': 'algorand',
-  'EOS': 'eos',
-  'FLOW': 'flow',
-  'NEO': 'neo',
-  'QTUM': 'qtum',
-  'ZIL': 'zilliqa',
-  'LRC': 'loopring',
-  'CELO': 'celo',
-  'ONE': 'harmony',
-  'DASH': 'dash',
-  'ETC': 'ethereum-classic',
-  'TON': 'the-open-network',
-  'JUP': 'jupiter-exchange-solana',
-  'PYTH': 'pyth-network',
-  'JTO': 'jito-governance-token',
-  'BLUR': 'blur',
-  'DYDX': 'dydx',
-  'RAY': 'raydium',
-  'ORCA': 'orca',
-  'MAGIC': 'magic',
-  'GMX': 'gmx',
-  'RUNE': 'thorchain',
-  'PENDLE': 'pendle',
-  'MINA': 'mina-protocol',
-  'WOO': 'woo-network',
-  'ANKR': 'ankr',
-  'MASK': 'mask-network',
-  
-  // Extras que podem estar na lista
-  'AR': 'arweave',
-  'STX': 'stacks',
-  'TIA': 'celestia',
-  'ORDI': 'ordinals',
-  'CFX': 'conflux-token',
-  'ROSE': 'oasis-network',
-  'APE': 'apecoin',
-  'SSV': 'ssv-network',
-  'RVN': 'ravencoin',
-  'GMT': 'stepn',
-  'ICX': 'icon',
-  'ZRX': '0x',
-  'GRT': 'the-graph',
-  'BAT': 'basic-attention-token',
-  'YFI': 'yearn-finance',
-  'SNX': 'havven',
-  'KSM': 'kusama',
-  'KLAY': 'klay-token',
-  'ICP': 'internet-computer',
-  'EGLD': 'elrond-erd-2',
-  'CHZ': 'chiliz',
-  'XTZ': 'tezos',
-  'WAVES': 'waves',
-};
+const CACHE_KEY = 'crypto_prices_cache_v2';
+const MAX_CACHE_AGE_MS = 5 * 60 * 1000; // 5 minutos - cache válido
+const STALE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutos - força atualização
 
 // Funções de cache
 function getCachedPrices(): CachedCryptoPrices | null {
@@ -196,9 +54,18 @@ function isCacheStale(timestamp: number): boolean {
   return Date.now() - timestamp > STALE_THRESHOLD_MS;
 }
 
+// Lista das principais criptos para buscar automaticamente
+const MAIN_CRYPTO_SYMBOLS = [
+  'BTC', 'ETH', 'USDT', 'BNB', 'SOL', 'USDC', 'XRP', 'DOGE', 'ADA', 'TRX',
+  'AVAX', 'LINK', 'DOT', 'MATIC', 'LTC', 'SHIB', 'BCH', 'UNI', 'XLM', 'NEAR',
+  'ARB', 'OP', 'IMX', 'AAVE', 'MKR', 'LDO', 'CRV', 'COMP', 'SUSHI',
+  'AXS', 'SAND', 'MANA', 'GALA', 'ENJ', 'RNDR', 'FET', 'WLD',
+  'XMR', 'ATOM', 'FIL', 'HBAR', 'VET', 'FTM', 'PEPE', 'FLOKI', 'BONK', 'WIF',
+  'APT', 'SUI', 'SEI', 'INJ', 'TON', 'JUP', 'GMX', 'RUNE', 'PENDLE', 'MINA'
+];
+
 export function useCryptoPrices() {
   const [prices, setPrices] = useState<Record<string, CryptoPrice>>(() => {
-    // Inicializa com cache local se disponível
     const cached = getCachedPrices();
     return cached?.prices || {};
   });
@@ -209,7 +76,6 @@ export function useCryptoPrices() {
     return cached?.timestamp ? new Date(cached.timestamp) : null;
   });
   
-  // Mantém o último preço válido da API
   const lastValidPrices = useRef<Record<string, CryptoPrice>>({});
   const retryCount = useRef(0);
   const maxRetries = 3;
@@ -219,52 +85,66 @@ export function useCryptoPrices() {
     setError(null);
 
     try {
-      // Pegar os IDs únicos a buscar
-      const idsToFetch = symbols 
-        ? symbols.map(s => symbolToId[s.toUpperCase()] || s.toLowerCase()).filter(Boolean)
-        : Object.values(symbolToId);
+      const symbolsToFetch = symbols || MAIN_CRYPTO_SYMBOLS;
       
-      const uniqueIds = [...new Set(idsToFetch)].slice(0, 100); // CoinGecko limita a 100 por request
+      console.log('Fetching crypto prices from Yahoo Finance via edge function...');
       
-      // Buscar preços em USD (padrão do app para cripto). A conversão para BRL é feita via taxa USD/BRL.
-      const response = await fetch(
-        `${COINGECKO_API}/coins/markets?vs_currency=usd&ids=${uniqueIds.join(',')}&order=market_cap_desc&per_page=100&page=1&sparkline=false&price_change_percentage=24h`,
-        {
-          headers: {
-            'Accept': 'application/json',
-          },
+      const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
+        body: {
+          symbols: symbolsToFetch,
+          market: 'crypto'
         }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Erro ao buscar preços: ${response.status}`);
-      }
-
-      const data: CryptoPrice[] = await response.json();
-      
-      const priceMap: Record<string, CryptoPrice> = {};
-      data.forEach((coin) => {
-        priceMap[coin.symbol.toUpperCase()] = coin;
-        priceMap[coin.id] = coin;
       });
 
-      // Salva no cache e atualiza estado
+      if (fetchError) {
+        throw new Error(fetchError.message);
+      }
+
+      if (!data?.quotes) {
+        throw new Error('No quotes returned');
+      }
+
+      const priceMap: Record<string, CryptoPrice> = {};
+      
+      for (const [symbol, quote] of Object.entries(data.quotes)) {
+        const q = quote as {
+          symbol: string;
+          name?: string;
+          price: number;
+          change: number;
+          changePercent: number;
+          high24h: number;
+          low24h: number;
+          lastUpdated: string;
+        };
+        
+        priceMap[symbol.toUpperCase()] = {
+          symbol: symbol.toUpperCase(),
+          name: q.name,
+          current_price: q.price,
+          price_change_24h: q.change,
+          price_change_percentage_24h: q.changePercent,
+          high_24h: q.high24h,
+          low_24h: q.low24h,
+          last_updated: q.lastUpdated,
+        };
+      }
+
       const newPrices = { ...prices, ...priceMap };
       setCachedPrices(newPrices);
       lastValidPrices.current = newPrices;
-      retryCount.current = 0; // Reset retry count on success
+      retryCount.current = 0;
       
       setPrices(newPrices);
       setLastUpdate(new Date());
-      console.log('Crypto prices updated from API:', Object.keys(priceMap).length, 'coins');
+      console.log('Crypto prices updated from Yahoo Finance:', Object.keys(priceMap).length, 'coins');
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
       setError(errorMsg);
-      console.error('Erro ao buscar preços:', err);
+      console.error('Erro ao buscar preços de cripto:', err);
       
       retryCount.current++;
       
-      // Tenta usar cache ou último preço válido
       const cached = getCachedPrices();
       
       if (Object.keys(lastValidPrices.current).length > 0) {
@@ -275,14 +155,12 @@ export function useCryptoPrices() {
         setPrices(cached.prices);
         setLastUpdate(new Date(cached.timestamp));
       } else if (cached) {
-        // Cache está stale mas é melhor que nada - usa mas avisa
-        console.warn('Using stale cached crypto prices (age:', Math.round((Date.now() - cached.timestamp) / 1000 / 60), 'min) - will retry');
+        console.warn('Using stale cached crypto prices');
         setPrices(cached.prices);
         setLastUpdate(new Date(cached.timestamp));
         
-        // Agenda retry mais rápido se cache está muito velho
         if (retryCount.current < maxRetries) {
-          setTimeout(() => fetchPrices(symbols), 10000); // Retry em 10 segundos
+          setTimeout(() => fetchPrices(symbols), 10000);
         }
       }
     } finally {
@@ -310,14 +188,12 @@ export function useCryptoPrices() {
   useEffect(() => {
     const cached = getCachedPrices();
     
-    // Se cache é válido, usa e não busca imediatamente
     if (cached && isCacheValid(cached.timestamp)) {
       console.log('Using valid cached crypto prices');
       setPrices(cached.prices);
       setLastUpdate(new Date(cached.timestamp));
       lastValidPrices.current = cached.prices;
     } else {
-      // Cache inválido ou inexistente - busca imediatamente
       fetchPrices();
     }
     
@@ -340,4 +216,34 @@ export function useCryptoPrices() {
   };
 }
 
-export { symbolToId };
+// Função para buscar criptomoedas por nome/símbolo via Yahoo Finance
+export async function searchCryptoOnYahoo(query: string): Promise<Array<{
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  high24h: number;
+  low24h: number;
+}>> {
+  try {
+    console.log('Searching crypto on Yahoo Finance:', query);
+    
+    const { data, error } = await supabase.functions.invoke('stock-quotes', {
+      body: {
+        action: 'search-crypto',
+        query: query
+      }
+    });
+
+    if (error) {
+      console.error('Error searching crypto:', error);
+      return [];
+    }
+
+    return data?.results || [];
+  } catch (err) {
+    console.error('Error searching crypto:', err);
+    return [];
+  }
+}

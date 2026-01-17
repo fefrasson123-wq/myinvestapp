@@ -24,8 +24,14 @@ function normalizeToYahooSymbol(symbol: string): string {
   return normalized;
 }
 
+// Converte símbolo de cripto para formato Yahoo Finance
+function getCryptoYahooSymbol(symbol: string): string {
+  const normalized = symbol.toUpperCase().replace('-USD', '');
+  return `${normalized}-USD`;
+}
+
 // Yahoo Finance API - completely free, no API key needed
-async function fetchYahooFinanceQuote(originalSymbol: string, market: 'br' | 'usa' = 'br'): Promise<{
+async function fetchYahooFinanceQuote(originalSymbol: string, market: 'br' | 'usa' | 'crypto' = 'br'): Promise<{
   price: number;
   change: number;
   changePercent: number;
@@ -35,11 +41,15 @@ async function fetchYahooFinanceQuote(originalSymbol: string, market: 'br' | 'us
   previousClose: number;
   volume: number;
   marketCap: number;
+  name?: string;
 } | null> {
   try {
     let yahooSymbol: string;
     
-    if (market === 'usa') {
+    if (market === 'crypto') {
+      // Cryptos use -USD suffix
+      yahooSymbol = getCryptoYahooSymbol(originalSymbol);
+    } else if (market === 'usa') {
       // USA stocks don't need suffix
       yahooSymbol = originalSymbol.toUpperCase();
     } else {
@@ -115,10 +125,82 @@ async function fetchYahooFinanceQuote(originalSymbol: string, market: 'br' | 'us
       previousClose: Math.round(previousClose * 100) / 100,
       volume,
       marketCap: 0,
+      name: meta.shortName || meta.longName,
     };
   } catch (error) {
     console.error(`Error fetching Yahoo Finance for ${originalSymbol}:`, error);
     return null;
+  }
+}
+
+// Busca criptomoedas no Yahoo Finance por nome/símbolo
+async function searchCryptos(query: string): Promise<Array<{
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  high24h: number;
+  low24h: number;
+}>> {
+  try {
+    // Yahoo Finance search API
+    const searchUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=20&newsCount=0&enableFuzzyQuery=false&quotesQueryId=tss_match_phrase_query`;
+    
+    console.log(`Searching cryptos on Yahoo Finance for: ${query}`);
+    
+    const response = await fetch(searchUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Yahoo Finance search error: ${response.status}`);
+      return [];
+    }
+
+    const data = await response.json();
+    
+    if (!data?.quotes || data.quotes.length === 0) {
+      console.log(`No search results for: ${query}`);
+      return [];
+    }
+
+    // Filter only crypto results (quoteType === 'CRYPTOCURRENCY')
+    const cryptoQuotes = data.quotes.filter((q: { quoteType?: string; symbol?: string }) => 
+      q.quoteType === 'CRYPTOCURRENCY' || (q.symbol && q.symbol.endsWith('-USD'))
+    );
+
+    console.log(`Found ${cryptoQuotes.length} crypto results for: ${query}`);
+
+    // Fetch detailed quotes for each crypto
+    const detailedQuotes = await Promise.all(
+      cryptoQuotes.slice(0, 10).map(async (q: { symbol: string; shortname?: string; longname?: string }) => {
+        const symbol = q.symbol.replace('-USD', '');
+        const quote = await fetchYahooFinanceQuote(symbol, 'crypto');
+        
+        if (quote) {
+          return {
+            symbol,
+            name: q.shortname || q.longname || symbol,
+            price: quote.price,
+            change: quote.change,
+            changePercent: quote.changePercent,
+            high24h: quote.high24h,
+            low24h: quote.low24h,
+          };
+        }
+        return null;
+      })
+    );
+
+    return detailedQuotes.filter((q): q is NonNullable<typeof q> => q !== null);
+  } catch (error) {
+    console.error(`Error searching cryptos:`, error);
+    return [];
   }
 }
 
@@ -129,7 +211,18 @@ serve(async (req) => {
   }
 
   try {
-    const { symbols, market = 'br' } = await req.json();
+    const body = await req.json();
+    const { symbols, market = 'br', action, query } = body;
+    
+    // Handle crypto search action
+    if (action === 'search-crypto' && query) {
+      console.log(`Searching cryptos for query: ${query}`);
+      const results = await searchCryptos(query);
+      
+      return new Response(JSON.stringify({ results }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     
     if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
       throw new Error('Símbolos inválidos');
@@ -139,7 +232,15 @@ serve(async (req) => {
     
     // Fetch all symbols in parallel using Yahoo Finance
     const quotePromises = symbols.map(async (symbol: string) => {
-      const upperSymbol = symbol.toUpperCase().replace('.SA', ''); // Normalize symbol
+      let upperSymbol = symbol.toUpperCase();
+      
+      // Normalize based on market
+      if (market === 'crypto') {
+        upperSymbol = upperSymbol.replace('-USD', '');
+      } else if (market === 'br') {
+        upperSymbol = upperSymbol.replace('.SA', '');
+      }
+      
       const quote = await fetchYahooFinanceQuote(upperSymbol, market);
       return { symbol: upperSymbol, quote };
     });
@@ -149,6 +250,7 @@ serve(async (req) => {
     // Transform data to our format
     const quotes: Record<string, {
       symbol: string;
+      name?: string;
       price: number;
       change: number;
       changePercent: number;
@@ -165,6 +267,7 @@ serve(async (req) => {
       if (quote) {
         quotes[symbol] = {
           symbol,
+          name: quote.name,
           price: quote.price,
           change: quote.change,
           changePercent: quote.changePercent,
