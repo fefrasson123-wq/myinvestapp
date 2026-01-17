@@ -405,7 +405,7 @@ const Index = () => {
                 <span className="truncate">Dashboard</span>
               </button>
               <button
-                onClick={() => setActiveTab('register')}
+                onClick={() => requireAuth(() => setActiveTab('register'))}
                 className={cn(
                   "flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px text-xs sm:text-base min-w-0",
                   activeTab === 'register'
@@ -417,7 +417,7 @@ const Index = () => {
                 <span className="truncate">Cadastrar</span>
               </button>
               <button
-                onClick={() => setActiveTab('history')}
+                onClick={() => requireAuth(() => setActiveTab('history'))}
                 className={cn(
                   "flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px text-xs sm:text-base min-w-0",
                   activeTab === 'history'
