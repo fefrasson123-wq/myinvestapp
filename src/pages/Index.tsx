@@ -385,13 +385,13 @@ const Index = () => {
         <meta name="description" content="Aplicativo para gerenciar e acompanhar todos os seus investimentos: criptomoedas, ações, fundos imobiliários, CDB, CDI e mais." />
       </Helmet>
 
-      <div className="min-h-screen bg-background overflow-x-hidden">
+      <div className="min-h-screen w-full bg-background overflow-x-hidden">
         <Header onAddClick={handleAddClick} />
 
         {/* Navigation Tabs */}
-        <nav className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-40">
-          <div className="container mx-auto px-2 sm:px-4">
-            <div className="flex justify-around sm:justify-center gap-0 sm:gap-1">
+        <nav className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-40 w-full">
+          <div className="w-full max-w-7xl mx-auto px-2 sm:px-4">
+            <div className="flex justify-around sm:justify-center gap-0 sm:gap-1 w-full">
               <button
                 onClick={() => setActiveTab('dashboard')}
                 className={cn(
@@ -432,7 +432,7 @@ const Index = () => {
           </div>
         </nav>
 
-        <main className="container mx-auto px-4 py-6 space-y-6">
+        <main className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6">
           {activeTab === 'dashboard' && (
             <div className="animate-smooth-appear">
               {/* Price Update Indicator */}
