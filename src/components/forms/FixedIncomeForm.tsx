@@ -321,6 +321,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
   
   // Determina se precisa de input de taxa
   const needsRateInput = () => {
+    if (isSavings) return false; // Poupança tem regras próprias automáticas
     if (isTreasury && treasuryType === 'selic') return false;
     return true;
   };
