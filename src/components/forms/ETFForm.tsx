@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Investment, ETFType, etfTypeLabels } from '@/types/investment';
 import { etfList, ETFAsset, searchETFs, getETFsByType } from '@/data/etfList';
-import { useStockPrices } from '@/hooks/useStockPrices';
+import { useETFPrices } from '@/hooks/useETFPrices';
 import { AssetPriceChart } from '../AssetPriceChart';
 
 interface ETFFormProps {
@@ -32,7 +32,7 @@ export function ETFForm({ onSubmit, onSell, onBack }: ETFFormProps) {
   const [purchaseDate, setPurchaseDate] = useState('');
   const [notes, setNotes] = useState('');
 
-  const { prices, fetchPrices, getPrice, getPriceChange } = useStockPrices();
+  const { prices, fetchPrices, getPrice, getPriceChange } = useETFPrices();
 
   // Filtra ETFs pelo tipo selecionado e busca
   const filteredETFs = useMemo(() => {
