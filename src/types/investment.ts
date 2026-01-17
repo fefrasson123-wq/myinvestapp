@@ -77,6 +77,9 @@ export interface Investment {
   bdrType?: BDRType;
   // ETF specific fields
   etfType?: ETFType;
+  // Cash specific fields
+  currency?: 'BRL' | 'USD' | 'EUR';
+  bank?: string;
   createdAt: Date;
   updatedAt: Date;
 }
