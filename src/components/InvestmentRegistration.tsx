@@ -18,10 +18,15 @@ import {
   DollarSign,
   Globe,
   BarChart3,
+  Coins,
+  BadgeDollarSign,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Investment } from '@/types/investment';
 import { CryptoForm } from './forms/CryptoForm';
+import { BitcoinForm } from './forms/BitcoinForm';
+import { AltcoinForm } from './forms/AltcoinForm';
+import { StablecoinForm } from './forms/StablecoinForm';
 import { StockForm } from './forms/StockForm';
 import { FIIForm } from './forms/FIIForm';
 import { FixedIncomeForm } from './forms/FixedIncomeForm';
@@ -50,13 +55,13 @@ interface InvestmentRegistrationProps {
   isModal?: boolean;
 }
 
-type FormType = 'menu' | 'fixedincomeMenu' | 'usaMenu' | 'crypto' | 'stocks' | 'fii' | 'cdb' | 'lcilca' | 'lci' | 'lca' | 'treasury' | 'savings' | 'cash' | 'realestate' | 'gold' | 'debentures' | 'cricra' | 'fixedincomefund' | 'usastocks' | 'reits' | 'bdr' | 'etf';
+type FormType = 'menu' | 'fixedincomeMenu' | 'usaMenu' | 'cryptoMenu' | 'crypto' | 'bitcoin' | 'altcoin' | 'stablecoin' | 'stocks' | 'fii' | 'cdb' | 'lcilca' | 'lci' | 'lca' | 'treasury' | 'savings' | 'cash' | 'realestate' | 'gold' | 'debentures' | 'cricra' | 'fixedincomefund' | 'usastocks' | 'reits' | 'bdr' | 'etf';
 
 // Categorias principais (menu inicial)
 const mainInvestmentTypes = [
   { id: 'stocks' as const, label: 'Ações', icon: TrendingUp, color: 'hsl(200, 100%, 50%)' },
   { id: 'fii' as const, label: 'Fundos Imobiliários', icon: Building2, color: 'hsl(280, 100%, 60%)' },
-  { id: 'crypto' as const, label: 'Criptomoedas', icon: Bitcoin, color: 'hsl(45, 100%, 50%)' },
+  { id: 'cryptoMenu' as const, label: 'Criptomoedas', icon: Bitcoin, color: 'hsl(45, 100%, 50%)' },
   { id: 'fixedincomeMenu' as const, label: 'Renda Fixa', icon: Percent, color: 'hsl(140, 100%, 50%)' },
   { id: 'usaMenu' as const, label: 'Bolsa Americana', icon: DollarSign, color: 'hsl(210, 100%, 45%)' },
   { id: 'gold' as const, label: 'Ouro', icon: CircleDollarSign, color: 'hsl(50, 100%, 45%)' },
@@ -84,6 +89,13 @@ const usaMarketTypes = [
   { id: 'reits' as const, label: 'REITs', icon: Building2, color: 'hsl(250, 80%, 55%)' },
 ];
 
+// Subcategorias de Criptomoedas
+const cryptoTypes = [
+  { id: 'bitcoin' as const, label: 'Bitcoin', icon: Bitcoin, color: 'hsl(45, 100%, 50%)' },
+  { id: 'altcoin' as const, label: 'Altcoins', icon: Coins, color: 'hsl(280, 100%, 60%)' },
+  { id: 'stablecoin' as const, label: 'Stablecoins', icon: BadgeDollarSign, color: 'hsl(140, 70%, 45%)' },
+];
+
 export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = true }: InvestmentRegistrationProps) {
   const [currentForm, setCurrentForm] = useState<FormType>('menu');
 
@@ -109,10 +121,13 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
     // Se estiver em um formulário de renda fixa, volta para o menu de renda fixa
     const fixedIncomeIds = fixedIncomeTypes.map(t => t.id);
     const usaMarketIds = usaMarketTypes.map(t => t.id);
+    const cryptoIds = cryptoTypes.map(t => t.id);
     if (fixedIncomeIds.includes(currentForm as any)) {
       setCurrentForm('fixedincomeMenu');
     } else if (usaMarketIds.includes(currentForm as any)) {
       setCurrentForm('usaMenu');
+    } else if (cryptoIds.includes(currentForm as any)) {
+      setCurrentForm('cryptoMenu');
     } else {
       setCurrentForm('menu');
     }
@@ -126,6 +141,12 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
     switch (currentForm) {
       case 'crypto':
         return <CryptoForm onSubmit={handleSubmit} onSell={handleSell} onBack={handleBack} />;
+      case 'bitcoin':
+        return <BitcoinForm onSubmit={handleSubmit} onSell={handleSell} onBack={handleBack} />;
+      case 'altcoin':
+        return <AltcoinForm onSubmit={handleSubmit} onSell={handleSell} onBack={handleBack} />;
+      case 'stablecoin':
+        return <StablecoinForm onSubmit={handleSubmit} onSell={handleSell} onBack={handleBack} />;
       case 'stocks':
         return <StockForm onSubmit={handleSubmit} onSell={handleSell} onBack={handleBack} />;
       case 'fii':
@@ -159,7 +180,7 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
     }
   };
 
-  const renderCategoryGrid = (types: typeof mainInvestmentTypes | typeof fixedIncomeTypes | typeof usaMarketTypes) => (
+  const renderCategoryGrid = (types: typeof mainInvestmentTypes | typeof fixedIncomeTypes | typeof usaMarketTypes | typeof cryptoTypes) => (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
       {types.map((type, index) => {
         const Icon = type.icon;
@@ -193,6 +214,7 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
     if (currentForm === 'menu') return 'Novo Investimento';
     if (currentForm === 'fixedincomeMenu') return 'Renda Fixa';
     if (currentForm === 'usaMenu') return 'Bolsa Americana';
+    if (currentForm === 'cryptoMenu') return 'Criptomoedas';
     return 'Cadastrar';
   };
 
@@ -231,6 +253,23 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
             Voltar
           </Button>
           {renderCategoryGrid(usaMarketTypes)}
+        </div>
+      );
+    }
+
+    if (currentForm === 'cryptoMenu') {
+      return (
+        <div className="space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToMainMenu}
+            className="gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </Button>
+          {renderCategoryGrid(cryptoTypes)}
         </div>
       );
     }
