@@ -92,7 +92,7 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function getPeriodDays(period: string): number {
+function getPeriodDays(period: string, oldestPurchaseDate?: Date): number {
   switch (period) {
     case '24h':
       return 1;
@@ -105,12 +105,24 @@ function getPeriodDays(period: string): number {
     case '1y':
       return 365;
     case 'total':
+      if (oldestPurchaseDate) {
+        const daysSincePurchase = Math.ceil((Date.now() - oldestPurchaseDate.getTime()) / (1000 * 60 * 60 * 24));
+        return Math.max(daysSincePurchase, 30); // Minimum 30 days
+      }
+      return 365;
     default:
       return 365;
   }
 }
 
-function getYahooRange(period: string): string {
+function getYahooRange(period: string, days?: number): string {
+  // If days provided and more than 1 year, use max range
+  if (days && days > 365) {
+    if (days > 365 * 5) return '10y';
+    if (days > 365 * 2) return '5y';
+    if (days > 365) return '2y';
+  }
+  
   switch (period) {
     case '24h':
       return '1d';
@@ -123,6 +135,7 @@ function getYahooRange(period: string): string {
     case '1y':
       return '1y';
     case 'total':
+      return days && days > 365 ? (days > 365 * 2 ? '5y' : '2y') : '1y';
     default:
       return '1y';
   }
@@ -343,8 +356,18 @@ function useHistoricalData(investments: Investment[], period: string) {
         setIsLoading(true);
       }
       
-      const days = getPeriodDays(period);
-      const range = getYahooRange(period);
+      // Find oldest purchase date among all investments
+      const oldestPurchaseDate = investments.reduce((oldest, inv) => {
+        const purchaseDate = inv.purchaseDate 
+          ? new Date(inv.purchaseDate) 
+          : inv.createdAt;
+        return !oldest || purchaseDate < oldest ? purchaseDate : oldest;
+      }, null as Date | null);
+      
+      const days = getPeriodDays(period, oldestPurchaseDate || undefined);
+      const range = getYahooRange(period, days);
+      
+      console.log(`Chart period: ${period}, days: ${days}, range: ${range}, oldest: ${oldestPurchaseDate?.toISOString()}`);
       
       // Separa investimentos por categoria
       const fixedIncomeCategories = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'];
@@ -384,8 +407,8 @@ function useHistoricalData(investments: Investment[], period: string) {
       
       console.log(`Loaded historical for ${Object.keys(allHistory).length} symbols`);
       
-      // Gera timestamps para o gráfico
-      const numPoints = days <= 1 ? 24 : days <= 7 ? 14 : days <= 30 ? 30 : 24;
+      // Gera timestamps para o gráfico - mais pontos para períodos maiores
+      const numPoints = days <= 1 ? 24 : days <= 7 ? 14 : days <= 30 ? 30 : days <= 180 ? 30 : days <= 365 ? 52 : Math.min(100, Math.ceil(days / 7));
       const now = Date.now();
       const startTime = now - days * 24 * 60 * 60 * 1000;
       const interval = (now - startTime) / (numPoints - 1);
