@@ -256,7 +256,7 @@ function generateRealisticVariation(
     let volatility = 0.02; // 2% padrão
     if (investment.category === 'crypto') volatility = 0.05;
     else if (['stocks', 'fii'].includes(investment.category)) volatility = 0.03;
-    else if (['cdb', 'cdi', 'treasury', 'savings'].includes(investment.category)) volatility = 0.001;
+    else if (['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(investment.category)) volatility = 0.001;
     
     const randomVariation = (Math.random() - 0.5) * volatility * baseValue * (1 - progress);
     
@@ -314,10 +314,10 @@ function useHistoricalData(investments: Investment[], period: string) {
     // Separa investimentos por categoria
     const cryptoInvestments = investments.filter(inv => inv.category === 'crypto' && inv.ticker);
     const fixedIncomeInvestments = investments.filter(inv => 
-      ['cdb', 'cdi', 'treasury', 'savings'].includes(inv.category)
+      ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(inv.category)
     );
     const otherInvestments = investments.filter(inv => 
-      !['crypto', 'cdb', 'cdi', 'treasury', 'savings'].includes(inv.category)
+      !['crypto', 'cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(inv.category)
     );
     
     // Busca histórico das cryptos em paralelo

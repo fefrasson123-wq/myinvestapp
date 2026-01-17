@@ -10,6 +10,11 @@ import {
   Home,
   CircleDollarSign,
   X,
+  ArrowLeft,
+  Percent,
+  Building,
+  FileText,
+  TrendingDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Investment } from '@/types/investment';
@@ -38,19 +43,29 @@ interface InvestmentRegistrationProps {
   isModal?: boolean;
 }
 
-type FormType = 'menu' | 'crypto' | 'stocks' | 'fii' | 'cdb' | 'cdi' | 'lcilca' | 'treasury' | 'savings' | 'cash' | 'realestate' | 'gold';
+type FormType = 'menu' | 'fixedincomeMenu' | 'crypto' | 'stocks' | 'fii' | 'cdb' | 'lcilca' | 'lci' | 'lca' | 'treasury' | 'savings' | 'cash' | 'realestate' | 'gold' | 'debentures' | 'cricra' | 'fixedincomefund';
 
-const investmentTypes = [
+// Categorias principais (menu inicial)
+const mainInvestmentTypes = [
   { id: 'crypto' as const, label: 'Criptomoedas', icon: Bitcoin, color: 'hsl(45, 100%, 50%)' },
   { id: 'stocks' as const, label: 'Ações', icon: TrendingUp, color: 'hsl(200, 100%, 50%)' },
   { id: 'fii' as const, label: 'Fundos Imobiliários', icon: Building2, color: 'hsl(280, 100%, 60%)' },
+  { id: 'fixedincomeMenu' as const, label: 'Renda Fixa', icon: Percent, color: 'hsl(140, 100%, 50%)' },
   { id: 'gold' as const, label: 'Ouro', icon: CircleDollarSign, color: 'hsl(50, 100%, 45%)' },
   { id: 'realestate' as const, label: 'Imóveis', icon: Home, color: 'hsl(220, 70%, 50%)' },
   { id: 'cash' as const, label: 'Dinheiro', icon: Wallet, color: 'hsl(120, 70%, 45%)' },
-  { id: 'cdb' as const, label: 'CDB', icon: Banknote, color: 'hsl(140, 100%, 50%)' },
-  { id: 'lcilca' as const, label: 'LCI/LCA', icon: Banknote, color: 'hsl(160, 80%, 45%)' },
+];
+
+// Subcategorias de Renda Fixa
+const fixedIncomeTypes = [
   { id: 'treasury' as const, label: 'Tesouro Direto', icon: Landmark, color: 'hsl(30, 100%, 50%)' },
+  { id: 'cdb' as const, label: 'CDB', icon: Banknote, color: 'hsl(140, 100%, 50%)' },
+  { id: 'lci' as const, label: 'LCI', icon: Building, color: 'hsl(160, 80%, 45%)' },
+  { id: 'lca' as const, label: 'LCA', icon: TrendingDown, color: 'hsl(100, 70%, 45%)' },
   { id: 'savings' as const, label: 'Poupança', icon: PiggyBank, color: 'hsl(180, 100%, 40%)' },
+  { id: 'debentures' as const, label: 'Debêntures', icon: FileText, color: 'hsl(260, 70%, 55%)' },
+  { id: 'cricra' as const, label: 'CRI / CRA', icon: Building2, color: 'hsl(320, 70%, 50%)' },
+  { id: 'fixedincomefund' as const, label: 'Fundo de Renda Fixa', icon: Percent, color: 'hsl(200, 70%, 50%)' },
 ];
 
 export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = true }: InvestmentRegistrationProps) {
@@ -75,6 +90,16 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
   };
 
   const handleBack = () => {
+    // Se estiver em um formulário de renda fixa, volta para o menu de renda fixa
+    const fixedIncomeIds = fixedIncomeTypes.map(t => t.id);
+    if (fixedIncomeIds.includes(currentForm as any)) {
+      setCurrentForm('fixedincomeMenu');
+    } else {
+      setCurrentForm('menu');
+    }
+  };
+
+  const handleBackToMainMenu = () => {
     setCurrentForm('menu');
   };
 
@@ -93,19 +118,23 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
       case 'gold':
         return <GoldForm onSubmit={handleSubmit} onBack={handleBack} />;
       case 'cdb':
-      case 'cdi':
+      case 'lci':
+      case 'lca':
       case 'lcilca':
       case 'treasury':
       case 'savings':
+      case 'debentures':
+      case 'cricra':
+      case 'fixedincomefund':
         return <FixedIncomeForm category={currentForm} onSubmit={handleSubmit} onBack={handleBack} />;
       default:
         return null;
     }
   };
 
-  const content = currentForm === 'menu' ? (
+  const renderCategoryGrid = (types: typeof mainInvestmentTypes | typeof fixedIncomeTypes) => (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-      {investmentTypes.map((type, index) => {
+      {types.map((type, index) => {
         const Icon = type.icon;
         return (
           <button
@@ -131,11 +160,42 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
         );
       })}
     </div>
-  ) : (
-    <div className="animate-slide-in-right">
-      {renderForm()}
-    </div>
   );
+
+  const getTitle = () => {
+    if (currentForm === 'menu') return 'Novo Investimento';
+    if (currentForm === 'fixedincomeMenu') return 'Renda Fixa';
+    return 'Cadastrar';
+  };
+
+  const content = () => {
+    if (currentForm === 'menu') {
+      return renderCategoryGrid(mainInvestmentTypes);
+    }
+    
+    if (currentForm === 'fixedincomeMenu') {
+      return (
+        <div className="space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToMainMenu}
+            className="gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </Button>
+          {renderCategoryGrid(fixedIncomeTypes)}
+        </div>
+      );
+    }
+
+    return (
+      <div className="animate-slide-in-right">
+        {renderForm()}
+      </div>
+    );
+  };
 
   // Modal version
   if (isModal) {
@@ -144,7 +204,7 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
         <div className="bg-card border border-border/50 rounded-xl w-full max-w-md shadow-2xl shadow-primary/5 animate-pop my-8 mx-4">
           <div className="flex items-center justify-between p-4 border-b border-border/50">
             <h2 className="text-lg font-semibold text-card-foreground">
-              {currentForm === 'menu' ? 'Novo Investimento' : 'Cadastrar'}
+              {getTitle()}
             </h2>
             <Button 
               variant="ghost" 
@@ -156,7 +216,7 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
             </Button>
           </div>
           <div className="p-4">
-            {content}
+            {content()}
           </div>
         </div>
       </div>
@@ -164,5 +224,5 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
   }
 
   // Inline version (for register tab)
-  return content;
+  return content();
 }

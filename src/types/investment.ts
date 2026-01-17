@@ -3,10 +3,14 @@ export type InvestmentCategory =
   | 'stocks'
   | 'fii'
   | 'cdb'
-  | 'cdi'
+  | 'lci'
+  | 'lca'
   | 'lcilca'
   | 'treasury'
   | 'savings'
+  | 'debentures'
+  | 'cricra'
+  | 'fixedincomefund'
   | 'cash'
   | 'realestate'
   | 'gold'
@@ -75,10 +79,14 @@ export const categoryLabels: Record<InvestmentCategory, string> = {
   stocks: 'Ações',
   fii: 'Fundos Imobiliários',
   cdb: 'CDB',
-  cdi: 'CDI',
+  lci: 'LCI',
+  lca: 'LCA',
   lcilca: 'LCI/LCA',
   treasury: 'Tesouro Direto',
   savings: 'Poupança',
+  debentures: 'Debêntures',
+  cricra: 'CRI/CRA',
+  fixedincomefund: 'Fundo de Renda Fixa',
   cash: 'Dinheiro em Espécie',
   realestate: 'Imóveis',
   gold: 'Ouro',
@@ -90,10 +98,14 @@ export const categoryColors: Record<InvestmentCategory, string> = {
   stocks: 'hsl(200, 100%, 50%)',
   fii: 'hsl(280, 100%, 60%)',
   cdb: 'hsl(140, 100%, 50%)',
-  cdi: 'hsl(320, 100%, 50%)',
+  lci: 'hsl(160, 80%, 45%)',
+  lca: 'hsl(100, 70%, 45%)',
   lcilca: 'hsl(160, 80%, 45%)',
   treasury: 'hsl(30, 100%, 50%)',
   savings: 'hsl(180, 100%, 40%)',
+  debentures: 'hsl(260, 70%, 55%)',
+  cricra: 'hsl(320, 70%, 50%)',
+  fixedincomefund: 'hsl(200, 70%, 50%)',
   cash: 'hsl(120, 70%, 45%)',
   realestate: 'hsl(220, 70%, 50%)',
   gold: 'hsl(50, 100%, 45%)',
