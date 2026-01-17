@@ -16,10 +16,11 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { InvestmentTag } from '@/components/InvestmentsByTag';
 import { useAuth } from '@/contexts/AuthContext';
+import { InvestmentRegistration } from '@/components/InvestmentRegistration';
+
 // Lazy load heavy components to reduce initial bundle size
 const CategoryChart = lazy(() => import('@/components/CategoryChart').then(m => ({ default: m.CategoryChart })));
 const InvestmentList = lazy(() => import('@/components/InvestmentList').then(m => ({ default: m.InvestmentList })));
-const InvestmentRegistration = lazy(() => import('@/components/InvestmentRegistration').then(m => ({ default: m.InvestmentRegistration })));
 const ResultsArea = lazy(() => import('@/components/ResultsArea').then(m => ({ default: m.ResultsArea })));
 const SellAssetModal = lazy(() => import('@/components/SellAssetModal').then(m => ({ default: m.SellAssetModal })));
 const EditInvestmentModal = lazy(() => import('@/components/EditInvestmentModal').then(m => ({ default: m.EditInvestmentModal })));
@@ -501,14 +502,12 @@ const Index = () => {
 
           {activeTab === 'register' && (
             <div className="animate-smooth-appear">
-              <Suspense fallback={<LoadingFallback />}>
-                <InvestmentRegistration
-                  onSubmit={handleSubmit}
-                  onSell={handleDirectSell}
-                  onClose={() => setActiveTab('dashboard')}
-                  isModal={false}
-                />
-              </Suspense>
+              <InvestmentRegistration
+                onSubmit={handleSubmit}
+                onSell={handleDirectSell}
+                onClose={() => setActiveTab('dashboard')}
+                isModal={false}
+              />
             </div>
           )}
 
@@ -535,13 +534,11 @@ const Index = () => {
         </main>
 
         {showRegistration && (
-          <Suspense fallback={<LoadingFallback />}>
-            <InvestmentRegistration
-              onSubmit={handleSubmit}
-              onSell={handleDirectSell}
-              onClose={handleClose}
-            />
-          </Suspense>
+          <InvestmentRegistration
+            onSubmit={handleSubmit}
+            onSell={handleDirectSell}
+            onClose={handleClose}
+          />
         )}
 
         {sellingInvestment && (
