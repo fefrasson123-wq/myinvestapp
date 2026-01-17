@@ -39,6 +39,9 @@ function formatPercent(value: number): string {
 export function ResultsArea({ investments }: ResultsAreaProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('1m');
 
+  // Calcula o valor total da carteira para percentuais
+  const totalPortfolioValue = investments.reduce((sum, inv) => sum + inv.currentValue, 0);
+
   // Ordena investimentos por lucro/prejuízo (todos já estão em BRL)
   const sortedInvestments = [...investments].sort((a, b) => {
     return b.profitLoss - a.profitLoss;
@@ -83,6 +86,7 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
               const isCrypto = inv.category === 'crypto';
               const displayProfitLoss = inv.profitLoss;
               const invIsPositive = displayProfitLoss >= 0;
+              const portfolioPercent = totalPortfolioValue > 0 ? (inv.currentValue / totalPortfolioValue) * 100 : 0;
               
               return (
                 <div 
@@ -96,12 +100,17 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
                       style={{ backgroundColor: categoryColors[inv.category] }}
                     />
                     <div>
-                      <p className="font-medium text-card-foreground">
-                        {inv.name}
-                        {inv.ticker && (
-                          <span className="ml-1 text-primary text-sm font-mono">({inv.ticker})</span>
-                        )}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-card-foreground">
+                          {inv.name}
+                          {inv.ticker && (
+                            <span className="ml-1 text-primary text-sm font-mono">({inv.ticker})</span>
+                          )}
+                        </p>
+                        <span className="text-xs font-mono text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
+                          {portfolioPercent.toFixed(1)}%
+                        </span>
+                      </div>
                       <div className="flex items-center gap-2">
                         <p className="text-sm text-muted-foreground">
                           {categoryLabels[inv.category]}
