@@ -224,23 +224,23 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
             <div>
               <Label className="text-base">Está Rendendo?</Label>
               <p className="text-xs text-muted-foreground mb-3">Seu dinheiro está rendendo juros?</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, isYielding: true }))}
-                  className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all duration-200 ${
+                  className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-md border-2 transition-all duration-200 text-sm ${
                     formData.isYielding 
                       ? 'border-green-500 bg-green-500/10 text-green-600' 
                       : 'border-border hover:border-primary hover:bg-primary/5'
                   }`}
                 >
-                  <Check className={`w-4 h-4 ${formData.isYielding ? 'text-green-500' : 'text-muted-foreground'}`} />
+                  <Check className={`w-3.5 h-3.5 ${formData.isYielding ? 'text-green-500' : 'text-muted-foreground'}`} />
                   <span className="font-medium">Sim</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, isYielding: false, cdiPercent: '' }))}
-                  className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all duration-200 ${
+                  className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-md border-2 transition-all duration-200 text-sm ${
                     !formData.isYielding 
                       ? 'border-red-500 bg-red-500/10 text-red-600' 
                       : 'border-border hover:border-primary hover:bg-primary/5'
