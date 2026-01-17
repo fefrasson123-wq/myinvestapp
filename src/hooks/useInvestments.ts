@@ -134,8 +134,121 @@ export function useInvestments() {
     }
   }, [investments.length, isLoading, calculateFixedIncomeValue, saveToStorage, investments]);
 
+  // Encontra investimento existente pelo ticker ou nome
+  const findExistingInvestment = useCallback((data: { ticker?: string; name: string; category: InvestmentCategory }) => {
+    // Para ativos com ticker, busca pelo ticker
+    if (data.ticker) {
+      return investments.find(inv => 
+        inv.ticker?.toLowerCase() === data.ticker?.toLowerCase() && 
+        inv.category === data.category
+      );
+    }
+    // Para outros ativos, busca pelo nome exato e categoria
+    return investments.find(inv => 
+      inv.name.toLowerCase() === data.name.toLowerCase() && 
+      inv.category === data.category
+    );
+  }, [investments]);
+
+  const updateInvestment = useCallback(async (id: string, data: Partial<Omit<Investment, 'id' | 'createdAt' | 'updatedAt'>>) => {
+    const investment = investments.find(inv => inv.id === id);
+    if (!investment) return;
+
+    const updatedInv = { ...investment, ...data };
+    
+    if (data.quantity !== undefined || data.averagePrice !== undefined) {
+      updatedInv.investedAmount = updatedInv.quantity * updatedInv.averagePrice;
+    }
+    
+    const isFixedIncome = ['cdb', 'cdi', 'treasury', 'savings'].includes(updatedInv.category);
+    
+    if (isFixedIncome && updatedInv.interestRate && updatedInv.purchaseDate) {
+      const purchaseDate = new Date(updatedInv.purchaseDate);
+      const now = new Date();
+      const yearsElapsed = (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+      
+      if (yearsElapsed > 0) {
+        updatedInv.currentValue = updatedInv.investedAmount * Math.pow(1 + updatedInv.interestRate / 100, yearsElapsed);
+        updatedInv.currentPrice = updatedInv.currentValue / updatedInv.quantity;
+      } else {
+        updatedInv.currentValue = updatedInv.investedAmount;
+        updatedInv.currentPrice = updatedInv.averagePrice;
+      }
+    } else {
+      updatedInv.currentValue = updatedInv.quantity * updatedInv.currentPrice;
+    }
+    
+    updatedInv.profitLoss = updatedInv.currentValue - updatedInv.investedAmount;
+    updatedInv.profitLossPercent = updatedInv.investedAmount > 0 
+      ? (updatedInv.profitLoss / updatedInv.investedAmount) * 100 
+      : 0;
+
+    if (user) {
+      const { error } = await supabase
+        .from('investments')
+        .update({
+          name: updatedInv.name,
+          category: updatedInv.category,
+          ticker: updatedInv.ticker || null,
+          quantity: updatedInv.quantity,
+          average_price: updatedInv.averagePrice,
+          current_price: updatedInv.currentPrice,
+          invested_amount: updatedInv.investedAmount,
+          current_value: updatedInv.currentValue,
+          profit_loss: updatedInv.profitLoss,
+          profit_loss_percent: updatedInv.profitLossPercent,
+          notes: updatedInv.notes || null,
+          purchase_date: updatedInv.purchaseDate || null,
+          maturity_date: updatedInv.maturityDate || null,
+          interest_rate: updatedInv.interestRate || null,
+          address: updatedInv.address || null,
+          area_m2: updatedInv.areaM2 || null,
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating investment:', error);
+        return;
+      }
+    }
+
+    setInvestments(prev => {
+      const updated = prev.map(inv => inv.id === id ? { ...updatedInv, updatedAt: new Date() } : inv);
+      saveToStorage(updated);
+      return updated;
+    });
+  }, [user, investments, saveToStorage]);
+
   const addInvestment = useCallback(async (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
     const isFixedIncome = ['cdb', 'cdi', 'treasury', 'savings'].includes(data.category);
+    
+    // Verifica se já existe um investimento com esse ticker/nome
+    const existingInvestment = findExistingInvestment(data);
+    
+    if (existingInvestment) {
+      // Calcula o novo preço médio ponderado
+      const oldQuantity = existingInvestment.quantity;
+      const oldAveragePrice = existingInvestment.averagePrice;
+      const newQuantity = data.quantity;
+      const newPrice = data.averagePrice;
+      
+      const totalQuantity = oldQuantity + newQuantity;
+      const weightedAveragePrice = (oldQuantity * oldAveragePrice + newQuantity * newPrice) / totalQuantity;
+      const newInvestedAmount = totalQuantity * weightedAveragePrice;
+      
+      // Atualiza o investimento existente
+      await updateInvestment(existingInvestment.id, {
+        quantity: totalQuantity,
+        averagePrice: weightedAveragePrice,
+        investedAmount: newInvestedAmount,
+        currentPrice: data.currentPrice || existingInvestment.currentPrice,
+      });
+      
+      // Retorna o investimento atualizado
+      return investments.find(inv => inv.id === existingInvestment.id) || existingInvestment;
+    }
+
+    // Se não existe, cria um novo investimento
     let currentValue: number;
 
     if (isFixedIncome && data.interestRate && data.purchaseDate) {
@@ -226,76 +339,7 @@ export function useInvestments() {
 
       return newInvestment;
     }
-  }, [user, saveToStorage]);
-
-  const updateInvestment = useCallback(async (id: string, data: Partial<Omit<Investment, 'id' | 'createdAt' | 'updatedAt'>>) => {
-    const investment = investments.find(inv => inv.id === id);
-    if (!investment) return;
-
-    const updatedInv = { ...investment, ...data };
-    
-    if (data.quantity !== undefined || data.averagePrice !== undefined) {
-      updatedInv.investedAmount = updatedInv.quantity * updatedInv.averagePrice;
-    }
-    
-    const isFixedIncome = ['cdb', 'cdi', 'treasury', 'savings'].includes(updatedInv.category);
-    
-    if (isFixedIncome && updatedInv.interestRate && updatedInv.purchaseDate) {
-      const purchaseDate = new Date(updatedInv.purchaseDate);
-      const now = new Date();
-      const yearsElapsed = (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
-      
-      if (yearsElapsed > 0) {
-        updatedInv.currentValue = updatedInv.investedAmount * Math.pow(1 + updatedInv.interestRate / 100, yearsElapsed);
-        updatedInv.currentPrice = updatedInv.currentValue / updatedInv.quantity;
-      } else {
-        updatedInv.currentValue = updatedInv.investedAmount;
-        updatedInv.currentPrice = updatedInv.averagePrice;
-      }
-    } else {
-      updatedInv.currentValue = updatedInv.quantity * updatedInv.currentPrice;
-    }
-    
-    updatedInv.profitLoss = updatedInv.currentValue - updatedInv.investedAmount;
-    updatedInv.profitLossPercent = updatedInv.investedAmount > 0 
-      ? (updatedInv.profitLoss / updatedInv.investedAmount) * 100 
-      : 0;
-
-    if (user) {
-      const { error } = await supabase
-        .from('investments')
-        .update({
-          name: updatedInv.name,
-          category: updatedInv.category,
-          ticker: updatedInv.ticker || null,
-          quantity: updatedInv.quantity,
-          average_price: updatedInv.averagePrice,
-          current_price: updatedInv.currentPrice,
-          invested_amount: updatedInv.investedAmount,
-          current_value: updatedInv.currentValue,
-          profit_loss: updatedInv.profitLoss,
-          profit_loss_percent: updatedInv.profitLossPercent,
-          notes: updatedInv.notes || null,
-          purchase_date: updatedInv.purchaseDate || null,
-          maturity_date: updatedInv.maturityDate || null,
-          interest_rate: updatedInv.interestRate || null,
-          address: updatedInv.address || null,
-          area_m2: updatedInv.areaM2 || null,
-        })
-        .eq('id', id);
-
-      if (error) {
-        console.error('Error updating investment:', error);
-        return;
-      }
-    }
-
-    setInvestments(prev => {
-      const updated = prev.map(inv => inv.id === id ? { ...updatedInv, updatedAt: new Date() } : inv);
-      saveToStorage(updated);
-      return updated;
-    });
-  }, [user, investments, saveToStorage]);
+  }, [user, saveToStorage, findExistingInvestment, updateInvestment, investments]);
 
   const deleteInvestment = useCallback(async (id: string) => {
     // Remove from local state immediately for instant UI feedback
