@@ -139,11 +139,15 @@ function getDailyRate(investment: Investment): number {
 }
 
 // Função para buscar histórico com retry e timeout
+// Obs: CoinGecko costuma bloquear/limitar chamadas no navegador. Se detectar falha,
+// fazemos um backoff global e deixamos o gráfico usar fallback (valor atual).
+let coingeckoBackoffUntil = 0;
+
 async function fetchHistoricalPricesWithRetry(
-  coinId: string, 
-  days: number, 
+  coinId: string,
+  days: number,
   vsCurrency: string = 'usd',
-  retries: number = 2
+  retries: number = 1
 ): Promise<HistoricalPrice[]> {
   const cacheKey = `${coinId}-${days}-${vsCurrency}`;
   const now = Date.now();
@@ -153,15 +157,19 @@ async function fetchHistoricalPricesWithRetry(
     return historicalCache[cacheKey].data;
   }
 
+  // Backoff global para evitar spam quando a API estiver indisponível
+  if (coingeckoBackoffUntil > now) {
+    return [];
+  }
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
 
       const url = new URL(`${COINGECKO_API}/coins/${coinId}/market_chart`);
       url.searchParams.set('vs_currency', vsCurrency);
       url.searchParams.set('days', String(days));
-      // melhora granularidade no curto prazo
       if (days <= 1) url.searchParams.set('interval', 'hourly');
 
       const response = await fetch(url.toString(), {
@@ -175,26 +183,26 @@ async function fetchHistoricalPricesWithRetry(
         if (attempt === retries) {
           throw new Error(`HTTP ${response.status}`);
         }
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
         continue;
       }
 
       const data = await response.json();
       const prices: HistoricalPrice[] = (data?.prices || []).map(([timestamp, price]: [number, number]) => ({
         timestamp,
-        price
+        price,
       }));
 
-      // Salva no cache por 5 minutos
       historicalCache[cacheKey] = { data: prices, expiry: now + 5 * 60 * 1000 };
-
       return prices;
     } catch (err) {
       if (attempt === retries) {
-        console.warn(`Falha ao buscar histórico para ${coinId}:`, err);
+        // Ativa backoff por 10 min para não travar o app com dezenas de requests falhando
+        coingeckoBackoffUntil = Date.now() + 10 * 60 * 1000;
+        console.warn(`CoinGecko indisponível (backoff 10min). Ticker=${coinId}`, err);
         return [];
       }
-      await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
     }
   }
 
@@ -467,7 +475,7 @@ function useHistoricalData(investments: Investment[], period: string) {
     return () => {
       cancelled = true;
     };
-  }, [investmentsKey, period, usdToBrl, investments]);
+  }, [investmentsKey, period, usdToBrl]);
   
   return { data, isLoading };
 }
