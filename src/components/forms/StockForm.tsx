@@ -129,44 +129,45 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" type="button" onClick={onBack}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <h3 className="text-lg font-semibold text-card-foreground">
-          {mode === 'buy' ? 'Adicionar Ação' : 'Vender Ação'}
-        </h3>
-      </div>
-
-      {/* Toggle Compra/Venda */}
-      <div className="flex gap-2 p-1 bg-secondary/50 rounded-lg">
-        <button
-          type="button"
-          onClick={() => setMode('buy')}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-all",
-            mode === 'buy'
-              ? "bg-success text-success-foreground shadow-sm"
-              : "text-muted-foreground hover:text-card-foreground"
-          )}
-        >
-          <TrendingUp className="w-4 h-4" />
-          Compra
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode('sell')}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-all",
-            mode === 'sell'
-              ? "bg-destructive text-destructive-foreground shadow-sm"
-              : "text-muted-foreground hover:text-card-foreground"
-          )}
-        >
-          <TrendingDown className="w-4 h-4" />
-          Venda
-        </button>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" type="button" onClick={onBack} className="h-8 w-8 p-0">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <span className="text-sm font-medium text-card-foreground">
+            {mode === 'buy' ? 'Adicionar Ação' : 'Vender Ação'}
+          </span>
+        </div>
+        {/* Toggle Compra/Venda */}
+        <div className="flex gap-1 p-0.5 bg-secondary/50 rounded-md">
+          <button
+            type="button"
+            onClick={() => setMode('buy')}
+            className={cn(
+              "flex items-center justify-center gap-1 py-1 px-2 rounded text-xs font-medium transition-all",
+              mode === 'buy'
+                ? "bg-success text-success-foreground shadow-sm"
+                : "text-muted-foreground hover:text-card-foreground"
+            )}
+          >
+            <TrendingUp className="w-3 h-3" />
+            Compra
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('sell')}
+            className={cn(
+              "flex items-center justify-center gap-1 py-1 px-2 rounded text-xs font-medium transition-all",
+              mode === 'sell'
+                ? "bg-destructive text-destructive-foreground shadow-sm"
+                : "text-muted-foreground hover:text-card-foreground"
+            )}
+          >
+            <TrendingDown className="w-3 h-3" />
+            Venda
+          </button>
+        </div>
       </div>
 
       <div className="relative">
@@ -205,21 +206,21 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
       </div>
 
       {selectedStock && (
-        <div className="space-y-4">
-          <div className="p-3 rounded-lg bg-secondary/30 border border-primary/30">
-            <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="p-2 rounded-lg bg-secondary/30 border border-primary/30">
+            <div className="flex items-center justify-between text-sm">
               <div>
-                <span className="font-mono text-primary font-semibold">{selectedStock.ticker}</span>
-                <span className="ml-2 text-card-foreground">{selectedStock.name}</span>
+                <span className="font-mono text-primary font-semibold text-xs">{selectedStock.ticker}</span>
+                <span className="ml-1 text-card-foreground text-xs">{selectedStock.name}</span>
               </div>
-              <div className="flex items-center gap-2">
-                {isPriceLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-                <span className="font-mono text-foreground">
+              <div className="flex items-center gap-1">
+                {isPriceLoading && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+                <span className="font-mono text-foreground text-xs">
                   R$ {(currentLivePrice?.price ?? selectedStock.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </span>
                 {currentLivePrice && (
                   <span className={cn(
-                    "text-xs font-mono",
+                    "text-[10px] font-mono",
                     currentLivePrice.changePercent >= 0 ? "text-success" : "text-destructive"
                   )}>
                     {currentLivePrice.changePercent >= 0 ? '+' : ''}{currentLivePrice.changePercent.toFixed(2)}%
@@ -242,9 +243,9 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-2">
         <div>
-          <Label htmlFor="quantity">Quantidade *</Label>
+          <Label htmlFor="quantity" className="text-xs">Quantidade *</Label>
           <Input
             id="quantity"
             type="number"
@@ -253,11 +254,12 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
             onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
             placeholder="0"
             required
+            className="h-8 text-sm"
           />
         </div>
 
         <div>
-          <Label htmlFor="averagePrice">{mode === 'buy' ? 'Preço Médio (R$)' : 'Preço de Venda (R$)'} *</Label>
+          <Label htmlFor="averagePrice" className="text-xs">{mode === 'buy' ? 'Preço Médio (R$)' : 'Preço Venda (R$)'} *</Label>
           <Input
             id="averagePrice"
             type="number"
@@ -266,22 +268,24 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
             onChange={(e) => setFormData(prev => ({ ...prev, averagePrice: e.target.value }))}
             placeholder="0.00"
             required
+            className="h-8 text-sm"
           />
         </div>
 
         <div>
-          <Label htmlFor="purchaseDate">{mode === 'buy' ? 'Data da Compra' : 'Data da Venda'}</Label>
+          <Label htmlFor="purchaseDate" className="text-xs">{mode === 'buy' ? 'Data Compra' : 'Data Venda'}</Label>
           <Input
             id="purchaseDate"
             type="date"
             value={formData.purchaseDate}
             onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
+            className="h-8 text-sm"
           />
         </div>
 
         {mode === 'buy' && (
           <div>
-            <Label htmlFor="dividends">Dividendos Recebidos (R$)</Label>
+            <Label htmlFor="dividends" className="text-xs">Dividendos (R$)</Label>
             <Input
               id="dividends"
               type="number"
@@ -289,35 +293,37 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
               value={formData.dividends}
               onChange={(e) => setFormData(prev => ({ ...prev, dividends: e.target.value }))}
               placeholder="0.00"
+              className="h-8 text-sm"
             />
           </div>
         )}
 
         <div className="col-span-2">
-          <Label htmlFor="notes">Observações</Label>
+          <Label htmlFor="notes" className="text-xs">Observações</Label>
           <Textarea
             id="notes"
             value={formData.notes}
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            placeholder="Notas sobre o investimento..."
-            rows={2}
+            placeholder="Notas..."
+            rows={1}
+            className="text-sm min-h-[32px]"
           />
         </div>
       </div>
 
-      <div className="flex gap-3 pt-4">
-        <Button type="button" variant="outline" className="flex-1" onClick={onBack}>
+      <div className="flex gap-2 pt-2">
+        <Button type="button" variant="outline" className="flex-1 h-8 text-sm" onClick={onBack}>
           Cancelar
         </Button>
         <Button 
           type="submit" 
           className={cn(
-            "flex-1 gap-2",
+            "flex-1 gap-1 h-8 text-sm",
             mode === 'sell' && "bg-destructive hover:bg-destructive/90 shadow-[0_0_20px_rgba(239,68,68,0.4)]"
           )}
           disabled={!selectedStock}
         >
-          <Check className="w-4 h-4" />
+          <Check className="w-3 h-3" />
           {mode === 'buy' ? 'Adicionar' : 'Registrar Venda'}
         </Button>
       </div>
