@@ -217,7 +217,7 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
             <div className="flex items-center justify-between">
               <div>
                 <Label htmlFor="isYielding" className="text-base">Está Rendendo?</Label>
-                <p className="text-xs text-muted-foreground">Ativar se o dinheiro rende % do CDI</p>
+                <p className="text-xs text-muted-foreground">Ativar se seu dinheiro rende</p>
               </div>
               <Switch
                 id="isYielding"
@@ -228,14 +228,14 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
 
             {formData.isYielding && (
               <div>
-                <Label htmlFor="cdiPercent">Percentual do CDI (%)</Label>
+                <Label htmlFor="cdiPercent">Percentual de Rendimento (%)</Label>
                 <Input
                   id="cdiPercent"
                   type="number"
                   step="0.01"
                   value={formData.cdiPercent}
                   onChange={(e) => setFormData(prev => ({ ...prev, cdiPercent: e.target.value }))}
-                  placeholder="Ex: 100 para 100% do CDI"
+                  placeholder="Ex: % de Rendimento Anual"
                 />
               </div>
             )}
