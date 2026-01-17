@@ -358,8 +358,29 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
+  // Calcula taxa efetiva da Poupança
+  // Regras: Selic > 8.5% → 0.5% ao mês + TR (aproximadamente 6.17% a.a.)
+  //         Selic ≤ 8.5% → 70% da Selic + TR
+  const savingsAnnualRate = useMemo(() => {
+    const TR = 0.1; // Taxa Referencial aproximada (atualmente muito baixa)
+    if (rates.cdi > 8.5) {
+      // 0.5% ao mês = (1.005^12 - 1) * 100 ≈ 6.17% ao ano + TR
+      const monthlyRate = 0.5;
+      const annualRate = (Math.pow(1 + monthlyRate / 100, 12) - 1) * 100;
+      return annualRate + TR;
+    } else {
+      // 70% da Selic + TR
+      return (rates.cdi * 0.7) + TR;
+    }
+  }, [rates.cdi]);
+
   // Calcula taxa efetiva
   const effectiveRate = useMemo(() => {
+    // Poupança tem regras próprias
+    if (isSavings) {
+      return savingsAnnualRate;
+    }
+    
     if (isTreasury && treasuryType === 'selic') {
       return rates.cdi;
     }
@@ -372,7 +393,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
       return (rates.cdi * rate) / 100;
     }
     return rate;
-  }, [formData.interestRate, effectiveType, rates, isTreasury, treasuryType]);
+  }, [formData.interestRate, effectiveType, rates, isTreasury, treasuryType, isSavings, savingsAnnualRate]);
 
   // Calcula rendimento estimado
   const estimatedReturn = useMemo(() => {
@@ -381,6 +402,13 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     const maturityDate = formData.maturityDate ? new Date(formData.maturityDate) : null;
     
     if (!maturityDate || amount === 0) return null;
+    
+    // Poupança
+    if (isSavings) {
+      const years = (maturityDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+      if (years <= 0) return null;
+      return amount * Math.pow(1 + savingsAnnualRate / 100, years);
+    }
     
     if (isTreasury && treasuryType === 'selic') {
       const years = (maturityDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
@@ -402,7 +430,7 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
     }
     
     return amount * Math.pow(1 + totalRate / 100, years);
-  }, [formData, effectiveType, rates, isTreasury, treasuryType]);
+  }, [formData, effectiveType, rates, isTreasury, treasuryType, isSavings, savingsAnnualRate]);
 
   // Handler de submit
   const handleSubmit = useCallback((e: React.FormEvent) => {
@@ -561,8 +589,42 @@ export function FixedIncomeForm({ category, onSubmit, onBack }: FixedIncomeFormP
         </div>
       </div>
 
+      {/* Mostrar informações de rendimento da Poupança */}
+      {isSavings && (
+        <div className="p-3 rounded-lg bg-primary/10 border border-primary/30">
+          <div className="flex items-center gap-2 text-sm text-primary mb-2">
+            <TrendingUp className="w-4 h-4" />
+            <span className="font-medium">Rendimento Calculado Automaticamente</span>
+            {ratesLoading && <RefreshCw className="w-3 h-3 animate-spin" />}
+          </div>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Selic atual:</span>
+              <span className="font-semibold text-card-foreground">{rates.cdi}% a.a.</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Rendimento da Poupança:</span>
+              <span className="font-semibold text-primary">{savingsAnnualRate.toFixed(2)}% a.a.</span>
+            </div>
+          </div>
+          <div className="mt-3 p-2 rounded bg-secondary/50 text-xs text-muted-foreground">
+            {rates.cdi > 8.5 ? (
+              <p>
+                <strong>Regra atual:</strong> Como a Selic está acima de 8,5% a.a., 
+                a poupança rende <strong>0,5% ao mês + TR</strong> (≈{savingsAnnualRate.toFixed(2)}% ao ano)
+              </p>
+            ) : (
+              <p>
+                <strong>Regra atual:</strong> Como a Selic está igual ou abaixo de 8,5% a.a., 
+                a poupança rende <strong>70% da Selic + TR</strong> (≈{savingsAnnualRate.toFixed(2)}% ao ano)
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Mostrar taxas atuais para tipos variáveis */}
-      {(isVariableRate || (isTreasury && treasuryType === 'selic')) && (
+      {!isSavings && (isVariableRate || (isTreasury && treasuryType === 'selic')) && (
         <div className="p-3 rounded-lg bg-secondary/50 border border-border/50">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
             <TrendingUp className="w-4 h-4" />
