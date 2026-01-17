@@ -49,6 +49,23 @@ export function FIIForm({ onSubmit, onSell, onBack }: FIIFormProps) {
   // Busca preço em tempo real
   const currentLivePrice = selectedFII ? prices[selectedFII.ticker] : null;
 
+  // Auto-seleciona quando o usuário digita um ticker exato (ex: MXRF11)
+  useEffect(() => {
+    const raw = searchQuery.trim();
+    if (!raw) return;
+
+    const ticker = raw.split(' - ')[0]?.trim().toUpperCase();
+    if (!ticker) return;
+
+    if (selectedFII?.ticker.toUpperCase() === ticker) return;
+
+    const exact = fiiList.find(f => f.ticker.toUpperCase() === ticker);
+    if (exact) {
+      handleSelectFII(exact);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
   const handleSelectFII = (fii: StockAsset) => {
     setSelectedFII(fii);
     setSearchQuery(`${fii.ticker} - ${fii.name}`);

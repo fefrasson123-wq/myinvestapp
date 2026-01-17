@@ -50,6 +50,25 @@ export function BDRForm({ onSubmit, onSell, onBack }: BDRFormProps) {
   // Busca preço em tempo real quando seleciona BDR
   const currentLivePrice = selectedBDR ? prices[selectedBDR.ticker] : null;
 
+  // Auto-seleciona quando o usuário digita um ticker exato (ex: AAPL34)
+  useEffect(() => {
+    if (!bdrType) return;
+
+    const raw = searchQuery.trim();
+    if (!raw) return;
+
+    const ticker = raw.split(' - ')[0]?.trim().toUpperCase();
+    if (!ticker) return;
+
+    if (selectedBDR?.ticker.toUpperCase() === ticker) return;
+
+    const exact = bdrList.find(b => b.type === bdrType && b.ticker.toUpperCase() === ticker);
+    if (exact) {
+      handleSelectBDR(exact);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bdrType, searchQuery]);
+
   const handleSelectBDR = (bdr: BDRAsset) => {
     setSelectedBDR(bdr);
     setSearchQuery(`${bdr.ticker} - ${bdr.name}`);

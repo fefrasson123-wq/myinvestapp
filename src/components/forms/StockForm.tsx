@@ -49,6 +49,23 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
   // Busca preço em tempo real quando seleciona ação
   const currentLivePrice = selectedStock ? prices[selectedStock.ticker] : null;
 
+  // Auto-seleciona quando o usuário digita um ticker exato (ex: ITUB4)
+  useEffect(() => {
+    const raw = searchQuery.trim();
+    if (!raw) return;
+
+    const ticker = raw.split(' - ')[0]?.trim().toUpperCase();
+    if (!ticker) return;
+
+    if (selectedStock?.ticker.toUpperCase() === ticker) return;
+
+    const exact = stocksList.find(s => s.ticker.toUpperCase() === ticker);
+    if (exact) {
+      handleSelectStock(exact);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
   const handleSelectStock = (stock: StockAsset) => {
     setSelectedStock(stock);
     setSearchQuery(`${stock.ticker} - ${stock.name}`);
