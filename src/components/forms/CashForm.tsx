@@ -73,6 +73,13 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
   const handleBack = () => {
     if (currency) {
       setCurrency(null);
+      setFormData({
+        name: '',
+        amount: '',
+        notes: '',
+        isYielding: false,
+        cdiPercent: '',
+      });
     } else if (cashType !== 'menu') {
       setCashType('menu');
     } else {
