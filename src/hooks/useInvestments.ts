@@ -442,6 +442,7 @@ export function useInvestments() {
       usastocks: 0,
       reits: 0,
       bdr: 0,
+      etf: 0,
       other: 0,
     };
 
