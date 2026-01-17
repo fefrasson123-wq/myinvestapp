@@ -17,6 +17,7 @@ import {
   TrendingDown,
   DollarSign,
   Globe,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Investment } from '@/types/investment';
@@ -30,6 +31,7 @@ import { GoldForm } from './forms/GoldForm';
 import { USAStockForm } from './forms/USAStockForm';
 import { REITsForm } from './forms/REITsForm';
 import { BDRForm } from './forms/BDRForm';
+import { ETFForm } from './forms/ETFForm';
 
 interface SellData {
   name: string;
@@ -48,13 +50,14 @@ interface InvestmentRegistrationProps {
   isModal?: boolean;
 }
 
-type FormType = 'menu' | 'fixedincomeMenu' | 'usaMenu' | 'crypto' | 'stocks' | 'fii' | 'cdb' | 'lcilca' | 'lci' | 'lca' | 'treasury' | 'savings' | 'cash' | 'realestate' | 'gold' | 'debentures' | 'cricra' | 'fixedincomefund' | 'usastocks' | 'reits' | 'bdr';
+type FormType = 'menu' | 'fixedincomeMenu' | 'usaMenu' | 'crypto' | 'stocks' | 'fii' | 'cdb' | 'lcilca' | 'lci' | 'lca' | 'treasury' | 'savings' | 'cash' | 'realestate' | 'gold' | 'debentures' | 'cricra' | 'fixedincomefund' | 'usastocks' | 'reits' | 'bdr' | 'etf';
 
 // Categorias principais (menu inicial)
 const mainInvestmentTypes = [
   { id: 'crypto' as const, label: 'Criptomoedas', icon: Bitcoin, color: 'hsl(45, 100%, 50%)' },
   { id: 'stocks' as const, label: 'Ações', icon: TrendingUp, color: 'hsl(200, 100%, 50%)' },
   { id: 'fii' as const, label: 'Fundos Imobiliários', icon: Building2, color: 'hsl(280, 100%, 60%)' },
+  { id: 'etf' as const, label: 'ETF', icon: BarChart3, color: 'hsl(170, 80%, 45%)' },
   { id: 'bdr' as const, label: 'BDR', icon: Globe, color: 'hsl(190, 90%, 45%)' },
   { id: 'usaMenu' as const, label: 'Bolsa Americana', icon: DollarSign, color: 'hsl(210, 100%, 45%)' },
   { id: 'fixedincomeMenu' as const, label: 'Renda Fixa', icon: Percent, color: 'hsl(140, 100%, 50%)' },
@@ -129,6 +132,8 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
         return <FIIForm onSubmit={handleSubmit} onBack={handleBack} />;
       case 'bdr':
         return <BDRForm onSubmit={handleSubmit} onSell={handleSell} onBack={handleBack} />;
+      case 'etf':
+        return <ETFForm onSubmit={handleSubmit} onSell={handleSell} onBack={handleBack} />;
       case 'cash':
         return <CashForm onSubmit={handleSubmit} onBack={handleBack} />;
       case 'realestate':

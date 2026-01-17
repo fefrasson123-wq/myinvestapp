@@ -17,9 +17,12 @@ export type InvestmentCategory =
   | 'usastocks'
   | 'reits'
   | 'bdr'
+  | 'etf'
   | 'other';
 
 export type BDRType = 'stock' | 'etf';
+
+export type ETFType = 'etf_acoes_brasil' | 'etf_acoes_exterior' | 'etf_renda_fixa' | 'etf_indice' | 'etf_cripto';
 
 export type FixedIncomeType = 'pos' | 'pre' | 'ipca' | 'cdi';
 
@@ -72,6 +75,8 @@ export interface Investment {
   purity?: number; // karats or percentage
   // BDR specific fields
   bdrType?: BDRType;
+  // ETF specific fields
+  etfType?: ETFType;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -100,6 +105,7 @@ export const categoryLabels: Record<InvestmentCategory, string> = {
   usastocks: 'Ações Americanas',
   reits: 'REITs',
   bdr: 'BDR',
+  etf: 'ETF',
   other: 'Outros',
 };
 
@@ -122,6 +128,7 @@ export const categoryColors: Record<InvestmentCategory, string> = {
   usastocks: 'hsl(210, 100%, 45%)',
   reits: 'hsl(250, 80%, 55%)',
   bdr: 'hsl(190, 90%, 45%)',
+  etf: 'hsl(170, 80%, 45%)',
   other: 'hsl(0, 0%, 50%)',
 };
 
@@ -148,4 +155,12 @@ export const transactionLabels: Record<TransactionType, string> = {
 export const bdrTypeLabels: Record<BDRType, string> = {
   stock: 'BDR de Ação',
   etf: 'BDR de ETF',
+};
+
+export const etfTypeLabels: Record<ETFType, string> = {
+  etf_acoes_brasil: 'ETF de Ações Brasil',
+  etf_acoes_exterior: 'ETF de Ações Exterior',
+  etf_renda_fixa: 'ETF de Renda Fixa',
+  etf_indice: 'ETF de Índice',
+  etf_cripto: 'ETF de Criptomoedas',
 };
