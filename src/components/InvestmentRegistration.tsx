@@ -54,16 +54,16 @@ type FormType = 'menu' | 'fixedincomeMenu' | 'usaMenu' | 'crypto' | 'stocks' | '
 
 // Categorias principais (menu inicial)
 const mainInvestmentTypes = [
-  { id: 'crypto' as const, label: 'Criptomoedas', icon: Bitcoin, color: 'hsl(45, 100%, 50%)' },
   { id: 'stocks' as const, label: 'Ações', icon: TrendingUp, color: 'hsl(200, 100%, 50%)' },
   { id: 'fii' as const, label: 'Fundos Imobiliários', icon: Building2, color: 'hsl(280, 100%, 60%)' },
-  { id: 'etf' as const, label: 'ETF', icon: BarChart3, color: 'hsl(170, 80%, 45%)' },
-  { id: 'bdr' as const, label: 'BDR', icon: Globe, color: 'hsl(190, 90%, 45%)' },
-  { id: 'usaMenu' as const, label: 'Bolsa Americana', icon: DollarSign, color: 'hsl(210, 100%, 45%)' },
+  { id: 'crypto' as const, label: 'Criptomoedas', icon: Bitcoin, color: 'hsl(45, 100%, 50%)' },
   { id: 'fixedincomeMenu' as const, label: 'Renda Fixa', icon: Percent, color: 'hsl(140, 100%, 50%)' },
+  { id: 'usaMenu' as const, label: 'Bolsa Americana', icon: DollarSign, color: 'hsl(210, 100%, 45%)' },
   { id: 'gold' as const, label: 'Ouro', icon: CircleDollarSign, color: 'hsl(50, 100%, 45%)' },
   { id: 'realestate' as const, label: 'Imóveis', icon: Home, color: 'hsl(220, 70%, 50%)' },
   { id: 'cash' as const, label: 'Dinheiro', icon: Wallet, color: 'hsl(120, 70%, 45%)' },
+  { id: 'etf' as const, label: 'ETF', icon: BarChart3, color: 'hsl(170, 80%, 45%)' },
+  { id: 'bdr' as const, label: 'BDR', icon: Globe, color: 'hsl(190, 90%, 45%)' },
 ];
 
 // Subcategorias de Renda Fixa
