@@ -12,12 +12,10 @@ const corsHeaders = {
 };
 
 // Mapeia tickers brasileiros com sufixos especiais (units, BDRs, etc) para o formato Yahoo Finance
-// Exemplo: ITUBN4 -> ITUB4, BPACN11 -> BPAC11, etc
 function normalizeToYahooSymbol(symbol: string): string {
   let normalized = symbol.toUpperCase().replace('.SA', '');
   
   // Remove 'N' de units/nominativas (ex: ITUBN4 -> ITUB4, BPACN11 -> BPAC11)
-  // Pattern: letras + N + números -> letras + números
   normalized = normalized.replace(/^([A-Z]+)N(\d+)$/, '$1$2');
   
   // Remove 'F' de fracionário (ex: PETR4F -> PETR4)
@@ -27,7 +25,7 @@ function normalizeToYahooSymbol(symbol: string): string {
 }
 
 // Yahoo Finance API - completely free, no API key needed
-async function fetchYahooFinanceQuote(originalSymbol: string): Promise<{
+async function fetchYahooFinanceQuote(originalSymbol: string, market: 'br' | 'usa' = 'br'): Promise<{
   price: number;
   change: number;
   changePercent: number;
@@ -39,14 +37,21 @@ async function fetchYahooFinanceQuote(originalSymbol: string): Promise<{
   marketCap: number;
 } | null> {
   try {
-    // Normalize and add .SA suffix for Brazilian stocks
-    const normalizedSymbol = normalizeToYahooSymbol(originalSymbol);
-    const yahooSymbol = `${normalizedSymbol}.SA`;
+    let yahooSymbol: string;
+    
+    if (market === 'usa') {
+      // USA stocks don't need suffix
+      yahooSymbol = originalSymbol.toUpperCase();
+    } else {
+      // Brazilian stocks need .SA suffix
+      const normalizedSymbol = normalizeToYahooSymbol(originalSymbol);
+      yahooSymbol = `${normalizedSymbol}.SA`;
+    }
     
     // Use Yahoo Finance v8 API (public, no auth needed)
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=1d`;
     
-    console.log(`Fetching Yahoo Finance for: ${yahooSymbol}`);
+    console.log(`Fetching Yahoo Finance for: ${yahooSymbol} (market: ${market})`);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -124,18 +129,18 @@ serve(async (req) => {
   }
 
   try {
-    const { symbols } = await req.json();
+    const { symbols, market = 'br' } = await req.json();
     
     if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
       throw new Error('Símbolos inválidos');
     }
 
-    console.log(`Fetching quotes for: ${symbols.join(', ')}`);
+    console.log(`Fetching quotes for: ${symbols.join(', ')} (market: ${market})`);
     
     // Fetch all symbols in parallel using Yahoo Finance
     const quotePromises = symbols.map(async (symbol: string) => {
       const upperSymbol = symbol.toUpperCase().replace('.SA', ''); // Normalize symbol
-      const quote = await fetchYahooFinanceQuote(upperSymbol);
+      const quote = await fetchYahooFinanceQuote(upperSymbol, market);
       return { symbol: upperSymbol, quote };
     });
 

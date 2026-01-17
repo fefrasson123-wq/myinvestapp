@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { ArrowLeft, Search, Building2, DollarSign, Info } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Search, Building2, DollarSign, Info, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Investment } from '@/types/investment';
 import { Card, CardContent } from '@/components/ui/card';
+import { useUSAStockPrices } from '@/hooks/useUSAStockPrices';
 
 interface REITsFormProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
@@ -43,6 +44,21 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
   const [purchaseDate, setPurchaseDate] = useState('');
   const [notes, setNotes] = useState('');
 
+  const { prices, isLoading, fetchPrices, getPrice, getPriceChange, lastUpdate } = useUSAStockPrices();
+
+  // Fetch prices for popular REITs on mount
+  useEffect(() => {
+    const tickers = popularREITs.map(r => r.ticker);
+    fetchPrices(tickers);
+  }, []);
+
+  // Fetch selected REIT price
+  useEffect(() => {
+    if (selectedREIT) {
+      fetchPrices([selectedREIT.ticker]);
+    }
+  }, [selectedREIT]);
+
   const filteredREITs = popularREITs.filter(
     reit =>
       reit.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -62,6 +78,7 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
     const qty = parseFloat(quantity) || 0;
     const price = parseFloat(averagePrice) || 0;
     const investedAmount = qty * price;
+    const currentPrice = getPrice(selectedREIT.ticker) || price;
 
     onSubmit({
       name: selectedREIT.name,
@@ -69,11 +86,28 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
       ticker: selectedREIT.ticker,
       quantity: qty,
       averagePrice: price,
-      currentPrice: price,
+      currentPrice,
       investedAmount,
       notes: notes || undefined,
       purchaseDate: purchaseDate || undefined,
     });
+  };
+
+  const formatPrice = (price: number | null) => {
+    if (price === null) return '—';
+    return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const renderPriceChange = (ticker: string) => {
+    const change = getPriceChange(ticker);
+    if (!change) return null;
+    
+    const isPositive = change.percent >= 0;
+    return (
+      <span className={`text-xs font-medium ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+        {isPositive ? '+' : ''}{change.percent.toFixed(2)}%
+      </span>
+    );
   };
 
   if (!selectedREIT) {
@@ -90,18 +124,35 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
         </Button>
 
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-primary">
-            <Building2 className="w-5 h-5" />
-            <h3 className="font-semibold">REITs (Real Estate Investment Trusts)</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-primary">
+              <Building2 className="w-5 h-5" />
+              <h3 className="font-semibold">REITs (Real Estate Investment Trusts)</h3>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => fetchPrices(popularREITs.map(r => r.ticker))}
+              disabled={isLoading}
+              className="gap-1 text-xs"
+            >
+              <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? 'Atualizando...' : 'Atualizar'}
+            </Button>
           </div>
 
           <Card className="bg-purple-500/10 border-purple-500/30">
             <CardContent className="p-3 flex gap-2">
               <Info className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
               <div className="text-sm text-purple-200">
+                <p>• Cotações em tempo real (USD)</p>
                 <p>• Fundos imobiliários americanos</p>
-                <p>• Cotações em dólares (USD)</p>
                 <p>• Dividendos mensais ou trimestrais</p>
+                {lastUpdate && (
+                  <p className="text-xs text-purple-300/70 mt-1">
+                    Atualizado: {lastUpdate.toLocaleTimeString('pt-BR')}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -117,25 +168,36 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
           </div>
 
           <div className="max-h-64 overflow-y-auto space-y-2">
-            {filteredREITs.map((reit) => (
-              <button
-                key={reit.ticker}
-                type="button"
-                onClick={() => handleSelectREIT(reit)}
-                className="w-full flex items-center justify-between p-3 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-purple-400" />
+            {filteredREITs.map((reit) => {
+              const price = getPrice(reit.ticker);
+              const change = getPriceChange(reit.ticker);
+              const isPositive = change ? change.percent >= 0 : true;
+              
+              return (
+                <button
+                  key={reit.ticker}
+                  type="button"
+                  onClick={() => handleSelectREIT(reit)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-card-foreground">{reit.ticker}</p>
+                      <p className="text-xs text-muted-foreground">{reit.name}</p>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <p className="font-semibold text-card-foreground">{reit.ticker}</p>
-                    <p className="text-xs text-muted-foreground">{reit.name}</p>
+                  <div className="text-right">
+                    <p className="font-semibold text-card-foreground">
+                      {formatPrice(price)}
+                    </p>
+                    {renderPriceChange(reit.ticker)}
                   </div>
-                </div>
-                <DollarSign className="w-4 h-4 text-green-400" />
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
 
           {searchQuery && filteredREITs.length === 0 && (
@@ -169,13 +231,24 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
         Voltar
       </Button>
 
-      <div className="flex items-center gap-3 p-3 rounded-lg bg-purple-500/10 border border-purple-500/30">
-        <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
-          <Building2 className="w-6 h-6 text-purple-400" />
+      <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10 border border-purple-500/30">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
+            <Building2 className="w-6 h-6 text-purple-400" />
+          </div>
+          <div>
+            <p className="font-bold text-card-foreground">{selectedREIT.ticker}</p>
+            <p className="text-sm text-muted-foreground">{selectedREIT.name}</p>
+          </div>
         </div>
-        <div>
-          <p className="font-bold text-card-foreground">{selectedREIT.ticker}</p>
-          <p className="text-sm text-muted-foreground">{selectedREIT.name}</p>
+        <div className="text-right">
+          <p className="text-lg font-bold text-primary">
+            {formatPrice(getPrice(selectedREIT.ticker))}
+          </p>
+          {renderPriceChange(selectedREIT.ticker)}
+          {isLoading && (
+            <RefreshCw className="w-3 h-3 animate-spin text-muted-foreground inline ml-1" />
+          )}
         </div>
       </div>
 
