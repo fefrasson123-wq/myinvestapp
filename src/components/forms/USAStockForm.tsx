@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { ArrowLeft, Search, TrendingUp, DollarSign, Info } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Search, TrendingUp, DollarSign, Info, RefreshCw, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Investment } from '@/types/investment';
 import { Card, CardContent } from '@/components/ui/card';
+import { useUSAStockPrices } from '@/hooks/useUSAStockPrices';
 
 interface USAStockFormProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
@@ -43,6 +44,21 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
   const [purchaseDate, setPurchaseDate] = useState('');
   const [notes, setNotes] = useState('');
 
+  const { prices, isLoading, fetchPrices, getPrice, getPriceChange, lastUpdate } = useUSAStockPrices();
+
+  // Fetch prices for popular stocks on mount
+  useEffect(() => {
+    const tickers = popularUSAStocks.map(s => s.ticker);
+    fetchPrices(tickers);
+  }, []);
+
+  // Fetch selected stock price
+  useEffect(() => {
+    if (selectedStock) {
+      fetchPrices([selectedStock.ticker]);
+    }
+  }, [selectedStock]);
+
   const filteredStocks = popularUSAStocks.filter(
     stock =>
       stock.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -62,6 +78,7 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
     const qty = parseFloat(quantity) || 0;
     const price = parseFloat(averagePrice) || 0;
     const investedAmount = qty * price;
+    const currentPrice = getPrice(selectedStock.ticker) || price;
 
     onSubmit({
       name: selectedStock.name,
@@ -69,11 +86,28 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
       ticker: selectedStock.ticker,
       quantity: qty,
       averagePrice: price,
-      currentPrice: price,
+      currentPrice,
       investedAmount,
       notes: notes || undefined,
       purchaseDate: purchaseDate || undefined,
     });
+  };
+
+  const formatPrice = (price: number | null) => {
+    if (price === null) return '—';
+    return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  const renderPriceChange = (ticker: string) => {
+    const change = getPriceChange(ticker);
+    if (!change) return null;
+    
+    const isPositive = change.percent >= 0;
+    return (
+      <span className={`text-xs font-medium ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+        {isPositive ? '+' : ''}{change.percent.toFixed(2)}%
+      </span>
+    );
   };
 
   if (!selectedStock) {
@@ -90,17 +124,34 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
         </Button>
 
         <div className="space-y-4">
-          <div className="flex items-center gap-2 text-primary">
-            <TrendingUp className="w-5 h-5" />
-            <h3 className="font-semibold">Ações Americanas (NYSE/NASDAQ)</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-primary">
+              <TrendingUp className="w-5 h-5" />
+              <h3 className="font-semibold">Ações Americanas (NYSE/NASDAQ)</h3>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => fetchPrices(popularUSAStocks.map(s => s.ticker))}
+              disabled={isLoading}
+              className="gap-1 text-xs"
+            >
+              <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? 'Atualizando...' : 'Atualizar'}
+            </Button>
           </div>
 
           <Card className="bg-blue-500/10 border-blue-500/30">
             <CardContent className="p-3 flex gap-2">
               <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
               <div className="text-sm text-blue-200">
-                <p>• Cotações em dólares (USD)</p>
+                <p>• Cotações em tempo real (USD)</p>
                 <p>• Bolsas: NYSE e NASDAQ</p>
+                {lastUpdate && (
+                  <p className="text-xs text-blue-300/70 mt-1">
+                    Atualizado: {lastUpdate.toLocaleTimeString('pt-BR')}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -116,25 +167,36 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
           </div>
 
           <div className="max-h-64 overflow-y-auto space-y-2">
-            {filteredStocks.map((stock) => (
-              <button
-                key={stock.ticker}
-                type="button"
-                onClick={() => handleSelectStock(stock)}
-                className="w-full flex items-center justify-between p-3 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-blue-400" />
+            {filteredStocks.map((stock) => {
+              const price = getPrice(stock.ticker);
+              const change = getPriceChange(stock.ticker);
+              const isPositive = change ? change.percent >= 0 : true;
+              
+              return (
+                <button
+                  key={stock.ticker}
+                  type="button"
+                  onClick={() => handleSelectStock(stock)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-card-foreground">{stock.ticker}</p>
+                      <p className="text-xs text-muted-foreground">{stock.name}</p>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <p className="font-semibold text-card-foreground">{stock.ticker}</p>
-                    <p className="text-xs text-muted-foreground">{stock.name}</p>
+                  <div className="text-right">
+                    <p className="font-semibold text-card-foreground">
+                      {formatPrice(price)}
+                    </p>
+                    {renderPriceChange(stock.ticker)}
                   </div>
-                </div>
-                <DollarSign className="w-4 h-4 text-green-400" />
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
 
           {searchQuery && filteredStocks.length === 0 && (
@@ -168,13 +230,24 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
         Voltar
       </Button>
 
-      <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-        <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
-          <TrendingUp className="w-6 h-6 text-blue-400" />
+      <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
+            <TrendingUp className="w-6 h-6 text-blue-400" />
+          </div>
+          <div>
+            <p className="font-bold text-card-foreground">{selectedStock.ticker}</p>
+            <p className="text-sm text-muted-foreground">{selectedStock.name}</p>
+          </div>
         </div>
-        <div>
-          <p className="font-bold text-card-foreground">{selectedStock.ticker}</p>
-          <p className="text-sm text-muted-foreground">{selectedStock.name}</p>
+        <div className="text-right">
+          <p className="text-lg font-bold text-primary">
+            {formatPrice(getPrice(selectedStock.ticker))}
+          </p>
+          {renderPriceChange(selectedStock.ticker)}
+          {isLoading && (
+            <RefreshCw className="w-3 h-3 animate-spin text-muted-foreground inline ml-1" />
+          )}
         </div>
       </div>
 
