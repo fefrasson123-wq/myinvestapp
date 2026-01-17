@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
+
 import { Investment } from '@/types/investment';
 import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
 import { useEurBrlRate } from '@/hooks/useEurBrlRate';
@@ -221,16 +221,34 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
 
         {cashType === 'banco' && (
           <div className="space-y-4 p-4 rounded-lg bg-muted/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label htmlFor="isYielding" className="text-base">Está Rendendo?</Label>
-                <p className="text-xs text-muted-foreground">Ativar se seu dinheiro rende</p>
+            <div>
+              <Label className="text-base">Está Rendendo?</Label>
+              <p className="text-xs text-muted-foreground mb-3">Seu dinheiro está rendendo juros?</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, isYielding: true }))}
+                  className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all duration-200 ${
+                    formData.isYielding 
+                      ? 'border-green-500 bg-green-500/10 text-green-600' 
+                      : 'border-border hover:border-primary hover:bg-primary/5'
+                  }`}
+                >
+                  <Check className={`w-4 h-4 ${formData.isYielding ? 'text-green-500' : 'text-muted-foreground'}`} />
+                  <span className="font-medium">Sim</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, isYielding: false, cdiPercent: '' }))}
+                  className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all duration-200 ${
+                    !formData.isYielding 
+                      ? 'border-red-500 bg-red-500/10 text-red-600' 
+                      : 'border-border hover:border-primary hover:bg-primary/5'
+                  }`}
+                >
+                  <span className="font-medium">Não</span>
+                </button>
               </div>
-              <Switch
-                id="isYielding"
-                checked={formData.isYielding}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isYielding: checked }))}
-              />
             </div>
 
             {formData.isYielding && (
