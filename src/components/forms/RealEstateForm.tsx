@@ -98,7 +98,7 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
               Média Nacional <span className="font-semibold text-primary">7,73% a.a.</span>
             </p>
             <p className="text-xs text-muted-foreground">
-              Mas tem regiões que podem superar <span className="font-semibold text-success">10%</span>.
+              Mas tem regiões que podem superar <span className="font-semibold text-success">10% ao ano</span>.
             </p>
           </div>
         </div>
