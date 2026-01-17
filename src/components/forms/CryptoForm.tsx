@@ -179,6 +179,14 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
     }
   };
 
+  const handleBackFromForm = () => {
+    if (step === 'form') {
+      setStep('select');
+    } else {
+      onBack();
+    }
+  };
+
   if (step === 'select') {
     return (
       <div className="space-y-4">
@@ -381,7 +389,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" type="button" onClick={() => setStep('select')}>
+        <Button variant="ghost" size="icon" type="button" onClick={handleBackFromForm}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex-1">

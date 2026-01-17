@@ -183,10 +183,27 @@ export function BDRForm({ onSubmit, onSell, onBack }: BDRFormProps) {
     );
   }
 
+  const handleBackFromForm = () => {
+    if (bdrType) {
+      setBdrType(null);
+      setSelectedBDR(null);
+      setSearchQuery('');
+      setFormData({
+        quantity: '',
+        averagePrice: '',
+        purchaseDate: '',
+        dividends: '',
+        notes: '',
+      });
+    } else {
+      onBack();
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" type="button" onClick={() => setBdrType(null)}>
+        <Button variant="ghost" size="icon" type="button" onClick={handleBackFromForm}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <h3 className="text-lg font-semibold text-card-foreground">
@@ -369,7 +386,7 @@ export function BDRForm({ onSubmit, onSell, onBack }: BDRFormProps) {
       </div>
 
       <div className="flex gap-3 pt-4">
-        <Button type="button" variant="outline" className="flex-1" onClick={() => setBdrType(null)}>
+        <Button type="button" variant="outline" className="flex-1" onClick={handleBackFromForm}>
           Cancelar
         </Button>
         <Button 

@@ -92,14 +92,18 @@ export function ETFForm({ onSubmit, onSell, onBack }: ETFFormProps) {
     });
   };
 
-  const handleBackToTypeSelection = () => {
-    setEtfType(null);
-    setSelectedETF(null);
-    setSearchQuery('');
-    setQuantity('');
-    setAveragePrice('');
-    setPurchaseDate('');
-    setNotes('');
+  const handleBackFromForm = () => {
+    if (etfType) {
+      setEtfType(null);
+      setSelectedETF(null);
+      setSearchQuery('');
+      setQuantity('');
+      setAveragePrice('');
+      setPurchaseDate('');
+      setNotes('');
+    } else {
+      onBack();
+    }
   };
 
   // Tela de seleção de tipo de ETF
@@ -161,7 +165,7 @@ export function ETFForm({ onSubmit, onSell, onBack }: ETFFormProps) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={handleBackToTypeSelection}
+          onClick={handleBackFromForm}
           className="gap-2 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4" />
