@@ -289,157 +289,178 @@ function useHistoricalData(investments: Investment[], period: string) {
   const { rate: usdToBrl } = useUsdBrlRate();
   const [data, setData] = useState<PriceHistory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   
-  const loadData = useCallback(async () => {
-    if (investments.length === 0) {
-      setData([]);
-      setIsLoading(false);
-      return;
-    }
+  // Create stable keys to compare investments without reference changes
+  const investmentsKey = investments
+    .map(inv => `${inv.id}-${inv.quantity}-${inv.currentValue}`)
+    .sort()
+    .join('|');
+  
+  useEffect(() => {
+    let cancelled = false;
     
-    setIsLoading(true);
-    
-    const days = getPeriodDays(period);
-    const numPoints = days <= 1 ? 24 : days <= 7 ? 14 : days <= 30 ? 30 : 24;
-    const now = Date.now();
-    const startTime = now - days * 24 * 60 * 60 * 1000;
-    const interval = (now - startTime) / (numPoints - 1);
-    
-    // Gera timestamps
-    const timestamps: number[] = [];
-    for (let i = 0; i < numPoints; i++) {
-      timestamps.push(startTime + i * interval);
-    }
-    
-    // Separa investimentos por categoria
-    const cryptoInvestments = investments.filter(inv => inv.category === 'crypto' && inv.ticker);
-    const fixedIncomeInvestments = investments.filter(inv => 
-      ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(inv.category)
-    );
-    const otherInvestments = investments.filter(inv => 
-      !['crypto', 'cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(inv.category)
-    );
-    
-    // Busca histórico das cryptos em paralelo
-    const cryptoHistoryPromises = cryptoInvestments.map(async (inv) => {
-      if (!inv.ticker) return { inv, history: [] as HistoricalPrice[] };
-
-      const resolvedId = await resolveCoinId(inv.ticker);
-      // Tentativa extra: usar ticker como id diretamente
-      const coinId = resolvedId || normalizeTicker(inv.ticker).toLowerCase();
-
-      const history = await fetchHistoricalPricesWithRetry(coinId, days, 'usd');
-      return { inv, history };
-    });
-
-    const cryptoResults = await Promise.all(cryptoHistoryPromises);
-
-    // Constrói dados do gráfico
-    const chartData: PriceHistory[] = [];
-
-    // Helper: interpola preço no timestamp (evita “linha reta” por aproximação ruim)
-    const interpolatePriceAt = (history: HistoricalPrice[], t: number): number | null => {
-      if (history.length === 0) return null;
-
-      // CoinGecko vem ordenado por tempo; garantimos por segurança
-      const sorted = history[0].timestamp <= history[history.length - 1].timestamp
-        ? history
-        : [...history].sort((a, b) => a.timestamp - b.timestamp);
-
-      if (t <= sorted[0].timestamp) return sorted[0].price;
-      if (t >= sorted[sorted.length - 1].timestamp) return sorted[sorted.length - 1].price;
-
-      // Busca binária do ponto à direita
-      let lo = 0;
-      let hi = sorted.length - 1;
-      while (lo < hi) {
-        const mid = Math.floor((lo + hi) / 2);
-        if (sorted[mid].timestamp < t) lo = mid + 1;
-        else hi = mid;
+    const loadData = async () => {
+      if (investments.length === 0) {
+        setData([]);
+        setIsLoading(false);
+        return;
       }
+      
+      // Only show loading on first load, not on updates
+      if (!hasLoadedOnce) {
+        setIsLoading(true);
+      }
+      
+      const days = getPeriodDays(period);
+      const numPoints = days <= 1 ? 24 : days <= 7 ? 14 : days <= 30 ? 30 : 24;
+      const now = Date.now();
+      const startTime = now - days * 24 * 60 * 60 * 1000;
+      const interval = (now - startTime) / (numPoints - 1);
+      
+      // Gera timestamps
+      const timestamps: number[] = [];
+      for (let i = 0; i < numPoints; i++) {
+        timestamps.push(startTime + i * interval);
+      }
+      
+      // Separa investimentos por categoria
+      const cryptoInvestments = investments.filter(inv => inv.category === 'crypto' && inv.ticker);
+      const fixedIncomeInvestments = investments.filter(inv => 
+        ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(inv.category)
+      );
+      const otherInvestments = investments.filter(inv => 
+        !['crypto', 'cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(inv.category)
+      );
+      
+      // Busca histórico das cryptos em paralelo
+      const cryptoHistoryPromises = cryptoInvestments.map(async (inv) => {
+        if (!inv.ticker) return { inv, history: [] as HistoricalPrice[] };
 
-      const right = sorted[lo];
-      const left = sorted[Math.max(0, lo - 1)];
+        const resolvedId = await resolveCoinId(inv.ticker);
+        // Tentativa extra: usar ticker como id diretamente
+        const coinId = resolvedId || normalizeTicker(inv.ticker).toLowerCase();
 
-      const dt = right.timestamp - left.timestamp;
-      if (dt <= 0) return right.price;
+        const history = await fetchHistoricalPricesWithRetry(coinId, days, 'usd');
+        return { inv, history };
+      });
 
-      const alpha = (t - left.timestamp) / dt;
-      return left.price + (right.price - left.price) * alpha;
-    };
+      const cryptoResults = await Promise.all(cryptoHistoryPromises);
+      
+      if (cancelled) return;
 
-      for (let i = 0; i < timestamps.length; i++) {
-        const timestamp = timestamps[i];
-        let portfolioValue = 0;
+      // Constrói dados do gráfico
+      const chartData: PriceHistory[] = [];
 
-        // 1. Cryptos - usa histórico real; se não houver, mantém valor atual (sem “inventar” variação)
-        for (const { inv, history } of cryptoResults) {
+      // Helper: interpola preço no timestamp (evita "linha reta" por aproximação ruim)
+      const interpolatePriceAt = (history: HistoricalPrice[], t: number): number | null => {
+        if (history.length === 0) return null;
+
+        // CoinGecko vem ordenado por tempo; garantimos por segurança
+        const sorted = history[0].timestamp <= history[history.length - 1].timestamp
+          ? history
+          : [...history].sort((a, b) => a.timestamp - b.timestamp);
+
+        if (t <= sorted[0].timestamp) return sorted[0].price;
+        if (t >= sorted[sorted.length - 1].timestamp) return sorted[sorted.length - 1].price;
+
+        // Busca binária do ponto à direita
+        let lo = 0;
+        let hi = sorted.length - 1;
+        while (lo < hi) {
+          const mid = Math.floor((lo + hi) / 2);
+          if (sorted[mid].timestamp < t) lo = mid + 1;
+          else hi = mid;
+        }
+
+        const right = sorted[lo];
+        const left = sorted[Math.max(0, lo - 1)];
+
+        const dt = right.timestamp - left.timestamp;
+        if (dt <= 0) return right.price;
+
+        const alpha = (t - left.timestamp) / dt;
+        return left.price + (right.price - left.price) * alpha;
+      };
+
+        for (let i = 0; i < timestamps.length; i++) {
+          const timestamp = timestamps[i];
+          let portfolioValue = 0;
+
+          // 1. Cryptos - usa histórico real; se não houver, mantém valor atual (sem "inventar" variação)
+          for (const { inv, history } of cryptoResults) {
+            const purchaseDate = inv.purchaseDate
+              ? new Date(inv.purchaseDate).getTime()
+              : inv.createdAt.getTime();
+
+            if (timestamp < purchaseDate) continue;
+
+            const priceAt = interpolatePriceAt(history, timestamp);
+            if (priceAt != null) {
+              portfolioValue += inv.quantity * priceAt * usdToBrl;
+            } else {
+              // Sem histórico real disponível para esse ticker → não simulamos
+              portfolioValue += (inv.currentValue || 0) * usdToBrl;
+            }
+          }
+
+        // 2. Renda fixa - calcula rendimento real
+        for (const inv of fixedIncomeInvestments) {
+          portfolioValue += calculateFixedIncomeAtTime(inv, timestamp);
+        }
+
+        // 3. Outros investimentos - (ainda sem fonte pública de histórico) mantém valor atual
+        for (const inv of otherInvestments) {
           const purchaseDate = inv.purchaseDate
             ? new Date(inv.purchaseDate).getTime()
             : inv.createdAt.getTime();
 
           if (timestamp < purchaseDate) continue;
-
-          const priceAt = interpolatePriceAt(history, timestamp);
-          if (priceAt != null) {
-            portfolioValue += inv.quantity * priceAt * usdToBrl;
-          } else {
-            // Sem histórico real disponível para esse ticker → não simulamos
-            portfolioValue += (inv.currentValue || 0) * usdToBrl;
-          }
+          portfolioValue += inv.currentValue;
         }
 
-      // 2. Renda fixa - calcula rendimento real
-      for (const inv of fixedIncomeInvestments) {
-        portfolioValue += calculateFixedIncomeAtTime(inv, timestamp);
+        // Formata data
+        const date = new Date(timestamp);
+        let dateStr: string;
+        if (days <= 1) {
+          dateStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        } else if (days <= 7) {
+          dateStr = date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' });
+        } else if (days <= 30) {
+          dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        } else {
+          dateStr = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+        }
+
+        chartData.push({ date: dateStr, value: portfolioValue });
       }
-
-      // 3. Outros investimentos - (ainda sem fonte pública de histórico) mantém valor atual
-      for (const inv of otherInvestments) {
-        const purchaseDate = inv.purchaseDate
-          ? new Date(inv.purchaseDate).getTime()
-          : inv.createdAt.getTime();
-
-        if (timestamp < purchaseDate) continue;
-        portfolioValue += inv.currentValue;
+      
+      // Garante que o último ponto tenha o valor atual correto
+      const totalCurrentValue = investments.reduce((sum, inv) => {
+        const value = inv.category === 'crypto' ? inv.currentValue * usdToBrl : inv.currentValue;
+        return sum + value;
+      }, 0);
+      
+      if (chartData.length > 0) {
+        chartData[chartData.length - 1] = { 
+          date: 'Agora', 
+          value: totalCurrentValue 
+        };
       }
-
-      // Formata data
-      const date = new Date(timestamp);
-      let dateStr: string;
-      if (days <= 1) {
-        dateStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      } else if (days <= 7) {
-        dateStr = date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' });
-      } else if (days <= 30) {
-        dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-      } else {
-        dateStr = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+      
+      if (!cancelled) {
+        setData(chartData);
+        setIsLoading(false);
+        setHasLoadedOnce(true);
       }
-
-      chartData.push({ date: dateStr, value: portfolioValue });
-    }
+    };
     
-    // Garante que o último ponto tenha o valor atual correto
-    const totalCurrentValue = investments.reduce((sum, inv) => {
-      const value = inv.category === 'crypto' ? inv.currentValue * usdToBrl : inv.currentValue;
-      return sum + value;
-    }, 0);
-    
-    if (chartData.length > 0) {
-      chartData[chartData.length - 1] = { 
-        date: 'Agora', 
-        value: totalCurrentValue 
-      };
-    }
-    
-    setData(chartData);
-    setIsLoading(false);
-  }, [investments, period, usdToBrl]);
-  
-  useEffect(() => {
     loadData();
-  }, [loadData]);
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [investmentsKey, period, usdToBrl, hasLoadedOnce]);
   
   return { data, isLoading };
 }
