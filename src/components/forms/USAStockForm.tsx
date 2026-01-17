@@ -219,9 +219,8 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
   }
 
   const handleBackFromSelected = () => {
-    // Quando um ativo está aberto, o usuário espera voltar para a categoria anterior (Bolsa Americana)
+    // Volta para a lista de ações (não limpa o ativo)
     setSelectedStock(null);
-    onBack();
   };
 
   return (

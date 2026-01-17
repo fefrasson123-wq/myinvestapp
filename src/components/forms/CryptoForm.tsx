@@ -181,15 +181,8 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
 
   const handleBackFromForm = () => {
     if (step === 'form') {
-      // Se está no formulário, volta para seleção de cripto
+      // Se está no formulário, volta para seleção de cripto (não limpa o ativo)
       setStep('select');
-      setSelectedCrypto(null);
-      setFormData({
-        quantity: '',
-        averagePrice: '',
-        purchaseDate: '',
-        notes: '',
-      });
     } else if (step === 'custom') {
       // Se está na busca customizada, volta para seleção
       setStep('select');
