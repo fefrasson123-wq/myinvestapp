@@ -14,6 +14,8 @@ export type InvestmentCategory =
   | 'cash'
   | 'realestate'
   | 'gold'
+  | 'usastocks'
+  | 'reits'
   | 'other';
 
 export type FixedIncomeType = 'pos' | 'pre' | 'ipca' | 'cdi';
@@ -90,6 +92,8 @@ export const categoryLabels: Record<InvestmentCategory, string> = {
   cash: 'Dinheiro em Espécie',
   realestate: 'Imóveis',
   gold: 'Ouro',
+  usastocks: 'Ações Americanas',
+  reits: 'REITs',
   other: 'Outros',
 };
 
@@ -109,6 +113,8 @@ export const categoryColors: Record<InvestmentCategory, string> = {
   cash: 'hsl(120, 70%, 45%)',
   realestate: 'hsl(220, 70%, 50%)',
   gold: 'hsl(50, 100%, 45%)',
+  usastocks: 'hsl(210, 100%, 45%)',
+  reits: 'hsl(250, 80%, 55%)',
   other: 'hsl(0, 0%, 50%)',
 };
 
