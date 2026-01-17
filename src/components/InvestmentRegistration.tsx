@@ -160,7 +160,7 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
   };
 
   const renderCategoryGrid = (types: typeof mainInvestmentTypes | typeof fixedIncomeTypes | typeof usaMarketTypes) => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
       {types.map((type, index) => {
         const Icon = type.icon;
         return (
@@ -168,19 +168,19 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
             key={type.id}
             type="button"
             onClick={() => setCurrentForm(type.id)}
-            className="flex flex-col items-center justify-center p-4 sm:p-6 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 active:scale-95 animate-slide-up group"
+            className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-lg border border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50 transition-all duration-200 hover:shadow-lg hover:shadow-primary/10 active:scale-95 animate-slide-up group"
             style={{ animationDelay: `${index * 40}ms` }}
           >
             <div 
-              className="p-3 rounded-lg mb-3 transition-transform duration-200 group-hover:scale-110"
+              className="p-2 rounded-lg mb-2 transition-transform duration-200 group-hover:scale-110"
               style={{ backgroundColor: `${type.color}20` }}
             >
               <Icon 
-                className="w-6 h-6 transition-transform duration-200" 
+                className="w-5 h-5 transition-transform duration-200" 
                 style={{ color: type.color }}
               />
             </div>
-            <span className="font-medium text-card-foreground text-sm text-center group-hover:text-primary transition-colors">
+            <span className="font-medium text-card-foreground text-xs text-center group-hover:text-primary transition-colors">
               {type.label}
             </span>
           </button>
@@ -246,21 +246,21 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
   if (isModal) {
     return (
       <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto animate-fade-in">
-        <div className="bg-card border border-border/50 rounded-xl w-full max-w-md shadow-2xl shadow-primary/5 animate-pop my-8 mx-4">
-          <div className="flex items-center justify-between p-4 border-b border-border/50">
-            <h2 className="text-lg font-semibold text-card-foreground">
+        <div className="bg-card border border-border/50 rounded-xl w-full max-w-md shadow-2xl shadow-primary/5 animate-pop mt-4 mb-4 mx-4">
+          <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
+            <h2 className="text-base font-semibold text-card-foreground">
               {getTitle()}
             </h2>
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={onClose}
-              className="hover:bg-destructive/10 hover:text-destructive transition-colors"
+              className="hover:bg-destructive/10 hover:text-destructive transition-colors h-8 w-8"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </Button>
           </div>
-          <div className="p-4">
+          <div className="p-3">
             {content()}
           </div>
         </div>
