@@ -19,6 +19,8 @@ interface UserData {
   id: string;
   email: string;
   display_name: string;
+  username: string | null;
+  whatsapp: string | null;
   created_at: string;
   last_sign_in_at: string | null;
   roles: string[];
@@ -239,6 +241,7 @@ export default function Admin() {
                   <TableRow>
                     <TableHead>Email</TableHead>
                     <TableHead>Nome</TableHead>
+                    <TableHead>WhatsApp</TableHead>
                     <TableHead>Roles</TableHead>
                     <TableHead>Ativos</TableHead>
                     <TableHead>Cadastro</TableHead>
@@ -251,6 +254,20 @@ export default function Admin() {
                     <TableRow key={userData.id}>
                       <TableCell className="font-medium">{userData.email}</TableCell>
                       <TableCell>{userData.display_name}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {userData.whatsapp ? (
+                          <a 
+                            href={`https://wa.me/55${userData.whatsapp}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {userData.whatsapp}
+                          </a>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-1 flex-wrap">
                           {userData.roles.length > 0 ? (
