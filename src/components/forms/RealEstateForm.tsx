@@ -17,6 +17,7 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
     purchasePrice: '',
     currentValue: '',
     purchaseDate: '',
+    knowsAppreciation: null as boolean | null,
     annualAppreciation: '7.73',
     paysRent: null as boolean | null,
     monthlyRent: '',
@@ -97,13 +98,10 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
           <MapPin className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
           <div className="space-y-1">
             <p className="text-sm font-medium text-foreground">
-              📌 Observações: Coloque a valorização anual do Imóvel.
+              📌 Coloque a valorização anual do Imóvel, ou o Valor Atual do Imóvel para calcularmos o seu ganho
             </p>
             <p className="text-sm text-muted-foreground">
               Média Nacional <span className="font-semibold text-primary">7,73% a.a.</span>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Mas tem regiões que podem superar <span className="font-semibold text-success">10% ao ano</span>.
             </p>
           </div>
         </div>
@@ -135,22 +133,6 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
         />
       </div>
 
-      {/* Valor Atual do Imóvel */}
-      <div>
-        <Label htmlFor="currentValue">Valor Atual do Imóvel (R$)</Label>
-        <Input
-          id="currentValue"
-          type="number"
-          step="0.01"
-          value={formData.currentValue}
-          onChange={(e) => setFormData(prev => ({ ...prev, currentValue: e.target.value }))}
-          placeholder="550000.00"
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          Deixe em branco para calcular automaticamente pela valorização
-        </p>
-      </div>
-
       {/* Data de Compra */}
       <div>
         <Label htmlFor="purchaseDate">Data de Compra</Label>
@@ -162,21 +144,70 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
         />
       </div>
 
-      {/* Valorização Anual */}
-      <div>
-        <Label htmlFor="annualAppreciation">Valorização Anual (% a.a.) *</Label>
-        <Input
-          id="annualAppreciation"
-          type="number"
-          step="0.01"
-          value={formData.annualAppreciation}
-          onChange={(e) => setFormData(prev => ({ ...prev, annualAppreciation: e.target.value }))}
-          placeholder="7.73"
-          required
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          Padrão: 7,73% a.a. (média nacional)
-        </p>
+      {/* Sabe a Valorização Anual? */}
+      <div className="space-y-3">
+        <div>
+          <Label>Sabe a Valorização Anual? (% a.a.)</Label>
+          <div className="flex gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, knowsAppreciation: true, currentValue: '' }))}
+              className={cn(
+                "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all border",
+                formData.knowsAppreciation === true
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-secondary/30 text-muted-foreground border-border/50 hover:border-primary/50"
+              )}
+            >
+              Sim
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormData(prev => ({ ...prev, knowsAppreciation: false, annualAppreciation: '' }))}
+              className={cn(
+                "flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all border",
+                formData.knowsAppreciation === false
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-secondary/30 text-muted-foreground border-border/50 hover:border-primary/50"
+              )}
+            >
+              Não
+            </button>
+          </div>
+        </div>
+        
+        {formData.knowsAppreciation === true && (
+          <div>
+            <Label htmlFor="annualAppreciation">Valorização Anual (% a.a.) *</Label>
+            <Input
+              id="annualAppreciation"
+              type="number"
+              step="0.01"
+              value={formData.annualAppreciation}
+              onChange={(e) => setFormData(prev => ({ ...prev, annualAppreciation: e.target.value }))}
+              placeholder="7.73"
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Padrão: 7,73% a.a. (média nacional)
+            </p>
+          </div>
+        )}
+
+        {formData.knowsAppreciation === false && (
+          <div>
+            <Label htmlFor="currentValue">Valor Atual do Imóvel (R$) *</Label>
+            <Input
+              id="currentValue"
+              type="number"
+              step="0.01"
+              value={formData.currentValue}
+              onChange={(e) => setFormData(prev => ({ ...prev, currentValue: e.target.value }))}
+              placeholder="550000.00"
+              required
+            />
+          </div>
+        )}
       </div>
 
       {/* Paga aluguel? */}
