@@ -308,7 +308,9 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
 
             {formData.isYielding && formData.yieldType === 'cdi' && currency === 'BRL' && (
               <div>
-                <Label htmlFor="cdiPercent">Percentual do CDI (%)</Label>
+                <Label htmlFor="cdiPercent">
+                  Percentual do CDI (%) <span className="text-primary font-normal">— CDI atual: {rates.cdi.toFixed(2)}% a.a.</span>
+                </Label>
                 <Input
                   id="cdiPercent"
                   type="number"
@@ -318,8 +320,8 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
                   placeholder="Ex: 100"
                 />
                 {formData.cdiPercent && effectiveRate !== null && (
-                  <p className="text-xs text-primary mt-1 font-medium">
-                    ≈ {effectiveRate.toFixed(2)}% a.a. ({formData.cdiPercent}% de {rates.cdi.toFixed(2)}%)
+                  <p className="text-sm text-green-600 mt-2 font-medium">
+                    Rendimento: {effectiveRate.toFixed(2)}% a.a.
                   </p>
                 )}
               </div>
