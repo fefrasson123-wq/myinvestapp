@@ -576,20 +576,17 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
     return null;
   };
 
-  // Calcula domínio do Y mostrando a variação REAL e PROPORCIONAL do patrimônio
-  // Se 90% do portfólio são imóveis subindo e 10% são ações caindo,
-  // o gráfico mostra exatamente esse impacto proporcional (pequena variação)
-  const values = data.map(d => d.value).filter(v => v > 0);
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
-  
-  // Padding mínimo de 2% apenas para não cortar os extremos
-  const realRange = maxValue - minValue;
-  const padding = realRange * 0.02 || maxValue * 0.01;
-  
-  // O eixo Y reflete EXATAMENTE a variação real do patrimônio
-  // Sem expansão artificial - mostra a estabilidade real quando há pouca variação
-  const yDomain = [Math.max(0, minValue - padding), maxValue + padding];
+  // Domínio do Y (escala) para evitar "zoom" que exagera pequenas variações.
+  // Se o patrimônio é ~R$300k e variou R$20k, isso deve parecer uma variação pequena.
+  // Por isso, usamos escala absoluta a partir de 0 (sem simulação; apenas escala).
+  const values = data.map(d => d.value).filter(v => Number.isFinite(v) && v >= 0);
+  const maxValue = Math.max(...values, 0);
+
+  // Padding pequeno só para não cortar o topo
+  const paddingTop = maxValue * 0.02;
+
+  // Escala absoluta: não "amplifica" variações pequenas
+  const yDomain: [number, number] = [0, maxValue + paddingTop];
 
   return (
     <ResponsiveContainer width="100%" height={300}>
