@@ -536,12 +536,38 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
     return null;
   };
 
-  // Calcula domínio do Y para melhor visualização das variações
+  // Calcula domínio do Y com escala proporcional ao patrimônio total
+  // Isso evita que pequenas variações pareçam enormes no gráfico
   const values = data.map(d => d.value).filter(v => v > 0);
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
-  const padding = (maxValue - minValue) * 0.1 || maxValue * 0.05;
-  const yDomain = [Math.max(0, minValue - padding), maxValue + padding];
+  const avgValue = values.reduce((a, b) => a + b, 0) / values.length;
+  
+  // Calcula a variação real em % do patrimônio
+  const realVariation = maxValue - minValue;
+  const variationPercent = avgValue > 0 ? (realVariation / avgValue) * 100 : 0;
+  
+  // Se a variação for pequena (< 20% do patrimônio), expande o eixo Y
+  // para mostrar a estabilidade real do portfólio
+  let yMin: number;
+  let yMax: number;
+  
+  if (variationPercent < 20) {
+    // Variação pequena: mostra pelo menos 15% do patrimônio como range
+    const targetRange = avgValue * 0.15;
+    const currentRange = realVariation;
+    const extraPadding = (targetRange - currentRange) / 2;
+    
+    yMin = Math.max(0, minValue - Math.max(extraPadding, avgValue * 0.02));
+    yMax = maxValue + Math.max(extraPadding, avgValue * 0.02);
+  } else {
+    // Variação maior: usa padding normal de 5%
+    const padding = realVariation * 0.1 || avgValue * 0.05;
+    yMin = Math.max(0, minValue - padding);
+    yMax = maxValue + padding;
+  }
+  
+  const yDomain = [yMin, yMax];
 
   return (
     <ResponsiveContainer width="100%" height={300}>
