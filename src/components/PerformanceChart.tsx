@@ -488,7 +488,8 @@ function useHistoricalData(investments: Investment[], period: string) {
           dateStr = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
         }
 
-        chartData.push({ date: dateStr, value: portfolioValue });
+        // Garante que nunca tenha valor negativo - mínimo é 0
+        chartData.push({ date: dateStr, value: Math.max(0, portfolioValue) });
       }
       
       // Garante que o último ponto tenha o valor atual correto
