@@ -207,9 +207,14 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
             id="name"
             value={formData.name}
             onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            placeholder={cashType === 'fisico' 
-              ? "Ex: Cofre, Carteira, Reserva..." 
-              : "Ex: Nubank, Itaú, Bradesco..."
+            placeholder={
+              cashType === 'fisico' 
+                ? "Ex: Cofre, Carteira, Reserva..." 
+                : currency === 'BRL'
+                  ? "Ex: Nubank, Itaú, Bradesco..."
+                  : currency === 'USD'
+                    ? "Ex: Wise, Nomad, Avenue, Inter..."
+                    : "Ex: Wise, N26, Revolut..."
             }
           />
         </div>
