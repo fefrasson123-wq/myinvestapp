@@ -489,7 +489,8 @@ function useHistoricalData(investments: Investment[], period: string) {
         }
 
         // Garante que nunca tenha valor negativo - mínimo é 0
-        chartData.push({ date: dateStr, value: Math.max(0, portfolioValue) });
+        // Inclui timestamp para o tooltip calcular "investido até a data" corretamente
+        chartData.push({ date: dateStr, value: Math.max(0, portfolioValue), ts: timestamp } as any);
       }
       
       // Garante que o último ponto tenha o valor atual correto
@@ -503,8 +504,9 @@ function useHistoricalData(investments: Investment[], period: string) {
       if (chartData.length > 0) {
         chartData[chartData.length - 1] = { 
           date: 'Agora', 
-          value: totalCurrentValue 
-        };
+          value: totalCurrentValue,
+          ts: now
+        } as any;
       }
       
       setData(chartData);
@@ -556,12 +558,30 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const value = payload[0].value;
-      // Mostra variação em relação ao valor INVESTIDO, não ao primeiro ponto
-      const change = value - totalInvested;
-      const changePercent = totalInvested > 0 ? ((change / totalInvested) * 100) : 0;
+      const value = payload[0].value as number;
+      const ts: number | undefined = payload[0]?.payload?.ts;
+
+      // Quando ainda não existia nada (nenhuma compra até essa data),
+      // o correto é mostrar 0 e 0% — nunca -100%.
+      const investedUpToTime = typeof ts === 'number'
+        ? investments.reduce((sum, inv) => {
+            const purchaseTs = inv.purchaseDate
+              ? new Date(inv.purchaseDate).getTime()
+              : inv.createdAt.getTime();
+
+            if (purchaseTs > ts) return sum;
+
+            const isCrypto = inv.category === 'crypto';
+            const isUSA = inv.category === 'usastocks' || inv.category === 'reits';
+            const invested = (isCrypto || isUSA) ? inv.investedAmount * usdToBrl : inv.investedAmount;
+            return sum + invested;
+          }, 0)
+        : totalInvested;
+
+      const change = investedUpToTime > 0 ? (value - investedUpToTime) : 0;
+      const changePercent = investedUpToTime > 0 ? ((change / investedUpToTime) * 100) : 0;
       const changeIsPositive = change >= 0;
-      
+
       return (
         <div className="bg-card border border-border/50 rounded-lg p-3 shadow-lg">
           <p className="text-muted-foreground text-sm mb-1">{label}</p>
