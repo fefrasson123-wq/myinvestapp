@@ -266,7 +266,8 @@ function getInterpolatedPrice(
   return dataPoints[dataPoints.length - 1].price;
 }
 
-// Calcula valor do investimento usando histórico real
+// Calcula valor do investimento usando histórico REAL
+// REGRA: Só mostra dados quando temos histórico real - sem simulação!
 function calculateValueAtTime(
   investment: Investment,
   timestamp: number,
@@ -277,14 +278,48 @@ function calculateValueAtTime(
     ? new Date(investment.purchaseDate).getTime() 
     : investment.createdAt.getTime();
   
+  // Antes da data de compra, valor é 0
   if (timestamp < purchaseDate) return 0;
   
   const isCrypto = investment.category === 'crypto';
   const isUSA = investment.category === 'usastocks' || investment.category === 'reits';
   const isBRStock = investment.category === 'stocks' || investment.category === 'fii';
+  const isETF = investment.category === 'etf';
+  const isBDR = investment.category === 'bdr';
+  const isGold = investment.category === 'gold';
+  const isRealEstate = investment.category === 'realestate';
+  const isCash = investment.category === 'cash';
   
-  // Para ativos com ticker, busca preço histórico real
-  if (investment.ticker && (isCrypto || isUSA || isBRStock)) {
+  // IMÓVEIS: valor constante (não existe histórico de preço de mercado)
+  // Mostra o valor atual cadastrado - representa a avaliação do imóvel
+  if (isRealEstate) {
+    return investment.currentValue;
+  }
+  
+  // CAIXA/STABLECOINS: valor constante (1:1 com a moeda)
+  if (isCash) {
+    const multiplier = investment.currency === 'USD' ? usdToBrl : 1;
+    return investment.currentValue * multiplier;
+  }
+  
+  // OURO: busca histórico real do Yahoo Finance (GC=F)
+  if (isGold) {
+    const goldHistory = historicalPrices['GC=F'] || historicalPrices['GC'];
+    if (goldHistory && goldHistory.length > 0) {
+      const pricePerOz = getInterpolatedPrice(goldHistory, timestamp);
+      if (pricePerOz !== null) {
+        // Converte preço por onça (USD) para preço por grama (BRL)
+        // 1 onça troy = 31.1035 gramas
+        const pricePerGramBRL = (pricePerOz / 31.1035) * usdToBrl;
+        return investment.quantity * pricePerGramBRL;
+      }
+    }
+    // Se não tem histórico, usa valor atual
+    return investment.currentValue;
+  }
+  
+  // ATIVOS COM TICKER: busca histórico real
+  if (investment.ticker && (isCrypto || isUSA || isBRStock || isETF || isBDR)) {
     const symbol = investment.ticker.toUpperCase().replace('.SA', '').replace('-USD', '');
     const history = historicalPrices[symbol];
     
@@ -297,27 +332,11 @@ function calculateValueAtTime(
     }
   }
   
-  // Fallback: interpolação entre valor investido e atual
-  const now = Date.now();
-  const totalTime = now - purchaseDate;
-  
-  if (totalTime <= 0) return investment.investedAmount;
-  
-  const elapsed = timestamp - purchaseDate;
-  const progress = Math.min(1, elapsed / totalTime);
-  
-  const currentValue = (isCrypto || isUSA) 
-    ? investment.currentValue * usdToBrl 
-    : investment.currentValue;
-  
-  const investedAmount = (isCrypto || isUSA)
-    ? investment.investedAmount * usdToBrl
-    : investment.investedAmount;
-  
-  const totalChange = currentValue - investedAmount;
-  const easedProgress = progress * progress * (3 - 2 * progress);
-  
-  return investedAmount + totalChange * easedProgress;
+  // FALLBACK para ativos SEM histórico disponível:
+  // Retorna o valor atual (linha reta) - melhor do que simular
+  // Isso mostra a realidade: só conhecemos o valor atual
+  const multiplier = (isCrypto || isUSA) ? usdToBrl : 1;
+  return investment.currentValue * multiplier;
 }
 
 function useHistoricalData(investments: Investment[], period: string) {
@@ -378,32 +397,53 @@ function useHistoricalData(investments: Investment[], period: string) {
         !fixedIncomeCategories.includes(inv.category)
       );
       
-      // Separa por mercado para buscar histórico
+      // Separa por mercado para buscar histórico REAL
       const cryptoTickers: string[] = [];
       const usaTickers: string[] = [];
-      const brTickers: string[] = [];
+      const brTickers: string[] = []; // Ações BR, FIIs, ETFs, BDRs
+      let hasGold = false;
       
       for (const inv of otherInvestments) {
+        // Ouro - busca histórico de futuros de ouro
+        if (inv.category === 'gold') {
+          hasGold = true;
+          continue;
+        }
+        
         if (inv.ticker) {
           const ticker = inv.ticker.toUpperCase().replace('.SA', '').replace('-USD', '');
+          
           if (inv.category === 'crypto') {
             cryptoTickers.push(ticker);
           } else if (inv.category === 'usastocks' || inv.category === 'reits') {
             usaTickers.push(ticker);
-          } else if (inv.category === 'stocks' || inv.category === 'fii') {
+          } else if (
+            inv.category === 'stocks' || 
+            inv.category === 'fii' ||
+            inv.category === 'etf' ||
+            inv.category === 'bdr'
+          ) {
+            // Todos esses usam Yahoo Finance com sufixo .SA
             brTickers.push(ticker);
           }
         }
       }
       
       // Busca histórico em paralelo (com cache)
-      const [cryptoHistory, usaHistory, brHistory] = await Promise.all([
+      // Ouro usa símbolo GC=F (futuros de ouro COMEX em USD)
+      const [cryptoHistory, usaHistory, brHistory, goldHistory] = await Promise.all([
         cryptoTickers.length > 0 ? fetchHistoricalFromYahoo(cryptoTickers, 'crypto', range) : {},
         usaTickers.length > 0 ? fetchHistoricalFromYahoo(usaTickers, 'usa', range) : {},
-        brTickers.length > 0 ? fetchHistoricalFromYahoo(brTickers, 'br', range) : {}
+        brTickers.length > 0 ? fetchHistoricalFromYahoo(brTickers, 'br', range) : {},
+        hasGold ? fetchHistoricalFromYahoo(['GC=F'], 'usa', range) : {}
       ]);
       
-      const allHistory: HistoricalPrices = { ...cryptoHistory, ...usaHistory, ...brHistory };
+      const allHistory: HistoricalPrices = { 
+        ...cryptoHistory, 
+        ...usaHistory, 
+        ...brHistory,
+        ...goldHistory 
+      };
       
       console.log(`Loaded historical for ${Object.keys(allHistory).length} symbols`);
       
