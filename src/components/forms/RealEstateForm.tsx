@@ -128,7 +128,7 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
           step="0.01"
           value={formData.purchasePrice}
           onChange={(e) => setFormData(prev => ({ ...prev, purchasePrice: e.target.value }))}
-          placeholder="500000.00"
+          placeholder="Ex: 500.000,00"
           required
         />
       </div>
@@ -203,7 +203,7 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
               step="0.01"
               value={formData.currentValue}
               onChange={(e) => setFormData(prev => ({ ...prev, currentValue: e.target.value }))}
-              placeholder="550000.00"
+              placeholder="Ex: 700.000,00"
               required
             />
           </div>
