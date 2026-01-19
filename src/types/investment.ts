@@ -30,6 +30,8 @@ export type TransactionType = 'buy' | 'sell';
 
 export type RealEstateType = 'house' | 'apartment' | 'land' | 'lot' | 'commercial';
 
+export type GoldType = 'physical' | 'digital';
+
 export interface Transaction {
   id: string;
   investmentId: string;
@@ -71,6 +73,8 @@ export interface Investment {
   city?: string;
   state?: string;
   // Gold specific fields
+  goldType?: GoldType;
+  goldPurity?: string;
   weightGrams?: number;
   purity?: number; // karats or percentage
   // BDR specific fields
