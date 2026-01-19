@@ -32,10 +32,14 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
     .filter(inv => inv.category === category)
     .sort((a, b) => b.profitLoss - a.profitLoss);
   
-  const totalValue = categoryInvestments.reduce((acc, inv) => {
+  // Calcula o valor de cada investimento considerando a conversão USD/BRL para crypto
+  const investmentsWithValues = categoryInvestments.map(inv => {
     const isCrypto = inv.category === 'crypto';
-    return acc + (isCrypto ? inv.currentValue * usdToBrl : inv.currentValue);
-  }, 0);
+    const value = isCrypto ? inv.currentValue * usdToBrl : inv.currentValue;
+    return { ...inv, calculatedValue: value };
+  });
+  
+  const totalValue = investmentsWithValues.reduce((acc, inv) => acc + inv.calculatedValue, 0);
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -64,11 +68,9 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
             </h4>
             
             <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {categoryInvestments.map((inv, index) => {
-                const isCrypto = inv.category === 'crypto';
-                const value = isCrypto ? inv.currentValue * usdToBrl : inv.currentValue;
+              {investmentsWithValues.map((inv, index) => {
                 const isPositive = inv.profitLoss >= 0;
-                const percentOfCategory = totalValue > 0 ? (value / totalValue) * 100 : 0;
+                const percentOfCategory = totalValue > 0 ? (inv.calculatedValue / totalValue) * 100 : 0;
                 
                 return (
                   <div 
@@ -101,7 +103,7 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
                       </div>
                     </div>
                     <p className="font-mono font-medium text-card-foreground">
-                      {formatCurrency(value)}
+                      {formatCurrency(inv.calculatedValue)}
                     </p>
                   </div>
                 );
