@@ -302,7 +302,7 @@ function calculateValueAtTime(
     return investment.currentValue * multiplier;
   }
   
-  // OURO: busca histórico real do Yahoo Finance (GC=F)
+  // OURO: busca histórico real (GC=F)
   if (isGold) {
     const goldHistory = historicalPrices['GC=F'] || historicalPrices['GC'];
     if (goldHistory && goldHistory.length > 0) {
@@ -423,7 +423,7 @@ function useHistoricalData(investments: Investment[], period: string) {
             inv.category === 'etf' ||
             inv.category === 'bdr'
           ) {
-            // Todos esses usam Yahoo Finance com sufixo .SA
+            // Todos esses usam sufixo .SA
             brTickers.push(ticker);
           }
         }

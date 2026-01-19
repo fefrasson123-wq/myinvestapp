@@ -54,7 +54,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
 
   const { prices, isLoading: isPriceLoading, fetchPrices } = useCryptoPrices();
 
-  // Busca cripto personalizada via Yahoo Finance
+  // Busca cripto personalizada
   const searchCustomCrypto = async (query: string) => {
     if (!query.trim()) {
       toast.error('Digite o nome ou símbolo da criptomoeda');
@@ -297,7 +297,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
     );
   }
 
-  // Tela de busca de cripto personalizada via Yahoo Finance
+  // Tela de busca de cripto personalizada
   if (step === 'custom') {
     return (
       <div className="space-y-4">

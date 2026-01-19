@@ -83,7 +83,7 @@ export function useETFPrices() {
   const retryCount = useRef(0);
   const maxRetries = 3;
 
-  // Fetch a single ETF price from Yahoo Finance via edge function
+  // Fetch a single ETF price via edge function
   const fetchSinglePrice = async (symbol: string): Promise<ETFPrice | null> => {
     try {
       const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
@@ -174,13 +174,13 @@ export function useETFPrices() {
       for (const symbol of symbols) {
         const upperSymbol = symbol.toUpperCase();
         
-        // Try Yahoo Finance first
+        // Try live price first
         const livePrice = await fetchSinglePrice(upperSymbol);
         
         if (livePrice) {
           newPrices[upperSymbol] = livePrice;
           successCount++;
-          console.log(`Updated ETF ${upperSymbol} price from Yahoo Finance:`, livePrice.price);
+          console.log(`Updated ETF ${upperSymbol} price:`, livePrice.price);
         } else {
           // Fallback to cache/local data
           const fallback = getLocalFallback(upperSymbol);
