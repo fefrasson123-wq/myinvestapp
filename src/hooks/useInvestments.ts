@@ -341,7 +341,11 @@ export function useInvestments() {
     }
   }, [user, saveToStorage, findExistingInvestment, updateInvestment, investments]);
 
-  const deleteInvestment = useCallback(async (id: string) => {
+  const deleteInvestment = useCallback(async (id: string): Promise<Investment | null> => {
+    // Find the investment before deleting
+    const deletedInvestment = investments.find(inv => inv.id === id);
+    if (!deletedInvestment) return null;
+
     // Remove from local state immediately for instant UI feedback
     setInvestments(prev => prev.filter(inv => inv.id !== id));
     
@@ -404,7 +408,7 @@ export function useInvestments() {
             updatedAt: new Date(inv.updated_at),
           })));
         }
-        return;
+        return null;
       }
       
       console.log('Investment deleted successfully:', id);
@@ -417,7 +421,48 @@ export function useInvestments() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       }
     }
-  }, [user]);
+
+    return deletedInvestment;
+  }, [user, investments]);
+
+  const restoreInvestment = useCallback(async (investment: Investment): Promise<boolean> => {
+    if (user) {
+      const { error } = await supabase
+        .from('investments')
+        .insert({
+          id: investment.id,
+          user_id: user.id,
+          name: investment.name,
+          category: investment.category,
+          ticker: investment.ticker || null,
+          quantity: investment.quantity,
+          average_price: investment.averagePrice,
+          current_price: investment.currentPrice,
+          invested_amount: investment.investedAmount,
+          current_value: investment.currentValue,
+          profit_loss: investment.profitLoss,
+          profit_loss_percent: investment.profitLossPercent,
+          notes: investment.notes || null,
+          purchase_date: investment.purchaseDate || null,
+          maturity_date: investment.maturityDate || null,
+          interest_rate: investment.interestRate || null,
+          address: investment.address || null,
+          area_m2: investment.areaM2 || null,
+        });
+
+      if (error) {
+        console.error('Error restoring investment:', error);
+        return false;
+      }
+    }
+
+    setInvestments(prev => [investment, ...prev]);
+    if (!user) {
+      saveToStorage([investment, ...investments]);
+    }
+    
+    return true;
+  }, [user, investments, saveToStorage]);
 
   const getTotalValue = useCallback(() => {
     return investments.reduce((sum, inv) => {
@@ -482,6 +527,7 @@ export function useInvestments() {
     addInvestment,
     updateInvestment,
     deleteInvestment,
+    restoreInvestment,
     getTotalValue,
     getTotalInvested,
     getTotalProfitLoss,
