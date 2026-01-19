@@ -63,7 +63,6 @@ export const etfList: ETFAsset[] = [
   { ticker: 'SHOT11', name: 'It Now MLCX', price: 55.20, change: 0.48, changePercent: 0.88, etfType: 'etf_indice' },
   { ticker: 'AGRI11', name: 'Trend Agronegócio', price: 42.80, change: 0.25, changePercent: 0.59, etfType: 'etf_indice' },
   { ticker: 'OGIN11', name: 'Trend Energia Limpa', price: 35.60, change: 0.18, changePercent: 0.51, etfType: 'etf_indice' },
-  { ticker: 'GOLD11', name: 'Trend Ouro', price: 15.45, change: 0.22, changePercent: 1.44, etfType: 'etf_indice' },
   { ticker: 'CORN11', name: 'It Now Milho', price: 12.85, change: 0.15, changePercent: 1.18, etfType: 'etf_indice' },
   { ticker: 'SOJA11', name: 'It Now Soja', price: 10.20, change: 0.08, changePercent: 0.79, etfType: 'etf_indice' },
   { ticker: 'BOVA39', name: 'Ibovespa CDI', price: 98.50, change: 0.65, changePercent: 0.66, etfType: 'etf_indice' },
@@ -73,6 +72,12 @@ export const etfList: ETFAsset[] = [
   { ticker: 'SAET11', name: 'Trend Saúde', price: 45.80, change: 0.32, changePercent: 0.70, etfType: 'etf_indice' },
   { ticker: 'IMOB11', name: 'It Now IMOB', price: 52.30, change: 0.28, changePercent: 0.54, etfType: 'etf_indice' },
   { ticker: 'ALUG11', name: 'Investo Aluguéis', price: 38.60, change: 0.15, changePercent: 0.39, etfType: 'etf_indice' },
+
+  // ETF de Ouro
+  { ticker: 'GOLD11', name: 'Trend Ouro', price: 15.45, change: 0.22, changePercent: 1.44, etfType: 'etf_ouro' },
+  { ticker: 'GLDX11', name: 'XP Gold', price: 12.80, change: 0.18, changePercent: 1.43, etfType: 'etf_ouro' },
+  { ticker: 'AURU11', name: 'Itaú Ouro', price: 9.25, change: 0.12, changePercent: 1.31, etfType: 'etf_ouro' },
+  { ticker: 'GLDB11', name: 'BTG Pactual Ouro', price: 11.50, change: 0.15, changePercent: 1.32, etfType: 'etf_ouro' },
 
   // ETF de Criptomoedas
   { ticker: 'HASH11', name: 'Hashdex Nasdaq Crypto', price: 28.50, change: 1.85, changePercent: 6.94, etfType: 'etf_cripto' },

@@ -22,7 +22,7 @@ export type InvestmentCategory =
 
 export type BDRType = 'stock' | 'etf';
 
-export type ETFType = 'etf_acoes_brasil' | 'etf_acoes_exterior' | 'etf_renda_fixa' | 'etf_indice' | 'etf_cripto';
+export type ETFType = 'etf_acoes_brasil' | 'etf_acoes_exterior' | 'etf_renda_fixa' | 'etf_indice' | 'etf_cripto' | 'etf_ouro';
 
 export type FixedIncomeType = 'pos' | 'pre' | 'ipca' | 'cdi';
 
@@ -166,4 +166,5 @@ export const etfTypeLabels: Record<ETFType, string> = {
   etf_renda_fixa: 'ETF de Renda Fixa',
   etf_indice: 'ETF de Índice',
   etf_cripto: 'ETF de Criptomoedas',
+  etf_ouro: 'ETF de Ouro',
 };
