@@ -182,20 +182,20 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                       )}
                     </div>
 
-                    <div className="flex gap-16 text-sm">
-                      <div className="transition-colors">
+                    <div className="flex gap-4 text-sm">
+                      <div className="w-24 transition-colors">
                         <span className="text-muted-foreground block">Quantidade</span>
                         <p className="font-mono text-card-foreground">{formatQuantity(investment.quantity)}</p>
                       </div>
-                      <div>
+                      <div className="w-32">
                         <span className="text-muted-foreground block">Preço Médio</span>
                         <p className="font-mono text-card-foreground">{formatCurrency(investment.averagePrice, currency)}</p>
                       </div>
-                      <div>
+                      <div className="w-32">
                         <span className="text-muted-foreground block">Cotação Atual</span>
                         <p className="font-mono text-card-foreground">{formatCurrency(effectiveCurrentPrice, currency)}</p>
                       </div>
-                      <div>
+                      <div className="w-32">
                         <span className="text-muted-foreground block">Valor Atual</span>
                         <p className="font-mono text-primary font-medium">{formatCurrency(effectiveCurrentValue, currency)}</p>
                       </div>
