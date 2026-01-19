@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Search, TrendingUp, Calendar, BarChart3, Bitcoin, Globe, Landmark, Activity } from 'lucide-react';
+import { ArrowLeft, Search, TrendingUp, Calendar, BarChart3, Bitcoin, Globe, Landmark, Activity, CircleDollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,7 @@ const etfTypeOptions: { id: ETFType; label: string; icon: React.ElementType; col
   { id: 'etf_renda_fixa', label: 'ETF de Renda Fixa', icon: Landmark, color: 'hsl(140, 80%, 45%)' },
   { id: 'etf_indice', label: 'ETF de Índice', icon: Activity, color: 'hsl(30, 100%, 50%)' },
   { id: 'etf_cripto', label: 'ETF de Criptomoedas', icon: Bitcoin, color: 'hsl(45, 100%, 50%)' },
+  { id: 'etf_ouro', label: 'ETF de Ouro', icon: CircleDollarSign, color: 'hsl(50, 100%, 45%)' },
 ];
 
 export function ETFForm({ onSubmit, onSell, onBack }: ETFFormProps) {
