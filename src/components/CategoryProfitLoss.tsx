@@ -60,7 +60,7 @@ export function CategoryProfitLoss({ investments }: CategoryProfitLossProps) {
       profitLoss,
       profitLossPercent,
     };
-  }).sort((a, b) => b.currentValue - a.currentValue);
+  }).sort((a, b) => b.profitLoss - a.profitLoss);
 
   // Calcula o total da carteira para percentual
   const totalPortfolioValue = categoryData.reduce((sum, cat) => sum + cat.currentValue, 0);
