@@ -45,10 +45,10 @@ function formatPercent(value: number): string {
 export function InvestmentsByTag({ investments, investmentTags, onTagChange }: InvestmentsByTagProps) {
   const { rate: usdToBrl } = useUsdBrlRate();
   const [expandedTags, setExpandedTags] = useState<Record<InvestmentTag, boolean>>({
-    'short-term': true,
-    'long-term': true,
-    'passive-income': true,
-    'speculation': true,
+    'short-term': false,
+    'long-term': false,
+    'passive-income': false,
+    'speculation': false,
   });
 
   const toggleTag = (tag: InvestmentTag) => {
