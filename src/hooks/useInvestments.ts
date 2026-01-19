@@ -346,16 +346,26 @@ export function useInvestments() {
     setInvestments(prev => prev.filter(inv => inv.id !== id));
     
     if (user) {
-      // First, delete related transactions
-      const { error: transactionsError } = await supabase
+      // First, find and delete only the most recent transaction for this investment
+      const { data: recentTransaction } = await supabase
         .from('transactions')
-        .delete()
-        .eq('investment_id', id);
+        .select('id')
+        .eq('investment_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (transactionsError) {
-        console.error('Error deleting related transactions:', transactionsError);
-      } else {
-        console.log('Related transactions deleted for investment:', id);
+      if (recentTransaction) {
+        const { error: transactionError } = await supabase
+          .from('transactions')
+          .delete()
+          .eq('id', recentTransaction.id);
+
+        if (transactionError) {
+          console.error('Error deleting recent transaction:', transactionError);
+        } else {
+          console.log('Most recent transaction deleted for investment:', id);
+        }
       }
 
       // Then delete the investment - tags will be cascaded automatically via ON DELETE CASCADE
