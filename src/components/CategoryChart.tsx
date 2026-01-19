@@ -51,9 +51,11 @@ export function CategoryChart({ categoryTotals, investments }: CategoryChartProp
     );
   };
 
-  const handlePieClick = (data: any) => {
-    if (data && data.category) {
-      setSelectedCategory(data.category);
+  const handlePieClick = (data: any, index: number) => {
+    // Recharts passa o objeto de dados diretamente com a propriedade payload
+    const category = data?.category || data?.payload?.category;
+    if (category) {
+      setSelectedCategory(category);
     }
   };
 
