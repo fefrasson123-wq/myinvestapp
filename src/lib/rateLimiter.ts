@@ -25,7 +25,7 @@ const DEFAULT_CONFIG: RateLimiterConfig = {
   minInterval: 350,           // ~3 req/seg para evitar bloqueio
   maxRetries: 3,
   retryDelay: 1000,
-  maxQueueSize: 100,
+  maxQueueSize: 200,          // Increased from 100 to handle more requests
   timeout: 15000,
 };
 
@@ -273,7 +273,7 @@ export const API_CONFIGS = {
     minInterval: 500,        // 2 req/seg max
     maxRetries: 3,
     retryDelay: 2000,
-    maxQueueSize: 50,
+    maxQueueSize: 150,       // Increased to handle more tickers
     timeout: 20000,
   },
   coingecko: {

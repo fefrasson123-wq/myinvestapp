@@ -67,21 +67,37 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
     };
   }, [investments]);
 
+  // Fetch prices only once on mount and then refresh periodically
+  // Avoid triggering on every tickersByType change to prevent rate limiter overflow
   useEffect(() => {
-    // Fetch immediately and keep refreshing (so we don't get stuck with cached/local fallbacks).
-    if (tickersByType.stocks.length) stock.fetchPrices(tickersByType.stocks);
-    if (tickersByType.fii.length) fii.fetchPrices(tickersByType.fii);
-    if (tickersByType.crypto.length) crypto.fetchPrices(tickersByType.crypto);
+    // Use a debounced/throttled approach - only fetch if we have tickers
+    const hasStocks = tickersByType.stocks.length > 0;
+    const hasFII = tickersByType.fii.length > 0;
+    const hasCrypto = tickersByType.crypto.length > 0;
+    
+    // Skip if no tickers to fetch
+    if (!hasStocks && !hasFII && !hasCrypto) return;
 
+    // Initial fetch with slight delay to avoid race conditions with other components
+    const initialTimeout = setTimeout(() => {
+      if (hasStocks) stock.fetchPrices(tickersByType.stocks);
+      if (hasFII) fii.fetchPrices(tickersByType.fii);
+      if (hasCrypto) crypto.fetchPrices(tickersByType.crypto);
+    }, 500);
+
+    // Periodic refresh every 2 minutes (reduced frequency to avoid rate limiting)
     const interval = window.setInterval(() => {
-      if (tickersByType.stocks.length) stock.fetchPrices(tickersByType.stocks);
-      if (tickersByType.fii.length) fii.fetchPrices(tickersByType.fii);
-      if (tickersByType.crypto.length) crypto.fetchPrices(tickersByType.crypto);
-    }, 60_000);
+      if (hasStocks) stock.fetchPrices(tickersByType.stocks);
+      if (hasFII) fii.fetchPrices(tickersByType.fii);
+      if (hasCrypto) crypto.fetchPrices(tickersByType.crypto);
+    }, 120_000);
 
-    return () => window.clearInterval(interval);
+    return () => {
+      clearTimeout(initialTimeout);
+      window.clearInterval(interval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tickersByType]);
+  }, [JSON.stringify(tickersByType)]);
 
   const getLivePrice = (inv: Investment): number | null => {
     const ticker = inv.ticker?.trim();
