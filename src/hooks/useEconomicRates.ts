@@ -20,10 +20,10 @@ const DEFAULT_RATES: EconomicRates = {
   lastUpdated: new Date(),
 };
 
-// Função para buscar retorno 12 meses do IBOVESPA via Yahoo Finance
+// Função para buscar retorno 12 meses do IBOVESPA
 async function fetchIbovespa12mReturn(): Promise<number | null> {
   try {
-    // Usar API do Yahoo Finance via proxy CORS
+    // Usar API de cotações via proxy CORS
     const endDate = Math.floor(Date.now() / 1000);
     const startDate = endDate - (365 * 24 * 60 * 60); // 12 meses atrás
     
@@ -52,7 +52,7 @@ async function fetchIbovespa12mReturn(): Promise<number | null> {
   }
 }
 
-// Função para buscar retorno 12 meses do S&P 500 via Yahoo Finance
+// Função para buscar retorno 12 meses do S&P 500
 async function fetchSP50012mReturn(): Promise<number | null> {
   try {
     const endDate = Math.floor(Date.now() / 1000);

@@ -93,7 +93,7 @@ export function useCryptoPrices() {
     try {
       const symbolsToFetch = symbols || MAIN_CRYPTO_SYMBOLS;
       
-      console.log('Fetching crypto prices from Yahoo Finance via edge function...');
+      console.log('Fetching crypto prices via edge function...');
       
       const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
         body: {
@@ -147,7 +147,7 @@ export function useCryptoPrices() {
       retryCount.current = 0;
       setLastUpdate(new Date());
       hasFetchedOnce.current = true;
-      console.log('Crypto prices updated from Yahoo Finance:', Object.keys(priceMap).length, 'coins');
+      console.log('Crypto prices updated:', Object.keys(priceMap).length, 'coins');
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
       setError(errorMsg);
@@ -224,7 +224,7 @@ export function useCryptoPrices() {
   };
 }
 
-// Função para buscar criptomoedas por nome/símbolo via Yahoo Finance
+// Função para buscar criptomoedas por nome/símbolo
 export async function searchCryptoOnYahoo(query: string): Promise<Array<{
   symbol: string;
   name: string;
@@ -235,7 +235,7 @@ export async function searchCryptoOnYahoo(query: string): Promise<Array<{
   low24h: number;
 }>> {
   try {
-    console.log('Searching crypto on Yahoo Finance:', query);
+    console.log('Searching crypto:', query);
     
     const { data, error } = await supabase.functions.invoke('stock-quotes', {
       body: {
