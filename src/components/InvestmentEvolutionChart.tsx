@@ -57,10 +57,15 @@ function generateCompoundEvolutionData(
   const totalDays = Math.max(30, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
   const totalYears = totalDays / 365.25;
   
-  // Calcula a taxa anual real baseada no valor investido e atual
-  const effectiveRate = annualRate || (totalYears > 0 
-    ? (Math.pow(currentValue / investedAmount, 1 / totalYears) - 1) * 100 
-    : 7.73);
+  // Calcula a taxa anual real baseada na diferença entre valor investido e atual
+  // Se temos o valor atual real, calculamos a taxa que levou a esse resultado
+  let effectiveRate: number;
+  if (currentValue > 0 && investedAmount > 0 && totalYears > 0) {
+    // Taxa implícita baseada no crescimento real
+    effectiveRate = (Math.pow(currentValue / investedAmount, 1 / totalYears) - 1) * 100;
+  } else {
+    effectiveRate = annualRate || 7.73;
+  }
   
   // Define quantidade de pontos baseado no período
   let points: number;
@@ -75,11 +80,19 @@ function generateCompoundEvolutionData(
   }
   points = Math.min(points, 36); // máximo de 36 pontos
   
+  console.log('Compound Evolution Data:', {
+    investedAmount,
+    currentValue,
+    totalYears,
+    effectiveRate,
+    points
+  });
+  
   for (let i = 0; i <= points; i++) {
     const progress = i / points;
     const yearsElapsed = totalYears * progress;
     
-    // Valorização composta gradual - sem volatilidade
+    // Valorização composta gradual
     const value = investedAmount * Math.pow(1 + effectiveRate / 100, yearsElapsed);
     const profit = value - investedAmount;
     const profitPercent = investedAmount > 0 ? (profit / investedAmount) * 100 : 0;
@@ -109,7 +122,7 @@ function generateCompoundEvolutionData(
     data[0].profitPercent = 0;
   }
   
-  // Garante que o último ponto seja o valor atual
+  // Garante que o último ponto seja o valor atual REAL
   if (data.length > 1) {
     data[data.length - 1].value = currentValue;
     data[data.length - 1].profit = currentValue - investedAmount;
@@ -117,6 +130,8 @@ function generateCompoundEvolutionData(
       ? parseFloat(((currentValue - investedAmount) / investedAmount * 100).toFixed(2))
       : 0;
   }
+  
+  console.log('Chart data points:', data.slice(0, 3), '...', data.slice(-2));
   
   return data;
 }
@@ -264,13 +279,20 @@ export function InvestmentEvolutionChart({
     return `${months} mês${months !== 1 ? 'es' : ''}`;
   };
 
-  // Calcula domínio do Y com margem
+  // Calcula domínio do Y - para mostrar curva exponencial, começa do zero ou valor menor
   const minValue = Math.min(...chartData.map(d => d.value));
   const maxValue = Math.max(...chartData.map(d => d.value));
   const valueRange = maxValue - minValue;
+  
+  // Para mostrar a curvatura real de juros compostos, o eixo Y deve começar de 0
+  // ou de um valor que represente ~70% do valor inicial para dar perspectiva
+  const yMin = isCompoundGrowth 
+    ? Math.max(0, minValue * 0.7) // Começa em 70% do valor inicial para mostrar curvatura
+    : Math.floor(minValue - valueRange * 0.1);
+  
   const yDomain = [
-    Math.floor(minValue - valueRange * 0.1),
-    Math.ceil(maxValue + valueRange * 0.1)
+    yMin,
+    Math.ceil(maxValue + valueRange * 0.05)
   ];
 
   return (
