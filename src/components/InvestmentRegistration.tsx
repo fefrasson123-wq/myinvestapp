@@ -37,6 +37,7 @@ import { USAStockForm } from './forms/USAStockForm';
 import { REITsForm } from './forms/REITsForm';
 import { BDRForm } from './forms/BDRForm';
 import { ETFForm } from './forms/ETFForm';
+import { InvestmentTag } from '@/components/InvestmentsByTag';
 
 interface SellData {
   name: string;
@@ -49,7 +50,7 @@ interface SellData {
 }
 
 interface InvestmentRegistrationProps {
-  onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
+  onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>, tag?: InvestmentTag | null) => void;
   onSell?: (data: SellData) => void;
   onClose: () => void;
   isModal?: boolean;
@@ -99,8 +100,8 @@ const cryptoTypes = [
 export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = true }: InvestmentRegistrationProps) {
   const [currentForm, setCurrentForm] = useState<FormType>('menu');
 
-  const handleSubmit = (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
-    onSubmit(data);
+  const handleSubmit = (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>, tag?: InvestmentTag | null) => {
+    onSubmit(data, tag);
     setCurrentForm('menu');
     if (isModal) {
       onClose();

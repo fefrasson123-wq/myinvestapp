@@ -336,7 +336,7 @@ const Index = () => {
     });
   };
 
-  const handleSubmit = async (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
+  const handleSubmit = async (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>, tag?: InvestmentTag | null) => {
     if (!user) {
       requireAuth(() => {});
       return;
@@ -357,6 +357,11 @@ const Index = () => {
         total: data.investedAmount,
         date: data.purchaseDate ? new Date(data.purchaseDate) : new Date(),
       });
+
+      // Se uma tag foi selecionada, salva ela
+      if (tag) {
+        handleTagChange(newInvestment.id, tag);
+      }
 
       toast({
         title: 'Investimento adicionado',

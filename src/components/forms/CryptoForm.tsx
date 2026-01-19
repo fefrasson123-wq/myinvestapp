@@ -10,11 +10,13 @@ import { cn } from '@/lib/utils';
 import { useCryptoPrices, searchCryptoOnYahoo } from '@/hooks/useCryptoPrices';
 import { AssetPriceChart } from '@/components/AssetPriceChart';
 import { toast } from 'sonner';
+import { FormTagSelector } from '@/components/forms/FormTagSelector';
+import { InvestmentTag } from '@/components/InvestmentsByTag';
 
 type TransactionMode = 'buy' | 'sell';
 
 interface CryptoFormProps {
-  onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
+  onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>, tag?: InvestmentTag | null) => void;
   onSell?: (data: {
     name: string;
     ticker: string;
@@ -45,6 +47,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
   const [customSearchQuery, setCustomSearchQuery] = useState('');
   const [isSearchingCustom, setIsSearchingCustom] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [selectedTag, setSelectedTag] = useState<InvestmentTag | null>(null);
   const [formData, setFormData] = useState({
     quantity: '',
     averagePrice: '',
@@ -175,7 +178,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
         investedAmount,
         purchaseDate: formData.purchaseDate || undefined,
         notes: formData.notes.trim() || undefined,
-      });
+      }, selectedTag);
     }
   };
 
@@ -533,6 +536,12 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
             rows={2}
           />
         </div>
+
+        {mode === 'buy' && (
+          <div className="col-span-2">
+            <FormTagSelector selectedTag={selectedTag} onTagChange={setSelectedTag} />
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3 pt-4">
