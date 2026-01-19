@@ -182,7 +182,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                       )}
                     </div>
 
-                    <div className="grid grid-cols-4 gap-4 text-sm w-full" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
+                    <div className="grid grid-cols-4 gap-2 text-sm w-full" style={{ gridTemplateColumns: '0.8fr 1fr 1fr 1fr' }}>
                       <div className="transition-colors">
                         <span className="text-muted-foreground block">Quantidade</span>
                         <p className="font-mono text-card-foreground truncate">{formatQuantity(investment.quantity)}</p>
