@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Trash2, Edit, TrendingUp, TrendingDown, DollarSign, BarChart3 } from 'lucide-react';
+import { Trash2, Edit, TrendingUp, TrendingDown, DollarSign, BarChart3, LineChart } from 'lucide-react';
 import { Investment, categoryLabels, categoryColors } from '@/types/investment';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { RealEstateValueChart } from '@/components/RealEstateValueChart';
 import { BenchmarkComparison } from '@/components/BenchmarkComparison';
+import { InvestmentEvolutionChart } from '@/components/InvestmentEvolutionChart';
 import { TagSelector } from '@/components/TagSelector';
 import { InvestmentTag, tagColors } from '@/components/InvestmentsByTag';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
@@ -23,6 +24,7 @@ interface InvestmentListProps {
 
 export function InvestmentList({ investments, onEdit, onDelete, onSell, investmentTags = {}, onTagChange }: InvestmentListProps) {
   const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
+  const [evolutionInvestment, setEvolutionInvestment] = useState<Investment | null>(null);
   const { showValues, formatPercent } = useValuesVisibility();
 
   // Live prices (best-effort). If unavailable, we fall back to the stored DB price.
@@ -232,6 +234,15 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => setEvolutionInvestment(investment)}
+                        className="hover:text-success hover:bg-success/10 btn-interactive"
+                        title="Evolução do Investimento"
+                      >
+                        <LineChart className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => setSelectedInvestment(investment)}
                         className="hover:text-primary hover:bg-primary/10 btn-interactive"
                         title="Comparar com Benchmarks"
@@ -293,6 +304,14 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
         <BenchmarkComparison
           investment={selectedInvestment}
           onClose={() => setSelectedInvestment(null)}
+        />
+      )}
+
+      {evolutionInvestment && (
+        <InvestmentEvolutionChart
+          investment={evolutionInvestment}
+          isOpen={!!evolutionInvestment}
+          onClose={() => setEvolutionInvestment(null)}
         />
       )}
     </>
