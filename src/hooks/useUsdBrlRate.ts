@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { getPriceCache } from "@/lib/priceCache";
+import { exchangeRateLimiter } from "@/lib/rateLimiter";
 
 interface UsdBrlRateState {
   rate: number;
@@ -63,15 +64,16 @@ export function useUsdBrlRate(): UsdBrlRateState {
     setError(null);
 
     try {
-      // USD/BRL (bid) — exemplo de resposta:
-      // { "USDBRL": { "bid": "5.1234", ... } }
-      const resp = await fetch("https://economia.awesomeapi.com.br/json/last/USD-BRL", {
-        headers: { Accept: "application/json" },
-      });
+      // USD/BRL (bid) com rate limiting
+      const data = await exchangeRateLimiter.execute(async () => {
+        const resp = await fetch("https://economia.awesomeapi.com.br/json/last/USD-BRL", {
+          headers: { Accept: "application/json" },
+        });
 
-      if (!resp.ok) throw new Error(`Falha ao buscar USD/BRL: ${resp.status}`);
+        if (!resp.ok) throw new Error(`Falha ao buscar USD/BRL: ${resp.status}`);
+        return resp.json();
+      }, 2);
 
-      const data = await resp.json();
       const bidRaw = data?.USDBRL?.bid;
       const bid = typeof bidRaw === "string" ? Number(bidRaw) : Number(bidRaw);
 

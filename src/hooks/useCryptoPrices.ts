@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getPriceCache, PriceCache } from '@/lib/priceCache';
+import { coingeckoRateLimiter } from '@/lib/rateLimiter';
 
 export interface CryptoPrice {
   symbol: string;
@@ -79,20 +80,24 @@ export function useCryptoPrices() {
       
       console.log('Fetching crypto prices via edge function...');
       
-      const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
-        body: {
-          symbols: symbolsToFetch,
-          market: 'crypto'
+      const data = await coingeckoRateLimiter.execute(async () => {
+        const { data: responseData, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
+          body: {
+            symbols: symbolsToFetch,
+            market: 'crypto'
+          }
+        });
+
+        if (fetchError) {
+          throw new Error(fetchError.message);
         }
-      });
 
-      if (fetchError) {
-        throw new Error(fetchError.message);
-      }
-
-      if (!data?.quotes) {
-        throw new Error('No quotes returned');
-      }
+        if (!responseData?.quotes) {
+          throw new Error('No quotes returned');
+        }
+        
+        return responseData;
+      }, 2); // Higher priority for crypto fetches
 
       const priceMap: CryptoPriceMap = {};
       
