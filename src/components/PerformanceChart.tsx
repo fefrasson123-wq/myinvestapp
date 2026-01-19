@@ -640,7 +640,9 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
           stroke={lineColor} 
           strokeWidth={2}
           fillOpacity={1} 
-          fill="url(#colorValue)" 
+          fill="url(#colorValue)"
+          animationDuration={2000}
+          animationEasing="ease-out"
         />
       </AreaChart>
     </ResponsiveContainer>
