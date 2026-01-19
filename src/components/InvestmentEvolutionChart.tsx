@@ -25,8 +25,22 @@ interface ChartDataPoint {
   profitPercent: number;
 }
 
-// Gera dados de evolução para IMÓVEIS com valorização composta
-function generateRealEstateEvolutionData(
+// Categorias que usam valorização composta (sem volatilidade)
+const COMPOUND_GROWTH_CATEGORIES = [
+  'realestate', 
+  'cdb', 
+  'lci', 
+  'lca', 
+  'lcilca', 
+  'treasury', 
+  'savings', 
+  'debentures', 
+  'cricra', 
+  'fixedincomefund'
+];
+
+// Gera dados de evolução com valorização composta (para imóveis e renda fixa)
+function generateCompoundEvolutionData(
   investedAmount: number, 
   currentValue: number, 
   purchaseDate?: string,
@@ -48,15 +62,24 @@ function generateRealEstateEvolutionData(
     ? (Math.pow(currentValue / investedAmount, 1 / totalYears) - 1) * 100 
     : 7.73);
   
-  // Define quantidade de pontos - para imóveis, 1 ponto por ano + pontos intermediários
-  const years = Math.ceil(totalYears);
-  const points = Math.max(12, Math.min(years * 2, 30));
+  // Define quantidade de pontos baseado no período
+  let points: number;
+  if (totalYears <= 1) {
+    points = 12; // mensal para até 1 ano
+  } else if (totalYears <= 3) {
+    points = Math.ceil(totalYears * 6); // bimestral
+  } else if (totalYears <= 10) {
+    points = Math.ceil(totalYears * 4); // trimestral
+  } else {
+    points = Math.ceil(totalYears * 2); // semestral para períodos longos
+  }
+  points = Math.min(points, 36); // máximo de 36 pontos
   
   for (let i = 0; i <= points; i++) {
     const progress = i / points;
     const yearsElapsed = totalYears * progress;
     
-    // Valorização composta gradual - sem volatilidade para imóveis
+    // Valorização composta gradual - sem volatilidade
     const value = investedAmount * Math.pow(1 + effectiveRate / 100, yearsElapsed);
     const profit = value - investedAmount;
     const profitPercent = investedAmount > 0 ? (profit / investedAmount) * 100 : 0;
@@ -191,11 +214,11 @@ export function InvestmentEvolutionChart({
   isOpen,
   onClose
 }: InvestmentEvolutionChartProps) {
-  const isRealEstate = investment.category === 'realestate';
+  const isCompoundGrowth = COMPOUND_GROWTH_CATEGORIES.includes(investment.category);
   
   const chartData = useMemo(() => {
-    if (isRealEstate) {
-      return generateRealEstateEvolutionData(
+    if (isCompoundGrowth) {
+      return generateCompoundEvolutionData(
         investment.investedAmount, 
         investment.currentValue, 
         investment.purchaseDate,
@@ -203,7 +226,7 @@ export function InvestmentEvolutionChart({
       );
     }
     return generateEvolutionData(investment.investedAmount, investment.currentValue, investment.purchaseDate);
-  }, [investment.investedAmount, investment.currentValue, investment.purchaseDate, investment.interestRate, isRealEstate]);
+  }, [investment.investedAmount, investment.currentValue, investment.purchaseDate, investment.interestRate, isCompoundGrowth]);
 
   const totalProfit = investment.currentValue - investment.investedAmount;
   const totalProfitPercent = investment.investedAmount > 0 ? (totalProfit / investment.investedAmount) * 100 : 0;
