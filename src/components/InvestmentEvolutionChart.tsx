@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 
 interface InvestmentEvolutionChartProps {
@@ -177,6 +178,9 @@ export function InvestmentEvolutionChart({
               <span className="text-primary font-mono text-sm">({investment.ticker})</span>
             )}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Gráfico mostrando a evolução do valor do investimento ao longo do tempo
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
