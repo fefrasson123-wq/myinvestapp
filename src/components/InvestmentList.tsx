@@ -182,22 +182,22 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                       )}
                     </div>
 
-                    <div className="grid grid-cols-4 gap-1 text-sm w-full" style={{ gridTemplateColumns: 'auto auto auto auto' }}>
+                    <div className="flex gap-4 text-sm">
                       <div className="transition-colors">
                         <span className="text-muted-foreground block">Quantidade</span>
-                        <p className="font-mono text-card-foreground truncate">{formatQuantity(investment.quantity)}</p>
+                        <p className="font-mono text-card-foreground">{formatQuantity(investment.quantity)}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground block">Preço Médio</span>
-                        <p className="font-mono text-card-foreground truncate">{formatCurrency(investment.averagePrice, currency)}</p>
+                        <p className="font-mono text-card-foreground">{formatCurrency(investment.averagePrice, currency)}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground block">Cotação Atual</span>
-                        <p className="font-mono text-card-foreground truncate">{formatCurrency(effectiveCurrentPrice, currency)}</p>
+                        <p className="font-mono text-card-foreground">{formatCurrency(effectiveCurrentPrice, currency)}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground block">Valor Atual</span>
-                        <p className="font-mono text-primary font-medium truncate">{formatCurrency(effectiveCurrentValue, currency)}</p>
+                        <p className="font-mono text-primary font-medium">{formatCurrency(effectiveCurrentValue, currency)}</p>
                       </div>
                     </div>
                   </div>
