@@ -38,23 +38,18 @@ function getStatusColor(lastUpdate: Date | null, isLoading: boolean): { dot: str
   const diffMs = now.getTime() - lastUpdate.getTime();
   const diffSeconds = Math.floor(diffMs / 1000);
   
-  // Verde: até 60 segundos
-  if (diffSeconds <= 60) {
+  // Verde: até 10 minutos (600 segundos)
+  if (diffSeconds < 600) {
     return { dot: "bg-success shadow-[0_0_8px_hsl(var(--success)/0.6)]", icon: "text-success" };
   }
   
-  // Amarelo: após 10 minutos (600 segundos)
-  if (diffSeconds >= 600 && diffSeconds < 3600) {
+  // Amarelo: de 10 minutos até 1 hora
+  if (diffSeconds < 3600) {
     return { dot: "bg-yellow-400", icon: "text-yellow-400" };
   }
   
   // Vermelho: após 1 hora (3600 segundos)
-  if (diffSeconds >= 3600) {
-    return { dot: "bg-destructive", icon: "text-destructive" };
-  }
-  
-  // Entre 60s e 10min: verde
-  return { dot: "bg-success shadow-[0_0_8px_hsl(var(--success)/0.6)]", icon: "text-success" };
+  return { dot: "bg-destructive", icon: "text-destructive" };
 }
 
 export function PriceUpdateIndicator({ lastUpdate, isLoading, onRefresh }: PriceUpdateIndicatorProps) {
