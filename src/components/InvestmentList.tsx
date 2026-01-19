@@ -26,7 +26,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
   const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
   const [evolutionInvestment, setEvolutionInvestment] = useState<Investment | null>(null);
   const [realEstateChartInvestment, setRealEstateChartInvestment] = useState<Investment | null>(null);
-  const { showValues, formatPercent } = useValuesVisibility();
+  const { showValues, formatPercent, formatCurrencyValue, usdBrlRate } = useValuesVisibility();
 
   // Live prices (best-effort). If unavailable, we fall back to the stored DB price.
   const stock = useStockPrices();
@@ -217,7 +217,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                             isPositive ? 'text-success' : 'text-destructive'
                           )}
                         >
-                          {formatCurrency(effectiveProfitLoss, currency)}
+                          {formatCurrencyValue(isCrypto ? effectiveProfitLoss * usdBrlRate : effectiveProfitLoss)}
                         </span>
                       </div>
                       <span
