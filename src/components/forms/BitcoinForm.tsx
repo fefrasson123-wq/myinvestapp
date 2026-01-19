@@ -8,11 +8,13 @@ import { Investment } from '@/types/investment';
 import { cn } from '@/lib/utils';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { AssetPriceChart } from '@/components/AssetPriceChart';
+import { FormTagSelector } from '@/components/forms/FormTagSelector';
+import { InvestmentTag } from '@/components/InvestmentsByTag';
 
 type TransactionMode = 'buy' | 'sell';
 
 interface BitcoinFormProps {
-  onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
+  onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>, tag?: InvestmentTag | null) => void;
   onSell?: (data: {
     name: string;
     ticker: string;
@@ -27,6 +29,7 @@ interface BitcoinFormProps {
 
 export function BitcoinForm({ onSubmit, onSell, onBack }: BitcoinFormProps) {
   const [mode, setMode] = useState<TransactionMode>('buy');
+  const [selectedTag, setSelectedTag] = useState<InvestmentTag | null>(null);
   const [formData, setFormData] = useState({
     quantity: '',
     averagePrice: '',
@@ -78,7 +81,7 @@ export function BitcoinForm({ onSubmit, onSell, onBack }: BitcoinFormProps) {
         investedAmount,
         purchaseDate: formData.purchaseDate || undefined,
         notes: formData.notes.trim() || undefined,
-      });
+      }, selectedTag);
     }
   };
 
@@ -216,6 +219,12 @@ export function BitcoinForm({ onSubmit, onSell, onBack }: BitcoinFormProps) {
             className="min-h-[60px]"
           />
         </div>
+
+        {mode === 'buy' && (
+          <div className="space-y-2">
+            <FormTagSelector selectedTag={selectedTag} onTagChange={setSelectedTag} />
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3 pt-2">

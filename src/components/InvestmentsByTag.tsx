@@ -5,15 +5,17 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
 
-export type InvestmentTag = 'long-term' | 'passive-income' | 'speculation';
+export type InvestmentTag = 'short-term' | 'long-term' | 'passive-income' | 'speculation';
 
 export const tagLabels: Record<InvestmentTag, string> = {
+  'short-term': 'Curto Prazo',
   'long-term': 'Longo Prazo',
   'passive-income': 'Renda Passiva',
   'speculation': 'Especulação',
 };
 
 export const tagColors: Record<InvestmentTag, string> = {
+  'short-term': 'hsl(280, 100%, 60%)',
   'long-term': 'hsl(200, 100%, 50%)',
   'passive-income': 'hsl(140, 100%, 45%)',
   'speculation': 'hsl(45, 100%, 50%)',
@@ -43,6 +45,7 @@ function formatPercent(value: number): string {
 export function InvestmentsByTag({ investments, investmentTags, onTagChange }: InvestmentsByTagProps) {
   const { rate: usdToBrl } = useUsdBrlRate();
   const [expandedTags, setExpandedTags] = useState<Record<InvestmentTag, boolean>>({
+    'short-term': true,
     'long-term': true,
     'passive-income': true,
     'speculation': true,

@@ -9,11 +9,13 @@ import { Investment } from '@/types/investment';
 import { cn } from '@/lib/utils';
 import { useStockPrices } from '@/hooks/useStockPrices';
 import { AssetPriceChart } from '@/components/AssetPriceChart';
+import { FormTagSelector } from '@/components/forms/FormTagSelector';
+import { InvestmentTag } from '@/components/InvestmentsByTag';
 
 type TransactionMode = 'buy' | 'sell';
 
 interface StockFormProps {
-  onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
+  onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>, tag?: InvestmentTag | null) => void;
   onSell?: (data: {
     name: string;
     ticker: string;
@@ -31,6 +33,7 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStock, setSelectedStock] = useState<StockAsset | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedTag, setSelectedTag] = useState<InvestmentTag | null>(null);
   const [formData, setFormData] = useState({
     quantity: '',
     averagePrice: '',
@@ -124,7 +127,7 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
         purchaseDate: formData.purchaseDate || undefined,
         dividends: formData.dividends ? parseFloat(formData.dividends) : undefined,
         notes: formData.notes.trim() || undefined,
-      });
+      }, selectedTag);
     }
   };
 
@@ -315,6 +318,12 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
             className="text-sm min-h-[32px]"
           />
         </div>
+
+        {mode === 'buy' && (
+          <div className="col-span-2">
+            <FormTagSelector selectedTag={selectedTag} onTagChange={setSelectedTag} />
+          </div>
+        )}
       </div>
 
       <div className="flex gap-2 pt-2">
