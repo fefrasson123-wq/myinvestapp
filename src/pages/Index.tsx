@@ -415,9 +415,11 @@ const Index = () => {
         <div 
           ref={navPlaceholderRef} 
           className={cn(
-            "transition-all duration-500 ease-out",
             isNavSticky ? "h-[49px]" : "h-0"
           )} 
+          style={{
+            transition: 'height 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+          }}
         />
         
         {/* Navigation Tabs */}
@@ -426,11 +428,12 @@ const Index = () => {
           className={cn(
             "border-b border-border/50 backdrop-blur-md z-40 w-full",
             isNavSticky 
-              ? "fixed top-0 left-0 right-0 shadow-lg bg-card/95" 
+              ? "fixed top-0 left-0 right-0 bg-card/95" 
               : "relative bg-card/80"
           )}
           style={{
-            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease',
+            transition: 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            boxShadow: isNavSticky ? '0 4px 20px -2px rgba(0, 0, 0, 0.15)' : 'none',
           }}
         >
           <div className="w-full max-w-7xl mx-auto px-2 sm:px-4">
