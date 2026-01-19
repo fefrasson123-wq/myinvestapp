@@ -75,20 +75,26 @@ export function CategoryChart({ categoryTotals, investments }: CategoryChartProp
                 paddingAngle={3}
                 dataKey="value"
                 stroke="transparent"
+                isAnimationActive={false}
                 onClick={handlePieClick}
                 style={{ cursor: 'pointer' }}
               >
                 {data.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
+                  <Cell
+                    key={`cell-${index}`}
                     fill={entry.color}
+                    onClick={() => setSelectedCategory(entry.category)}
                     style={{
                       filter: 'drop-shadow(0 0 8px ' + entry.color + ')',
+                      cursor: 'pointer',
                     }}
                   />
                 ))}
               </Pie>
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip
+                content={<CustomTooltip />}
+                wrapperStyle={{ pointerEvents: 'none' }}
+              />
               <Legend 
                 formatter={(value, entry: any) => {
                   const item = data.find(d => d.name === value);
