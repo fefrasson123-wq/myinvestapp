@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { stocksList, fiiList, StockAsset } from '@/data/stocksList';
 import { bdrList, BDRAsset } from '@/data/bdrList';
 import { getPriceCache } from '@/lib/priceCache';
+import { yahooRateLimiter } from '@/lib/rateLimiter';
 
 interface StockPrice {
   symbol: string;
@@ -64,32 +65,36 @@ export function useStockPrices() {
     return unsubscribe;
   }, []);
 
-  // Fetch a single stock price from BRAPI
+  // Fetch a single stock price from BRAPI with rate limiting
   const fetchSinglePrice = async (symbol: string): Promise<StockPrice | null> => {
     try {
-      const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
-        body: { symbols: [symbol] },
-      });
+      const result = await yahooRateLimiter.execute(async () => {
+        const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
+          body: { symbols: [symbol] },
+        });
 
-      if (fetchError) {
-        console.error('Edge function error for', symbol, ':', fetchError);
+        if (fetchError) {
+          console.error('Edge function error for', symbol, ':', fetchError);
+          return null;
+        }
+
+        if (data?.quotes?.[symbol]) {
+          const q = data.quotes[symbol];
+          return {
+            symbol: q.symbol,
+            price: q.price,
+            change: q.change,
+            changePercent: q.changePercent,
+            high24h: q.high24h,
+            low24h: q.low24h,
+            open: q.open,
+            lastUpdated: new Date().toISOString(),
+          };
+        }
         return null;
-      }
-
-      if (data?.quotes?.[symbol]) {
-        const q = data.quotes[symbol];
-        return {
-          symbol: q.symbol,
-          price: q.price,
-          change: q.change,
-          changePercent: q.changePercent,
-          high24h: q.high24h,
-          low24h: q.low24h,
-          open: q.open,
-          lastUpdated: new Date().toISOString(),
-        };
-      }
-      return null;
+      }, 1); // Priority 1 for individual fetches
+      
+      return result;
     } catch (err) {
       console.error('Error fetching price for', symbol, ':', err);
       return null;

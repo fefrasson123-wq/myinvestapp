@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getPriceCache } from '@/lib/priceCache';
+import { exchangeRateLimiter } from '@/lib/rateLimiter';
 
 interface EurBrlRateState {
   rate: number;
@@ -56,13 +57,16 @@ export function useEurBrlRate(): EurBrlRateState {
     setError(null);
 
     try {
-      const response = await fetch('https://economia.awesomeapi.com.br/json/last/EUR-BRL');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error: ${response.status}`);
-      }
+      const data = await exchangeRateLimiter.execute(async () => {
+        const response = await fetch('https://economia.awesomeapi.com.br/json/last/EUR-BRL');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error: ${response.status}`);
+        }
 
-      const data = await response.json();
+        return response.json();
+      }, 2);
+
       const newRate = parseFloat(data.EURBRL?.bid);
 
       if (isNaN(newRate) || newRate <= 0) {

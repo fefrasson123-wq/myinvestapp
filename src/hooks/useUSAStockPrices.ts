@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getPriceCache } from '@/lib/priceCache';
+import { yahooRateLimiter } from '@/lib/rateLimiter';
 
 interface USAStockPrice {
   symbol: string;
@@ -51,29 +52,33 @@ export function useUSAStockPrices() {
 
   const fetchSinglePrice = async (symbol: string): Promise<USAStockPrice | null> => {
     try {
-      const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
-        body: { symbols: [symbol], market: 'usa' },
-      });
+      const result = await yahooRateLimiter.execute(async () => {
+        const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
+          body: { symbols: [symbol], market: 'usa' },
+        });
 
-      if (fetchError) {
-        console.error('Edge function error for USA stock', symbol, ':', fetchError);
+        if (fetchError) {
+          console.error('Edge function error for USA stock', symbol, ':', fetchError);
+          return null;
+        }
+
+        if (data?.quotes?.[symbol]) {
+          const q = data.quotes[symbol];
+          return {
+            symbol: q.symbol,
+            price: q.price,
+            change: q.change,
+            changePercent: q.changePercent,
+            high24h: q.high24h,
+            low24h: q.low24h,
+            open: q.open,
+            lastUpdated: new Date().toISOString(),
+          };
+        }
         return null;
-      }
-
-      if (data?.quotes?.[symbol]) {
-        const q = data.quotes[symbol];
-        return {
-          symbol: q.symbol,
-          price: q.price,
-          change: q.change,
-          changePercent: q.changePercent,
-          high24h: q.high24h,
-          low24h: q.low24h,
-          open: q.open,
-          lastUpdated: new Date().toISOString(),
-        };
-      }
-      return null;
+      }, 1);
+      
+      return result;
     } catch (err) {
       console.error('Error fetching USA stock price for', symbol, ':', err);
       return null;

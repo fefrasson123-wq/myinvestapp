@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { etfList, ETFAsset } from '@/data/etfList';
 import { getPriceCache } from '@/lib/priceCache';
+import { yahooRateLimiter } from '@/lib/rateLimiter';
 
 interface ETFPrice {
   symbol: string;
@@ -61,31 +62,35 @@ export function useETFPrices() {
     return unsubscribe;
   }, []);
 
-  // Fetch a single ETF price via edge function
+  // Fetch a single ETF price via edge function with rate limiting
   const fetchSinglePrice = async (symbol: string): Promise<ETFPrice | null> => {
     try {
-      const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
-        body: { symbols: [symbol], market: 'br' }, // ETFs brasileiros usam .SA
-      });
+      const result = await yahooRateLimiter.execute(async () => {
+        const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
+          body: { symbols: [symbol], market: 'br' },
+        });
 
-      if (fetchError) {
-        console.error('Edge function error for ETF', symbol, ':', fetchError);
+        if (fetchError) {
+          console.error('Edge function error for ETF', symbol, ':', fetchError);
+          return null;
+        }
+
+        if (data?.quotes?.[symbol]) {
+          const q = data.quotes[symbol];
+          return {
+            symbol: q.symbol,
+            price: q.price,
+            change: q.change,
+            changePercent: q.changePercent,
+            high24h: q.high24h,
+            low24h: q.low24h,
+            lastUpdated: new Date().toISOString(),
+          };
+        }
         return null;
-      }
-
-      if (data?.quotes?.[symbol]) {
-        const q = data.quotes[symbol];
-        return {
-          symbol: q.symbol,
-          price: q.price,
-          change: q.change,
-          changePercent: q.changePercent,
-          high24h: q.high24h,
-          low24h: q.low24h,
-          lastUpdated: new Date().toISOString(),
-        };
-      }
-      return null;
+      }, 1);
+      
+      return result;
     } catch (err) {
       console.error('Error fetching price for ETF', symbol, ':', err);
       return null;

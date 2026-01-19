@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { fiiList, StockAsset } from '@/data/stocksList';
 import { getPriceCache } from '@/lib/priceCache';
+import { yahooRateLimiter } from '@/lib/rateLimiter';
 
 interface FIIPrice {
   symbol: string;
@@ -91,32 +92,36 @@ export function useFIIPrices() {
     return unsubscribe;
   }, []);
 
-  // Fetch a single FII price from BRAPI
+  // Fetch a single FII price from BRAPI with rate limiting
   const fetchSinglePrice = async (symbol: string): Promise<FIIPrice | null> => {
     try {
-      const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
-        body: { symbols: [symbol] },
-      });
+      const result = await yahooRateLimiter.execute(async () => {
+        const { data, error: fetchError } = await supabase.functions.invoke('stock-quotes', {
+          body: { symbols: [symbol] },
+        });
 
-      if (fetchError) {
-        console.error('Edge function error for', symbol, ':', fetchError);
+        if (fetchError) {
+          console.error('Edge function error for', symbol, ':', fetchError);
+          return null;
+        }
+
+        if (data?.quotes?.[symbol]) {
+          const q = data.quotes[symbol];
+          return {
+            symbol: q.symbol,
+            price: q.price,
+            change: q.change,
+            changePercent: q.changePercent,
+            dividendYield: fiiDividendYields[symbol] || 10.0,
+            high24h: q.high24h,
+            low24h: q.low24h,
+            lastUpdated: new Date().toISOString(),
+          };
+        }
         return null;
-      }
-
-      if (data?.quotes?.[symbol]) {
-        const q = data.quotes[symbol];
-        return {
-          symbol: q.symbol,
-          price: q.price,
-          change: q.change,
-          changePercent: q.changePercent,
-          dividendYield: fiiDividendYields[symbol] || 10.0,
-          high24h: q.high24h,
-          low24h: q.low24h,
-          lastUpdated: new Date().toISOString(),
-        };
-      }
-      return null;
+      }, 1);
+      
+      return result;
     } catch (err) {
       console.error('Error fetching price for', symbol, ':', err);
       return null;
