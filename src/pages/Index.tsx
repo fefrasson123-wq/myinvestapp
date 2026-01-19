@@ -18,14 +18,15 @@ import { InvestmentTag } from '@/components/InvestmentsByTag';
 import { useAuth } from '@/contexts/AuthContext';
 import { InvestmentRegistration } from '@/components/InvestmentRegistration';
 
+import { EditInvestmentModal } from '@/components/EditInvestmentModal';
+import { SellAssetModal } from '@/components/SellAssetModal';
+import { EditTransactionModal } from '@/components/EditTransactionModal';
+
 // Lazy load heavy components to reduce initial bundle size
 const CategoryChart = lazy(() => import('@/components/CategoryChart').then(m => ({ default: m.CategoryChart })));
 const InvestmentList = lazy(() => import('@/components/InvestmentList').then(m => ({ default: m.InvestmentList })));
 const ResultsArea = lazy(() => import('@/components/ResultsArea').then(m => ({ default: m.ResultsArea })));
-const SellAssetModal = lazy(() => import('@/components/SellAssetModal').then(m => ({ default: m.SellAssetModal })));
-const EditInvestmentModal = lazy(() => import('@/components/EditInvestmentModal').then(m => ({ default: m.EditInvestmentModal })));
 const TransactionHistory = lazy(() => import('@/components/TransactionHistory').then(m => ({ default: m.TransactionHistory })));
-const EditTransactionModal = lazy(() => import('@/components/EditTransactionModal').then(m => ({ default: m.EditTransactionModal })));
 const InvestmentsByTag = lazy(() => import('@/components/InvestmentsByTag').then(m => ({ default: m.InvestmentsByTag })));
 
 // Loading fallback component
