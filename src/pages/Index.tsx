@@ -297,22 +297,24 @@ const Index = () => {
 
   const handleDelete = async (id: string) => {
     requireAuth(async () => {
-      const deletedInvestment = await deleteInvestment(id);
+      // Encontra o investimento antes de deletar para mostrar toast instantâneo
+      const investmentToDelete = investments.find(inv => inv.id === id);
       
-      if (deletedInvestment) {
+      if (investmentToDelete) {
+        // Toast instantâneo (optimistic UI)
         toast({
           title: 'Investimento removido',
-          description: `${deletedInvestment.name} foi excluído.`,
+          description: `${investmentToDelete.name} foi excluído.`,
           action: (
             <Button
               variant="outline"
               size="sm"
               onClick={async () => {
-                const restored = await restoreInvestment(deletedInvestment);
+                const restored = await restoreInvestment(investmentToDelete);
                 if (restored) {
                   toast({
                     title: 'Investimento restaurado',
-                    description: `${deletedInvestment.name} foi restaurado com sucesso.`,
+                    description: `${investmentToDelete.name} foi restaurado com sucesso.`,
                   });
                 } else {
                   toast({
@@ -328,6 +330,9 @@ const Index = () => {
           ),
         });
       }
+      
+      // Executa a exclusão em background
+      await deleteInvestment(id);
     });
   };
 
