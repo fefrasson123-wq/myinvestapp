@@ -286,12 +286,13 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                   </div>
                 </div>
 
-                {/* Gráfico de Valorização para Imóveis */}
+                {/* Gráfico de Valorização para Imóveis - Compacto na lista */}
                 {isRealEstate && (
                   <RealEstateValueChart
                     purchasePrice={investment.investedAmount}
                     currentValue={investment.currentValue}
                     purchaseDate={investment.purchaseDate}
+                    expanded={false}
                   />
                 )}
               </div>
