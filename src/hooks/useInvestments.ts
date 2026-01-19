@@ -346,7 +346,19 @@ export function useInvestments() {
     setInvestments(prev => prev.filter(inv => inv.id !== id));
     
     if (user) {
-      // Delete from Supabase - tags will be cascaded automatically via ON DELETE CASCADE
+      // First, delete related transactions
+      const { error: transactionsError } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('investment_id', id);
+
+      if (transactionsError) {
+        console.error('Error deleting related transactions:', transactionsError);
+      } else {
+        console.log('Related transactions deleted for investment:', id);
+      }
+
+      // Then delete the investment - tags will be cascaded automatically via ON DELETE CASCADE
       const { error } = await supabase
         .from('investments')
         .delete()
