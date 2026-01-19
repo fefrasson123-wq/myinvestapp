@@ -191,7 +191,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                         <p className="font-mono text-card-foreground">{formatCurrency(investment.averagePrice, currency)}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Preço Atual</span>
+                        <span className="text-muted-foreground">Cotação Atual</span>
                         <p className="font-mono text-card-foreground">{formatCurrency(effectiveCurrentPrice, currency)}</p>
                       </div>
                       <div>
