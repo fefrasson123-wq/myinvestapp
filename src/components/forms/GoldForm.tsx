@@ -161,12 +161,10 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
             className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border bg-card hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group"
           >
             <svg className="w-12 h-12 text-amber-500" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 44L16 20H48L56 44H8Z" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
-              <path d="M8 44L16 52H48L56 44H8Z" fill="currentColor" fillOpacity="0.5" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
-              <path d="M16 20L24 12H40L48 20" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
-              <path d="M24 12V20M40 12V20" stroke="currentColor" strokeWidth="1.5"/>
-              <path d="M16 20H48" stroke="currentColor" strokeWidth="1.5"/>
-              <text x="32" y="40" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="bold">AU</text>
+              <path d="M12 28L20 20H44L52 28V44L44 52H20L12 44V28Z" fill="currentColor" fillOpacity="0.4"/>
+              <path d="M12 28L20 20H44L52 28" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round"/>
+              <path d="M12 28V44L20 52H44L52 44V28" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round"/>
+              <path d="M20 20V52M44 20V52M12 36H52" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5"/>
             </svg>
             <div className="text-center">
               <h4 className="font-semibold text-card-foreground">Ouro Físico</h4>
