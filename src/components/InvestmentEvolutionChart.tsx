@@ -58,10 +58,8 @@ function generateCompoundEvolutionData(
   const totalYears = totalDays / 365.25;
   
   // Calcula a taxa anual real baseada na diferença entre valor investido e atual
-  // Se temos o valor atual real, calculamos a taxa que levou a esse resultado
   let effectiveRate: number;
   if (currentValue > 0 && investedAmount > 0 && totalYears > 0) {
-    // Taxa implícita baseada no crescimento real
     effectiveRate = (Math.pow(currentValue / investedAmount, 1 / totalYears) - 1) * 100;
   } else {
     effectiveRate = annualRate || 7.73;
@@ -70,36 +68,26 @@ function generateCompoundEvolutionData(
   // Define quantidade de pontos baseado no período
   let points: number;
   if (totalYears <= 1) {
-    points = 12; // mensal para até 1 ano
+    points = 12;
   } else if (totalYears <= 3) {
-    points = Math.ceil(totalYears * 6); // bimestral
+    points = Math.ceil(totalYears * 6);
   } else if (totalYears <= 10) {
-    points = Math.ceil(totalYears * 4); // trimestral
+    points = Math.ceil(totalYears * 4);
   } else {
-    points = Math.ceil(totalYears * 2); // semestral para períodos longos
+    points = Math.ceil(totalYears * 2);
   }
-  points = Math.min(points, 36); // máximo de 36 pontos
-  
-  console.log('Compound Evolution Data:', {
-    investedAmount,
-    currentValue,
-    totalYears,
-    effectiveRate,
-    points
-  });
+  points = Math.min(points, 36);
   
   for (let i = 0; i <= points; i++) {
     const progress = i / points;
     const yearsElapsed = totalYears * progress;
     
-    // Valorização composta gradual
     const value = investedAmount * Math.pow(1 + effectiveRate / 100, yearsElapsed);
     const profit = value - investedAmount;
     const profitPercent = investedAmount > 0 ? (profit / investedAmount) * 100 : 0;
     
     const pointDate = new Date(startDate.getTime() + (totalDays * progress * 24 * 60 * 60 * 1000));
     
-    // Formata label baseado no período total
     let label: string;
     if (totalDays <= 365) {
       label = pointDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
@@ -115,14 +103,12 @@ function generateCompoundEvolutionData(
     });
   }
   
-  // Garante que o primeiro ponto seja o valor investido
   if (data.length > 0) {
     data[0].value = investedAmount;
     data[0].profit = 0;
     data[0].profitPercent = 0;
   }
   
-  // Garante que o último ponto seja o valor atual REAL
   if (data.length > 1) {
     data[data.length - 1].value = currentValue;
     data[data.length - 1].profit = currentValue - investedAmount;
@@ -130,8 +116,6 @@ function generateCompoundEvolutionData(
       ? parseFloat(((currentValue - investedAmount) / investedAmount * 100).toFixed(2))
       : 0;
   }
-  
-  console.log('Chart data points:', data.slice(0, 3), '...', data.slice(-2));
   
   return data;
 }
@@ -230,17 +214,6 @@ export function InvestmentEvolutionChart({
   onClose
 }: InvestmentEvolutionChartProps) {
   const isCompoundGrowth = COMPOUND_GROWTH_CATEGORIES.includes(investment.category);
-  
-  console.log('InvestmentEvolutionChart - Investment data:', {
-    name: investment.name,
-    category: investment.category,
-    investedAmount: investment.investedAmount,
-    currentValue: investment.currentValue,
-    currentPrice: investment.currentPrice,
-    purchaseDate: investment.purchaseDate,
-    interestRate: investment.interestRate,
-    isCompoundGrowth
-  });
   
   const chartData = useMemo(() => {
     if (isCompoundGrowth) {
