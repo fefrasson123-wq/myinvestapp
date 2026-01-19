@@ -30,6 +30,41 @@ function getCryptoYahooSymbol(symbol: string): string {
   return `${normalized}-USD`;
 }
 
+// Fetch with timeout and retry
+async function fetchWithRetry(
+  url: string, 
+  options: RequestInit = {}, 
+  retries = 2, 
+  timeout = 8000
+): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`Fetch attempt ${i + 1} failed for ${url}: ${lastError.message}`);
+      
+      if (i < retries) {
+        // Wait before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Fetch failed');
+}
+
 // Yahoo Finance API - completely free, no API key needed
 async function fetchYahooFinanceQuote(originalSymbol: string, market: 'br' | 'usa' | 'crypto' = 'br'): Promise<{
   price: number;
@@ -63,7 +98,7 @@ async function fetchYahooFinanceQuote(originalSymbol: string, market: 'br' | 'us
     
     console.log(`Fetching Yahoo Finance for: ${yahooSymbol} (market: ${market})`);
     
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -171,7 +206,7 @@ async function fetchHistoricalPrices(
       
       console.log(`Fetching historical for: ${yahooSymbol} (range: ${range}, interval: ${interval})`);
       
-      const response = await fetch(url, {
+      const response = await fetchWithRetry(url, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -233,7 +268,7 @@ async function searchCryptos(query: string): Promise<Array<{
     
     console.log(`Searching cryptos on Yahoo Finance for: ${query}`);
     
-    const response = await fetch(searchUrl, {
+    const response = await fetchWithRetry(searchUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
