@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, ArrowLeft, Loader2, Coins, Smartphone } from 'lucide-react';
+import { Check, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -160,9 +160,14 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
             onClick={() => handleSelectGoldType('physical')}
             className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border bg-card hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group"
           >
-            <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 transition-colors">
-              <Coins className="w-8 h-8 text-amber-500" />
-            </div>
+            <svg className="w-12 h-12 text-amber-500" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 44L16 20H48L56 44H8Z" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+              <path d="M8 44L16 52H48L56 44H8Z" fill="currentColor" fillOpacity="0.5" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+              <path d="M16 20L24 12H40L48 20" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+              <path d="M24 12V20M40 12V20" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M16 20H48" stroke="currentColor" strokeWidth="1.5"/>
+              <text x="32" y="40" textAnchor="middle" fill="currentColor" fontSize="10" fontWeight="bold">AU</text>
+            </svg>
             <div className="text-center">
               <h4 className="font-semibold text-card-foreground">Ouro Físico</h4>
               <p className="text-xs text-muted-foreground mt-1">
@@ -176,9 +181,12 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
             onClick={() => handleSelectGoldType('digital')}
             className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border bg-card hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group"
           >
-            <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 transition-colors">
-              <Smartphone className="w-8 h-8 text-amber-500" />
-            </div>
+            <svg className="w-12 h-12" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="32" cy="32" r="24" fill="#F7931A" fillOpacity="0.2" stroke="#F7931A" strokeWidth="2"/>
+              <circle cx="32" cy="32" r="18" fill="#FFD700" fillOpacity="0.3" stroke="#FFD700" strokeWidth="1.5"/>
+              <text x="32" y="28" textAnchor="middle" fill="#F7931A" fontSize="8" fontWeight="bold">PAX</text>
+              <text x="32" y="40" textAnchor="middle" fill="#FFD700" fontSize="10" fontWeight="bold">GOLD</text>
+            </svg>
             <div className="text-center">
               <h4 className="font-semibold text-card-foreground">Ouro Digital</h4>
               <p className="text-xs text-muted-foreground mt-1">
@@ -200,7 +208,10 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <Coins className="w-5 h-5 text-amber-500" />
+            <svg className="w-5 h-5 text-amber-500" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 44L16 20H48L56 44H8Z" fill="currentColor" fillOpacity="0.3" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+              <path d="M8 44L16 52H48L56 44H8Z" fill="currentColor" fillOpacity="0.5" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
+            </svg>
             <h3 className="text-lg font-semibold text-card-foreground">
               Ouro Físico
             </h3>
@@ -349,7 +360,10 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex items-center gap-2">
-          <Smartphone className="w-5 h-5 text-amber-500" />
+          <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="32" cy="32" r="24" fill="#F7931A" fillOpacity="0.2" stroke="#F7931A" strokeWidth="2"/>
+            <circle cx="32" cy="32" r="18" fill="#FFD700" fillOpacity="0.3" stroke="#FFD700" strokeWidth="1.5"/>
+          </svg>
           <h3 className="text-lg font-semibold text-card-foreground">
             Ouro Digital - PAX Gold
           </h3>
@@ -359,9 +373,12 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
       {/* PAXG Info Card */}
       <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-            <span className="text-lg font-bold text-amber-500">₿</span>
-          </div>
+          <svg className="w-10 h-10" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="32" cy="32" r="24" fill="#F7931A" fillOpacity="0.2" stroke="#F7931A" strokeWidth="2"/>
+            <circle cx="32" cy="32" r="18" fill="#FFD700" fillOpacity="0.3" stroke="#FFD700" strokeWidth="1.5"/>
+            <text x="32" y="28" textAnchor="middle" fill="#F7931A" fontSize="8" fontWeight="bold">PAX</text>
+            <text x="32" y="40" textAnchor="middle" fill="#FFD700" fontSize="10" fontWeight="bold">GOLD</text>
+          </svg>
           <div>
             <div className="font-semibold text-card-foreground">PAX Gold (PAXG)</div>
             <div className="text-xs text-muted-foreground">1 PAXG = 1 onça troy de ouro físico</div>
