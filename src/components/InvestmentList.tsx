@@ -133,9 +133,9 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex flex-col gap-4">
-                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_260px] gap-4 md:items-center">
                   {/* Info principal */}
-                  <div className="flex-1">
+                  <div className="min-w-0">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <h4 className="font-semibold text-card-foreground group-hover:text-primary transition-colors">
                         {investment.name}
@@ -203,8 +203,8 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                   </div>
 
                   {/* Lucro/Prejuízo */}
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
+                  <div className="flex items-center justify-end gap-4 w-full md:w-[260px] flex-shrink-0">
+                    <div className="text-right w-[140px] flex-shrink-0">
                       <div className="flex items-center gap-1 justify-end">
                         {isPositive ? (
                           <TrendingUp className="w-4 h-4 text-success transition-transform group-hover:scale-110" />
