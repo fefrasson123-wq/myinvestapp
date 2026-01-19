@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getPriceCache, PriceCache } from '@/lib/priceCache';
 
 export interface CryptoPrice {
   symbol: string;
@@ -12,47 +13,10 @@ export interface CryptoPrice {
   last_updated: string;
 }
 
-interface CachedCryptoPrices {
-  prices: Record<string, CryptoPrice>;
-  timestamp: number;
-}
+type CryptoPriceMap = Record<string, CryptoPrice>;
 
-const CACHE_KEY = 'crypto_prices_cache_v2';
-const MAX_CACHE_AGE_MS = 5 * 60 * 1000; // 5 minutos - cache válido
-const STALE_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutos - força atualização
-
-// Funções de cache
-function getCachedPrices(): CachedCryptoPrices | null {
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      return JSON.parse(cached) as CachedCryptoPrices;
-    }
-  } catch {
-    // Ignora erros de localStorage
-  }
-  return null;
-}
-
-function setCachedPrices(prices: Record<string, CryptoPrice>) {
-  try {
-    const data: CachedCryptoPrices = {
-      prices,
-      timestamp: Date.now(),
-    };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-  } catch {
-    // Ignora erros de localStorage
-  }
-}
-
-function isCacheValid(timestamp: number): boolean {
-  return Date.now() - timestamp < MAX_CACHE_AGE_MS;
-}
-
-function isCacheStale(timestamp: number): boolean {
-  return Date.now() - timestamp > STALE_THRESHOLD_MS;
-}
+// Cache instance
+const cryptoCache = getPriceCache<CryptoPriceMap>('crypto');
 
 // Lista das principais criptos para buscar automaticamente
 const MAIN_CRYPTO_SYMBOLS = [
@@ -65,22 +29,42 @@ const MAIN_CRYPTO_SYMBOLS = [
 ];
 
 export function useCryptoPrices() {
-  const [prices, setPrices] = useState<Record<string, CryptoPrice>>(() => {
-    const cached = getCachedPrices();
-    return cached?.prices || {};
-  });
+  const [prices, setPrices] = useState<CryptoPriceMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(() => {
-    const cached = getCachedPrices();
-    return cached?.timestamp ? new Date(cached.timestamp) : null;
-  });
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   
-  const lastValidPrices = useRef<Record<string, CryptoPrice>>({});
+  const lastValidPrices = useRef<CryptoPriceMap>({});
   const retryCount = useRef(0);
   const maxRetries = 3;
   const isFetching = useRef(false);
   const hasFetchedOnce = useRef(false);
+
+  // Inicializa com cache
+  useEffect(() => {
+    const initCache = async () => {
+      const cached = await cryptoCache.get();
+      if (cached) {
+        setPrices(cached.data);
+        setLastUpdate(new Date(cryptoCache.getTimestamp() || Date.now()));
+        lastValidPrices.current = cached.data;
+        
+        if (cached.isValid) {
+          console.log('Using valid cached crypto prices');
+          hasFetchedOnce.current = true;
+        }
+      }
+    };
+    initCache();
+    
+    // Subscribe to cache updates from other tabs
+    const unsubscribe = cryptoCache.subscribe((data) => {
+      setPrices(data as CryptoPriceMap);
+      setLastUpdate(new Date());
+    });
+    
+    return unsubscribe;
+  }, []);
 
   const fetchPrices = useCallback(async (symbols?: string[]) => {
     // Prevent concurrent fetches
@@ -110,7 +94,7 @@ export function useCryptoPrices() {
         throw new Error('No quotes returned');
       }
 
-      const priceMap: Record<string, CryptoPrice> = {};
+      const priceMap: CryptoPriceMap = {};
       
       for (const [symbol, quote] of Object.entries(data.quotes)) {
         const q = quote as {
@@ -136,13 +120,10 @@ export function useCryptoPrices() {
         };
       }
 
-      // Use functional update to avoid dependency on prices
-      setPrices(prevPrices => {
-        const newPrices = { ...prevPrices, ...priceMap };
-        setCachedPrices(newPrices);
-        lastValidPrices.current = newPrices;
-        return newPrices;
-      });
+      // Merge with existing prices and save to cache
+      const newPrices = await cryptoCache.merge(priceMap);
+      setPrices(newPrices);
+      lastValidPrices.current = newPrices;
       
       retryCount.current = 0;
       setLastUpdate(new Date());
@@ -155,25 +136,31 @@ export function useCryptoPrices() {
       
       retryCount.current++;
       
-      const cached = getCachedPrices();
+      // Try to use cached data on error
+      const cached = await cryptoCache.get();
       
       if (Object.keys(lastValidPrices.current).length > 0) {
         console.log('Using last valid crypto prices from memory');
         setPrices(lastValidPrices.current);
-      } else if (cached && !isCacheStale(cached.timestamp)) {
-        console.log('Using cached crypto prices (age:', Math.round((Date.now() - cached.timestamp) / 1000 / 60), 'min)');
-        setPrices(cached.prices);
-        setLastUpdate(new Date(cached.timestamp));
+      } else if (cached && !cached.isStale) {
+        console.log('Using cached crypto prices (age:', Math.round(cached.age / 1000 / 60), 'min)');
+        setPrices(cached.data);
+        setLastUpdate(new Date(cryptoCache.getTimestamp() || Date.now()));
       } else if (cached) {
         console.warn('Using stale cached crypto prices');
-        setPrices(cached.prices);
-        setLastUpdate(new Date(cached.timestamp));
+        setPrices(cached.data);
+        setLastUpdate(new Date(cryptoCache.getTimestamp() || Date.now()));
+      }
+      
+      // Retry logic
+      if (retryCount.current < maxRetries) {
+        setTimeout(() => fetchPrices(symbols), 15000);
       }
     } finally {
       setIsLoading(false);
       isFetching.current = false;
     }
-  }, []); // No dependencies - use refs and functional updates
+  }, []);
 
   const getPrice = useCallback((symbol: string): number | null => {
     const upperSymbol = symbol.toUpperCase();
@@ -193,17 +180,21 @@ export function useCryptoPrices() {
 
   // Busca preços na inicialização e verifica cache
   useEffect(() => {
-    const cached = getCachedPrices();
+    const initAndFetch = async () => {
+      const cached = await cryptoCache.get();
+      
+      if (cached?.isValid) {
+        console.log('Using valid cached crypto prices');
+        setPrices(cached.data);
+        setLastUpdate(new Date(cryptoCache.getTimestamp() || Date.now()));
+        lastValidPrices.current = cached.data;
+        hasFetchedOnce.current = true;
+      } else if (!hasFetchedOnce.current) {
+        fetchPrices();
+      }
+    };
     
-    if (cached && isCacheValid(cached.timestamp)) {
-      console.log('Using valid cached crypto prices');
-      setPrices(cached.prices);
-      setLastUpdate(new Date(cached.timestamp));
-      lastValidPrices.current = cached.prices;
-      hasFetchedOnce.current = true;
-    } else if (!hasFetchedOnce.current) {
-      fetchPrices();
-    }
+    initAndFetch();
     
     // Atualiza a cada 60 segundos
     const interval = setInterval(() => {
@@ -211,7 +202,7 @@ export function useCryptoPrices() {
     }, 60000);
 
     return () => clearInterval(interval);
-  }, []); // Run only once on mount
+  }, [fetchPrices]);
 
   return {
     prices,

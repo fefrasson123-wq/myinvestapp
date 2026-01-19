@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getPriceCache } from '@/lib/priceCache';
 
 interface USAStockPrice {
   symbol: string;
@@ -12,62 +13,41 @@ interface USAStockPrice {
   lastUpdated: string;
 }
 
-interface CachedUSAStockPrices {
-  prices: Record<string, USAStockPrice>;
-  timestamp: number;
-}
+type USAStockPriceMap = Record<string, USAStockPrice>;
 
-const CACHE_KEY = 'usa_stock_prices_cache';
-const MAX_CACHE_AGE_MS = 15 * 60 * 1000; // 15 minutes
-const STALE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
-
-function getCachedPrices(): CachedUSAStockPrices | null {
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      return JSON.parse(cached) as CachedUSAStockPrices;
-    }
-  } catch {
-    // Ignore localStorage errors
-  }
-  return null;
-}
-
-function setCachedPrices(prices: Record<string, USAStockPrice>) {
-  try {
-    const data: CachedUSAStockPrices = {
-      prices,
-      timestamp: Date.now(),
-    };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-  } catch {
-    // Ignore localStorage errors
-  }
-}
-
-function isCacheValid(timestamp: number): boolean {
-  return Date.now() - timestamp < MAX_CACHE_AGE_MS;
-}
-
-function isCacheStale(timestamp: number): boolean {
-  return Date.now() - timestamp > STALE_THRESHOLD_MS;
-}
+// Cache instance
+const usaStockCache = getPriceCache<USAStockPriceMap>('usaStocks');
 
 export function useUSAStockPrices() {
-  const [prices, setPrices] = useState<Record<string, USAStockPrice>>(() => {
-    const cached = getCachedPrices();
-    return cached?.prices || {};
-  });
+  const [prices, setPrices] = useState<USAStockPriceMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(() => {
-    const cached = getCachedPrices();
-    return cached?.timestamp ? new Date(cached.timestamp) : null;
-  });
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   
-  const lastValidPrices = useRef<Record<string, USAStockPrice>>({});
+  const lastValidPrices = useRef<USAStockPriceMap>({});
   const retryCount = useRef(0);
   const maxRetries = 3;
+
+  // Inicializa com cache
+  useEffect(() => {
+    const initCache = async () => {
+      const cached = await usaStockCache.get();
+      if (cached) {
+        setPrices(cached.data);
+        setLastUpdate(new Date(usaStockCache.getTimestamp() || Date.now()));
+        lastValidPrices.current = cached.data;
+      }
+    };
+    initCache();
+    
+    // Subscribe to cache updates from other tabs
+    const unsubscribe = usaStockCache.subscribe((data) => {
+      setPrices(data as USAStockPriceMap);
+      setLastUpdate(new Date());
+    });
+    
+    return unsubscribe;
+  }, []);
 
   const fetchSinglePrice = async (symbol: string): Promise<USAStockPrice | null> => {
     try {
@@ -100,12 +80,12 @@ export function useUSAStockPrices() {
     }
   };
 
-  const getLocalFallback = (symbol: string): USAStockPrice | null => {
+  const getLocalFallback = useCallback(async (symbol: string): Promise<USAStockPrice | null> => {
     const upperSymbol = symbol.toUpperCase();
     
-    const cached = getCachedPrices();
-    if (cached && cached.prices[upperSymbol] && !isCacheStale(cached.timestamp)) {
-      return cached.prices[upperSymbol];
+    const cached = await usaStockCache.get();
+    if (cached && cached.data[upperSymbol] && !cached.isStale) {
+      return cached.data[upperSymbol];
     }
     
     if (lastValidPrices.current[upperSymbol]) {
@@ -113,7 +93,7 @@ export function useUSAStockPrices() {
     }
     
     return null;
-  };
+  }, []);
 
   const fetchPrices = useCallback(async (symbols: string[]) => {
     if (!symbols || symbols.length === 0) {
@@ -124,7 +104,7 @@ export function useUSAStockPrices() {
     setError(null);
 
     try {
-      const newPrices: Record<string, USAStockPrice> = {};
+      const newPrices: USAStockPriceMap = {};
       let successCount = 0;
       
       for (const symbol of symbols) {
@@ -137,7 +117,7 @@ export function useUSAStockPrices() {
           successCount++;
           console.log(`Updated ${upperSymbol} (USA) price:`, livePrice.price);
         } else {
-          const fallback = getLocalFallback(upperSymbol);
+          const fallback = await getLocalFallback(upperSymbol);
           if (fallback) {
             newPrices[upperSymbol] = fallback;
             console.log(`Using fallback for ${upperSymbol} (USA):`, fallback.price);
@@ -145,10 +125,10 @@ export function useUSAStockPrices() {
         }
       }
 
-      const updatedPrices = { ...prices, ...newPrices };
+      // Merge with cache and save
+      const updatedPrices = await usaStockCache.merge(newPrices);
       
       if (successCount > 0) {
-        setCachedPrices(updatedPrices);
         lastValidPrices.current = { ...lastValidPrices.current, ...newPrices };
         retryCount.current = 0;
       }
@@ -161,11 +141,11 @@ export function useUSAStockPrices() {
       
       retryCount.current++;
       
-      const fallbackPrices: Record<string, USAStockPrice> = {};
-      symbols.forEach(symbol => {
-        const fallback = getLocalFallback(symbol.toUpperCase());
+      const fallbackPrices: USAStockPriceMap = {};
+      for (const symbol of symbols) {
+        const fallback = await getLocalFallback(symbol.toUpperCase());
         if (fallback) fallbackPrices[symbol.toUpperCase()] = fallback;
-      });
+      }
       setPrices(prev => ({ ...prev, ...fallbackPrices }));
       
       if (retryCount.current < maxRetries) {
@@ -174,7 +154,7 @@ export function useUSAStockPrices() {
     } finally {
       setIsLoading(false);
     }
-  }, [prices]);
+  }, [getLocalFallback]);
 
   const getPrice = useCallback((symbol: string): number | null => {
     const upperSymbol = symbol.toUpperCase();
@@ -192,14 +172,17 @@ export function useUSAStockPrices() {
   }, [prices]);
 
   useEffect(() => {
-    const cached = getCachedPrices();
-    
-    if (cached && isCacheValid(cached.timestamp)) {
-      console.log('Using valid cached USA stock prices');
-      setPrices(cached.prices);
-      setLastUpdate(new Date(cached.timestamp));
-      lastValidPrices.current = cached.prices;
-    }
+    const initCache = async () => {
+      const cached = await usaStockCache.get();
+      
+      if (cached?.isValid) {
+        console.log('Using valid cached USA stock prices');
+        setPrices(cached.data);
+        setLastUpdate(new Date(usaStockCache.getTimestamp() || Date.now()));
+        lastValidPrices.current = cached.data;
+      }
+    };
+    initCache();
   }, []);
 
   return {

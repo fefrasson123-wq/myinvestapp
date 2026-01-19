@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getPriceCache } from '@/lib/priceCache';
 
 interface EurBrlRateState {
   rate: number;
@@ -8,52 +9,47 @@ interface EurBrlRateState {
   refresh: () => Promise<void>;
 }
 
-const STORAGE_KEY = 'eur_brl_rate_cache';
-const CACHE_MS = 5 * 60 * 1000; // 5 minutes
-const STALE_THRESHOLD_MS = 30 * 60 * 1000; // 30 minutes
+interface EurRateData {
+  rate: number;
+  lastUpdated: string;
+}
+
+// Cache instance
+const eurCache = getPriceCache<EurRateData>('eur');
+
 const DEFAULT_RATE = 6.0; // Conservative fallback rate
 
-interface CachedRate {
-  rate: number;
-  timestamp: number;
-}
-
-function getCachedRate(): CachedRate | null {
-  try {
-    const cached = localStorage.getItem(STORAGE_KEY);
-    if (cached) {
-      return JSON.parse(cached);
-    }
-  } catch {
-    // Ignore parsing errors
-  }
-  return null;
-}
-
-function isCacheValid(cached: CachedRate | null): boolean {
-  if (!cached) return false;
-  return Date.now() - cached.timestamp < CACHE_MS;
-}
-
-function isCacheStale(cached: CachedRate | null): boolean {
-  if (!cached) return true;
-  return Date.now() - cached.timestamp > STALE_THRESHOLD_MS;
-}
-
 export function useEurBrlRate(): EurBrlRateState {
-  const [rate, setRate] = useState<number>(() => {
-    const cached = getCachedRate();
-    return cached?.rate || DEFAULT_RATE;
-  });
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(() => {
-    const cached = getCachedRate();
-    return cached ? new Date(cached.timestamp) : null;
-  });
+  const [rate, setRate] = useState<number>(DEFAULT_RATE);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const lastValidRate = useRef<number>(rate);
+  const lastValidRate = useRef<number>(DEFAULT_RATE);
   const retryCount = useRef(0);
+  const maxRetries = 3;
+
+  // Inicializa com cache
+  useEffect(() => {
+    const initCache = async () => {
+      const cached = await eurCache.get();
+      if (cached) {
+        setRate(cached.data.rate);
+        setLastUpdated(new Date(cached.data.lastUpdated));
+        lastValidRate.current = cached.data.rate;
+      }
+    };
+    initCache();
+    
+    // Subscribe to cache updates from other tabs
+    const unsubscribe = eurCache.subscribe((data) => {
+      const rateData = data as EurRateData;
+      setRate(rateData.rate);
+      setLastUpdated(new Date(rateData.lastUpdated));
+    });
+    
+    return unsubscribe;
+  }, []);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -73,32 +69,41 @@ export function useEurBrlRate(): EurBrlRateState {
         throw new Error('Invalid rate received');
       }
 
+      const now = new Date();
+      
+      // Salva no cache
+      await eurCache.set({
+        rate: newRate,
+        lastUpdated: now.toISOString(),
+      });
+
       lastValidRate.current = newRate;
       retryCount.current = 0;
       
       setRate(newRate);
-      setLastUpdated(new Date());
-
-      const cacheData: CachedRate = {
-        rate: newRate,
-        timestamp: Date.now(),
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheData));
+      setLastUpdated(now);
+      console.log('EUR/BRL rate updated:', newRate);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch EUR/BRL rate';
       setError(errorMessage);
+      console.error('Error fetching EUR/BRL:', err);
       
       retryCount.current += 1;
 
-      const cached = getCachedRate();
-      if (cached && !isCacheStale(cached)) {
-        setRate(cached.rate);
-        setLastUpdated(new Date(cached.timestamp));
+      const cached = await eurCache.get();
+      if (cached && !cached.isStale) {
+        setRate(cached.data.rate);
+        setLastUpdated(new Date(cached.data.lastUpdated));
       } else if (lastValidRate.current !== DEFAULT_RATE) {
         setRate(lastValidRate.current);
       } else {
         setRate(DEFAULT_RATE);
+      }
+      
+      // Retry
+      if (retryCount.current < maxRetries) {
+        setTimeout(() => refresh(), 10000);
       }
     } finally {
       setIsLoading(false);
@@ -106,17 +111,23 @@ export function useEurBrlRate(): EurBrlRateState {
   }, []);
 
   useEffect(() => {
-    const cached = getCachedRate();
+    const init = async () => {
+      const cached = await eurCache.get();
+      
+      if (cached?.isValid) {
+        console.log('Using valid cached EUR/BRL rate');
+        setRate(cached.data.rate);
+        setLastUpdated(new Date(cached.data.lastUpdated));
+        lastValidRate.current = cached.data.rate;
+        setIsLoading(false);
+      } else {
+        refresh();
+      }
+    };
     
-    if (isCacheValid(cached)) {
-      setRate(cached!.rate);
-      setLastUpdated(new Date(cached!.timestamp));
-      setIsLoading(false);
-    } else {
-      refresh();
-    }
+    init();
 
-    const intervalId = setInterval(refresh, CACHE_MS);
+    const intervalId = setInterval(refresh, 5 * 60 * 1000);
     return () => clearInterval(intervalId);
   }, [refresh]);
 
