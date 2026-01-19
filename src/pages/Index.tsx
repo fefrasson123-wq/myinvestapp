@@ -412,7 +412,7 @@ const Index = () => {
         <Header onAddClick={handleAddClick} />
 
         {/* Navigation Tabs Placeholder - maintains layout when nav becomes fixed */}
-        <div ref={navPlaceholderRef} className={isNavSticky ? "h-[49px]" : "h-0"} />
+        <div ref={navPlaceholderRef} className={isNavSticky ? "h-[49px]" : "h-0 transition-all duration-300"} />
         
         {/* Navigation Tabs */}
         <nav 
@@ -421,11 +421,8 @@ const Index = () => {
             "border-b border-border/50 bg-card/95 backdrop-blur-md z-40 w-full transition-all duration-300 ease-out",
             isNavSticky 
               ? "fixed top-0 left-0 right-0 shadow-lg animate-slide-down" 
-              : "relative"
+              : "relative animate-fade-in"
           )}
-          style={{
-            transform: isNavSticky ? 'translateY(0)' : 'translateY(0)',
-          }}
         >
           <div className="w-full max-w-7xl mx-auto px-2 sm:px-4">
             <div className="flex justify-around sm:justify-center gap-0 sm:gap-1 w-full">
