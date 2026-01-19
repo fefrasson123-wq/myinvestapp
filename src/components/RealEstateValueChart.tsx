@@ -127,7 +127,7 @@ export function RealEstateValueChart({
   purchasePrice, 
   currentValue, 
   purchaseDate,
-  expanded = true // Por padrão expandido para Dashboard
+  expanded = false // Por padrão compacto para lista de investimentos
 }: RealEstateValueChartProps) {
   const chartData = useMemo(() => 
     generateValueGrowthData(purchasePrice, currentValue, purchaseDate, expanded),
@@ -182,7 +182,7 @@ export function RealEstateValueChart({
       </div>
 
       {/* Gráfico de Valorização - Altura maior para melhor visualização */}
-      <div className={cn("w-full", expanded ? "h-48" : "h-36")}>
+      <div className={cn("w-full", expanded ? "h-48" : "h-24")}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
             <defs>
