@@ -492,7 +492,7 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
         <Button type="button" variant="outline" className="flex-1" onClick={handleBack}>
           Cancelar
         </Button>
-        <Button type="submit" className="flex-1 gap-2 bg-amber-600 hover:bg-amber-700">
+        <Button type="submit" className="flex-1 gap-2">
           <Check className="w-4 h-4" />
           Adicionar PAXG
         </Button>
