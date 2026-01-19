@@ -250,17 +250,6 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                       >
                         <BarChart3 className="w-4 h-4" />
                       </Button>
-                      {isRealEstate && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setRealEstateChartInvestment(investment)}
-                          className="hover:text-primary hover:bg-primary/10 btn-interactive"
-                          title="Valorização do Imóvel"
-                        >
-                          <Building2 className="w-4 h-4" />
-                        </Button>
-                      )}
                       {onTagChange && (
                         <TagSelector
                           currentTag={currentTag || null}
