@@ -286,7 +286,7 @@ export function InvestmentRegistration({ onSubmit, onSell, onClose, isModal = tr
   if (isModal) {
     return (
       <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto animate-fade-in">
-        <div className="bg-card border border-border/50 rounded-xl w-full max-w-md shadow-2xl shadow-primary/5 animate-pop mt-4 mb-4 mx-4">
+        <div className="bg-card border border-border/50 rounded-xl w-full max-w-md md:max-w-lg lg:max-w-xl shadow-2xl shadow-primary/5 animate-pop mt-4 mb-4 mx-4">
           <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
             <h2 className="text-base font-semibold text-card-foreground">
               {getTitle()}
