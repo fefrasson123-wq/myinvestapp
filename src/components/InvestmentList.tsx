@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Trash2, Edit, TrendingUp, TrendingDown, DollarSign, BarChart3, LineChart } from 'lucide-react';
+import { Trash2, Edit, TrendingUp, TrendingDown, DollarSign, BarChart3, LineChart, Building2 } from 'lucide-react';
 import { Investment, categoryLabels, categoryColors } from '@/types/investment';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,7 @@ interface InvestmentListProps {
 export function InvestmentList({ investments, onEdit, onDelete, onSell, investmentTags = {}, onTagChange }: InvestmentListProps) {
   const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
   const [evolutionInvestment, setEvolutionInvestment] = useState<Investment | null>(null);
+  const [realEstateChartInvestment, setRealEstateChartInvestment] = useState<Investment | null>(null);
   const { showValues, formatPercent } = useValuesVisibility();
 
   // Live prices (best-effort). If unavailable, we fall back to the stored DB price.
@@ -249,6 +250,17 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                       >
                         <BarChart3 className="w-4 h-4" />
                       </Button>
+                      {isRealEstate && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setRealEstateChartInvestment(investment)}
+                          className="hover:text-primary hover:bg-primary/10 btn-interactive"
+                          title="Valorização do Imóvel"
+                        >
+                          <Building2 className="w-4 h-4" />
+                        </Button>
+                      )}
                       {onTagChange && (
                         <TagSelector
                           currentTag={currentTag || null}
@@ -286,15 +298,6 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                   </div>
                 </div>
 
-                {/* Gráfico de Valorização para Imóveis - Compacto na lista */}
-                {isRealEstate && (
-                  <RealEstateValueChart
-                    purchasePrice={investment.investedAmount}
-                    currentValue={investment.currentValue}
-                    purchaseDate={investment.purchaseDate}
-                    expanded={false}
-                  />
-                )}
               </div>
             </div>
           );
@@ -314,6 +317,26 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
           isOpen={!!evolutionInvestment}
           onClose={() => setEvolutionInvestment(null)}
         />
+      )}
+
+      {/* Modal de Valorização de Imóvel */}
+      {realEstateChartInvestment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div 
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm" 
+            onClick={() => setRealEstateChartInvestment(null)} 
+          />
+          <div className="relative w-full max-w-2xl bg-card border border-border rounded-xl shadow-2xl animate-scale-in">
+            <div className="p-4">
+              <RealEstateValueChart
+                purchasePrice={realEstateChartInvestment.investedAmount}
+                currentValue={realEstateChartInvestment.currentValue}
+                purchaseDate={realEstateChartInvestment.purchaseDate}
+                expanded={true}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
