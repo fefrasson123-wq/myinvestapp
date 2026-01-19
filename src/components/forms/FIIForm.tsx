@@ -284,12 +284,13 @@ export function FIIForm({ onSubmit, onSell, onBack }: FIIFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="purchaseDate">Data da Compra</Label>
+          <Label htmlFor="purchaseDate">Data da Compra *</Label>
           <Input
             id="purchaseDate"
             type="date"
             value={formData.purchaseDate}
             onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
+            required
           />
         </div>
 

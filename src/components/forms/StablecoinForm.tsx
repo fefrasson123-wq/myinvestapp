@@ -352,12 +352,13 @@ export function StablecoinForm({ onSubmit, onSell, onBack }: StablecoinFormProps
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="purchaseDate">Data da {mode === 'buy' ? 'Compra' : 'Venda'}</Label>
+          <Label htmlFor="purchaseDate">Data da {mode === 'buy' ? 'Compra' : 'Venda'} *</Label>
           <Input
             id="purchaseDate"
             type="date"
             value={formData.purchaseDate}
             onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+            required
           />
         </div>
 

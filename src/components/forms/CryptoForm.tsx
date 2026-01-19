@@ -517,12 +517,13 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="purchaseDate">{mode === 'buy' ? 'Data da Compra' : 'Data da Venda'}</Label>
+          <Label htmlFor="purchaseDate">{mode === 'buy' ? 'Data da Compra *' : 'Data da Venda *'}</Label>
           <Input
             id="purchaseDate"
             type="date"
             value={formData.purchaseDate}
             onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
+            required
           />
         </div>
 

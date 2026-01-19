@@ -135,12 +135,13 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
 
       {/* Data de Compra */}
       <div>
-        <Label htmlFor="purchaseDate">Data de Compra</Label>
+        <Label htmlFor="purchaseDate">Data de Compra *</Label>
         <Input
           id="purchaseDate"
           type="date"
           value={formData.purchaseDate}
           onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
+          required
         />
       </div>
 
