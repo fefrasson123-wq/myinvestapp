@@ -144,21 +144,57 @@ function getYahooRange(period: string, days?: number): string {
 // Calcula taxa diária baseada no tipo de renda fixa
 function getDailyRate(investment: Investment): number {
   const annualRate = (investment.interestRate || 10) / 100;
-  return Math.pow(1 + annualRate, 1/365) - 1;
+  return Math.pow(1 + annualRate, 1 / 365) - 1;
 }
 
 // Calcula valor da renda fixa em um momento específico
 function calculateFixedIncomeAtTime(investment: Investment, timestamp: number): number {
-  const purchaseDate = investment.purchaseDate 
-    ? new Date(investment.purchaseDate).getTime() 
+  const purchaseDate = investment.purchaseDate
+    ? new Date(investment.purchaseDate).getTime()
     : investment.createdAt.getTime();
-  
+
   if (timestamp < purchaseDate) return 0;
-  
+
   const dailyRate = getDailyRate(investment);
   const daysElapsed = (timestamp - purchaseDate) / (1000 * 60 * 60 * 24);
-  
+
   return investment.investedAmount * Math.pow(1 + dailyRate, daysElapsed);
+}
+
+// IMÓVEIS: quando o usuário informa "valor atual", precisamos distribuir esse crescimento ao longo do tempo.
+// Calcula a taxa anual implícita e aplica juros compostos até o timestamp.
+function calculateRealEstateAtTime(investment: Investment, timestamp: number): number {
+  const purchaseTs = investment.purchaseDate
+    ? new Date(investment.purchaseDate).getTime()
+    : investment.createdAt.getTime();
+
+  if (timestamp < purchaseTs) return 0;
+
+  const invested = Number(investment.investedAmount) || 0;
+  const current = Number(investment.currentValue) || 0;
+  if (invested <= 0) return 0;
+
+  const nowTs = Date.now();
+  const totalYears = Math.max(1 / 365, (nowTs - purchaseTs) / (1000 * 60 * 60 * 24 * 365.25));
+
+  // Taxa implícita baseada no valor atual cadastrado
+  const impliedAnnualRate = current > 0
+    ? (Math.pow(current / invested, 1 / totalYears) - 1)
+    : 0;
+
+  const yearsElapsed = (timestamp - purchaseTs) / (1000 * 60 * 60 * 24 * 365.25);
+
+  // Clamps de segurança (evita overflow e valores absurdos)
+  const clampedYears = Math.min(Math.max(0, yearsElapsed), 100);
+  const clampedRate = Math.min(Math.max(impliedAnnualRate, -0.99), 5); // -99% a.a. até +500% a.a.
+
+  const value = invested * Math.pow(1 + clampedRate, clampedYears);
+  if (!Number.isFinite(value) || value < 0) return 0;
+
+  // Nunca ultrapassa o valor atual no "agora" (em timestamps futuros, trava no atual)
+  if (timestamp >= nowTs) return current;
+
+  return Math.min(value, current);
 }
 
 // Busca histórico via edge function com cache
@@ -290,10 +326,10 @@ function calculateValueAtTime(
   const isRealEstate = investment.category === 'realestate';
   const isCash = investment.category === 'cash';
   
-  // IMÓVEIS: valor constante (não existe histórico de preço de mercado)
-  // Mostra o valor atual cadastrado - representa a avaliação do imóvel
+  // IMÓVEIS: gera evolução composta do valor de compra até o valor atual cadastrado
+  // (sem histórico de mercado, mas com crescimento gradual baseado nos dados do usuário)
   if (isRealEstate) {
-    return investment.currentValue;
+    return calculateRealEstateAtTime(investment, timestamp);
   }
   
   // CAIXA/STABLECOINS: valor constante (1:1 com a moeda)
