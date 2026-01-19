@@ -28,7 +28,9 @@ function formatPercent(value: number): string {
 export function CategoryDetailModal({ category, investments, onClose }: CategoryDetailModalProps) {
   const { rate: usdToBrl } = useUsdBrlRate();
 
-  const categoryInvestments = investments.filter(inv => inv.category === category);
+  const categoryInvestments = investments
+    .filter(inv => inv.category === category)
+    .sort((a, b) => b.profitLoss - a.profitLoss);
   
   const totalValue = categoryInvestments.reduce((acc, inv) => {
     const isCrypto = inv.category === 'crypto';
@@ -66,6 +68,7 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
                 const isCrypto = inv.category === 'crypto';
                 const value = isCrypto ? inv.currentValue * usdToBrl : inv.currentValue;
                 const isPositive = inv.profitLoss >= 0;
+                const percentOfCategory = totalValue > 0 ? (value / totalValue) * 100 : 0;
                 
                 return (
                   <div 
@@ -94,9 +97,14 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
                         </span>
                       </div>
                     </div>
-                    <p className="font-mono font-medium text-card-foreground">
-                      {formatCurrency(value)}
-                    </p>
+                    <div className="text-right">
+                      <p className="font-mono font-medium text-card-foreground">
+                        {formatCurrency(value)}
+                      </p>
+                      <span className="text-xs font-mono text-muted-foreground">
+                        {percentOfCategory.toFixed(1)}% da categoria
+                      </span>
+                    </div>
                   </div>
                 );
               })}
