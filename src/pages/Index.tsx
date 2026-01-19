@@ -521,7 +521,7 @@ const Index = () => {
                 </div>
                 <Suspense fallback={<LoadingFallback />}>
                   <InvestmentList
-                    investments={investments}
+                    investments={[...investments].sort((a, b) => b.profitLoss - a.profitLoss)}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onSell={handleSell}
