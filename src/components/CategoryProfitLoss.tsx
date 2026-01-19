@@ -2,16 +2,10 @@ import { TrendingUp, TrendingDown, Layers } from 'lucide-react';
 import { Investment, InvestmentCategory, categoryLabels, categoryColors } from '@/types/investment';
 import { cn } from '@/lib/utils';
 import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
+import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 
 interface CategoryProfitLossProps {
   investments: Investment[];
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
 }
 
 function formatPercent(value: number): string {
@@ -32,6 +26,7 @@ interface CategoryData {
 
 export function CategoryProfitLoss({ investments }: CategoryProfitLossProps) {
   const { rate: usdToBrl } = useUsdBrlRate();
+  const { formatCurrencyValue } = useValuesVisibility();
 
   // Agrupa investimentos por categoria e calcula totais
   const categoryData: CategoryData[] = Object.entries(
@@ -106,7 +101,7 @@ export function CategoryProfitLoss({ investments }: CategoryProfitLossProps) {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Investido: {formatCurrency(data.invested)}
+                    Investido: {formatCurrencyValue(data.invested)}
                   </p>
                 </div>
               </div>
@@ -121,7 +116,7 @@ export function CategoryProfitLoss({ investments }: CategoryProfitLossProps) {
                     "font-mono font-medium transition-colors duration-300",
                     isPositive ? "text-success" : "text-destructive"
                   )}>
-                    {isPositive ? '+' : ''}{formatCurrency(data.profitLoss)}
+                    {isPositive ? '+' : ''}{formatCurrencyValue(data.profitLoss)}
                   </p>
                 </div>
                 <p className={cn(
