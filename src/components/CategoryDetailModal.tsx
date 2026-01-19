@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Investment, InvestmentCategory, categoryLabels, categoryColors } from '@/types/investment';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -52,6 +52,9 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
             />
             {categoryLabels[category]}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Detalhes dos ativos na categoria {categoryLabels[category]}
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">

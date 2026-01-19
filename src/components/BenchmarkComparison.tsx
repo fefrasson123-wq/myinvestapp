@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Investment } from '@/types/investment';
 import { TrendingUp, TrendingDown, BarChart3, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -116,6 +116,9 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
             <BarChart3 className="w-5 h-5 text-primary" />
             Comparação com Benchmarks
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Compare o desempenho do seu investimento com índices de mercado
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
