@@ -160,37 +160,12 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
             onClick={() => handleSelectGoldType('physical')}
             className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border bg-card hover:border-amber-500/50 hover:bg-amber-500/5 transition-all group"
           >
-            <svg className="w-12 h-12" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-              {/* Gold bar - classic trapezoidal shape */}
-              <defs>
-                <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#FFD700"/>
-                  <stop offset="30%" stopColor="#FFF8DC"/>
-                  <stop offset="50%" stopColor="#FFD700"/>
-                  <stop offset="70%" stopColor="#DAA520"/>
-                  <stop offset="100%" stopColor="#B8860B"/>
-                </linearGradient>
-                <linearGradient id="goldTop" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#FFF8DC"/>
-                  <stop offset="100%" stopColor="#FFD700"/>
-                </linearGradient>
-                <linearGradient id="goldSide" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#DAA520"/>
-                  <stop offset="100%" stopColor="#B8860B"/>
-                </linearGradient>
-              </defs>
-              {/* Front face */}
-              <path d="M8 44L16 28H48L56 44H8Z" fill="url(#goldGradient)"/>
-              {/* Top face */}
-              <path d="M16 28L22 20H42L48 28H16Z" fill="url(#goldTop)"/>
-              {/* Right side */}
-              <path d="M48 28L42 20V20L48 28L56 44V44L48 28Z" fill="url(#goldSide)"/>
-              {/* Edges */}
-              <path d="M8 44L16 28H48L56 44H8Z" stroke="#B8860B" strokeWidth="1"/>
-              <path d="M16 28L22 20H42L48 28" stroke="#DAA520" strokeWidth="1"/>
-              <path d="M48 28L56 44" stroke="#8B7355" strokeWidth="1"/>
-              {/* Shine effect */}
-              <path d="M20 36L24 30H40L44 36" stroke="#FFF8DC" strokeWidth="0.5" strokeOpacity="0.6"/>
+            <svg className="w-12 h-12 text-amber-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              {/* Gold bar icon - simple line style like Lucide */}
+              <path d="M4 17L7 10H17L20 17H4Z" fill="currentColor" fillOpacity="0.15"/>
+              <path d="M4 17L7 10H17L20 17H4Z"/>
+              <path d="M7 10L9 7H15L17 10"/>
+              <path d="M9 7V10M15 7V10"/>
             </svg>
             <div className="text-center">
               <h4 className="font-semibold text-card-foreground">Ouro Físico</h4>
@@ -232,18 +207,10 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <svg className="w-5 h-5" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="goldGradientSmall" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#FFD700"/>
-                  <stop offset="50%" stopColor="#FFF8DC"/>
-                  <stop offset="100%" stopColor="#B8860B"/>
-                </linearGradient>
-              </defs>
-              <path d="M8 44L16 28H48L56 44H8Z" fill="url(#goldGradientSmall)"/>
-              <path d="M16 28L22 20H42L48 28H16Z" fill="#FFD700"/>
-              <path d="M8 44L16 28H48L56 44H8Z" stroke="#B8860B" strokeWidth="1.5"/>
-              <path d="M16 28L22 20H42L48 28" stroke="#DAA520" strokeWidth="1"/>
+            <svg className="w-5 h-5 text-amber-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 17L7 10H17L20 17H4Z" fill="currentColor" fillOpacity="0.15"/>
+              <path d="M4 17L7 10H17L20 17H4Z"/>
+              <path d="M7 10L9 7H15L17 10"/>
             </svg>
             <h3 className="text-lg font-semibold text-card-foreground">
               Ouro Físico
