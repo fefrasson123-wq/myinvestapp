@@ -381,7 +381,7 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
           </svg>
           <div>
             <div className="font-semibold text-card-foreground">PAX Gold (PAXG)</div>
-            <div className="text-xs text-muted-foreground">1 PAXG = 1 onça troy de ouro físico</div>
+            <div className="text-xs text-muted-foreground">1 PAXG = ~31,1g de ouro puro (24K)</div>
           </div>
         </div>
         
