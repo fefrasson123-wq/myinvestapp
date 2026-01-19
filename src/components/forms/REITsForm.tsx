@@ -304,12 +304,13 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="purchaseDate">Data da Compra</Label>
+          <Label htmlFor="purchaseDate">Data da Compra *</Label>
           <Input
             id="purchaseDate"
             type="date"
             value={purchaseDate}
             onChange={(e) => setPurchaseDate(e.target.value)}
+            required
           />
         </div>
 

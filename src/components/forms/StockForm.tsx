@@ -282,13 +282,14 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="purchaseDate" className="text-xs">{mode === 'buy' ? 'Data Compra' : 'Data Venda'}</Label>
+          <Label htmlFor="purchaseDate" className="text-xs">{mode === 'buy' ? 'Data Compra *' : 'Data Venda *'}</Label>
           <Input
             id="purchaseDate"
             type="date"
             value={formData.purchaseDate}
             onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
             className="h-8 text-sm"
+            required
           />
         </div>
 

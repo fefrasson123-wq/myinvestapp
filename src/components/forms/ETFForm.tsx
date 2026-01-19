@@ -278,13 +278,14 @@ export function ETFForm({ onSubmit, onSell, onBack }: ETFFormProps) {
         <div>
           <Label htmlFor="purchaseDate" className="flex items-center gap-2">
             <Calendar className="w-4 h-4" />
-            Data de Compra
+            Data de Compra *
           </Label>
           <Input
             id="purchaseDate"
             type="date"
             value={purchaseDate}
             onChange={(e) => setPurchaseDate(e.target.value)}
+            required
           />
         </div>
 

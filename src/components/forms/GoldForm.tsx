@@ -311,12 +311,13 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
           </div>
 
           <div>
-            <Label htmlFor="purchaseDate">Data da Compra</Label>
+            <Label htmlFor="purchaseDate">Data da Compra *</Label>
             <Input
               id="purchaseDate"
               type="date"
               value={physicalFormData.purchaseDate}
               onChange={(e) => setPhysicalFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
+              required
             />
           </div>
         </div>
@@ -468,12 +469,13 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
       )}
 
       <div>
-        <Label htmlFor="digitalPurchaseDate">Data da Compra</Label>
+        <Label htmlFor="digitalPurchaseDate">Data da Compra *</Label>
         <Input
           id="digitalPurchaseDate"
           type="date"
           value={digitalFormData.purchaseDate}
           onChange={(e) => setDigitalFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
+          required
         />
       </div>
 
