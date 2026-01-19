@@ -30,22 +30,36 @@ export function RealEstateForm({ onSubmit, onBack }: RealEstateFormProps) {
     }
 
     const purchasePrice = parseFloat(formData.purchasePrice) || 0;
-    const annualRate = parseFloat(formData.annualAppreciation) || 7.73;
+    const annualRate = parseFloat(formData.annualAppreciation);
     const purchaseDate = formData.purchaseDate ? new Date(formData.purchaseDate) : null;
     
+    // If no valid purchase price or date, return the purchase price
     if (!purchaseDate || purchasePrice === 0) {
       return purchasePrice;
     }
 
+    // If annual rate is not a valid number, use default 7.73%
+    const effectiveRate = isNaN(annualRate) ? 7.73 : annualRate;
+
     const now = new Date();
     const yearsHeld = (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
     
+    // If the purchase date is in the future or today, return purchase price
     if (yearsHeld <= 0) {
       return purchasePrice;
     }
 
+    // Limit years to a reasonable range to prevent overflow (max 100 years)
+    const clampedYears = Math.min(yearsHeld, 100);
+
     // Compound appreciation
-    const currentValue = purchasePrice * Math.pow(1 + annualRate / 100, yearsHeld);
+    const currentValue = purchasePrice * Math.pow(1 + effectiveRate / 100, clampedYears);
+    
+    // Sanity check - if the value is unreasonably large, return a capped value
+    if (!isFinite(currentValue) || currentValue > 1e15) {
+      return purchasePrice * Math.pow(1 + effectiveRate / 100, Math.min(clampedYears, 50));
+    }
+    
     return currentValue;
   };
 
