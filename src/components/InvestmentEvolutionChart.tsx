@@ -25,7 +25,80 @@ interface ChartDataPoint {
   profitPercent: number;
 }
 
-// Gera dados de evolução do investimento ao longo do tempo
+// Gera dados de evolução para IMÓVEIS com valorização composta
+function generateRealEstateEvolutionData(
+  investedAmount: number, 
+  currentValue: number, 
+  purchaseDate?: string,
+  annualRate?: number
+): ChartDataPoint[] {
+  const data: ChartDataPoint[] = [];
+  
+  const startDate = purchaseDate ? new Date(purchaseDate) : new Date();
+  if (!purchaseDate) {
+    startDate.setFullYear(startDate.getFullYear() - 1);
+  }
+  
+  const endDate = new Date();
+  const totalDays = Math.max(30, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+  const totalYears = totalDays / 365.25;
+  
+  // Calcula a taxa anual real baseada no valor investido e atual
+  const effectiveRate = annualRate || (totalYears > 0 
+    ? (Math.pow(currentValue / investedAmount, 1 / totalYears) - 1) * 100 
+    : 7.73);
+  
+  // Define quantidade de pontos - para imóveis, 1 ponto por ano + pontos intermediários
+  const years = Math.ceil(totalYears);
+  const points = Math.max(12, Math.min(years * 2, 30));
+  
+  for (let i = 0; i <= points; i++) {
+    const progress = i / points;
+    const yearsElapsed = totalYears * progress;
+    
+    // Valorização composta gradual - sem volatilidade para imóveis
+    const value = investedAmount * Math.pow(1 + effectiveRate / 100, yearsElapsed);
+    const profit = value - investedAmount;
+    const profitPercent = investedAmount > 0 ? (profit / investedAmount) * 100 : 0;
+    
+    const pointDate = new Date(startDate.getTime() + (totalDays * progress * 24 * 60 * 60 * 1000));
+    
+    // Formata label baseado no período total
+    let label: string;
+    if (totalDays <= 365) {
+      label = pointDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+    } else {
+      label = pointDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+    }
+    
+    data.push({
+      date: label,
+      value: Math.round(value * 100) / 100,
+      profit: Math.round(profit * 100) / 100,
+      profitPercent: parseFloat(profitPercent.toFixed(2)),
+    });
+  }
+  
+  // Garante que o primeiro ponto seja o valor investido
+  if (data.length > 0) {
+    data[0].value = investedAmount;
+    data[0].profit = 0;
+    data[0].profitPercent = 0;
+  }
+  
+  // Garante que o último ponto seja o valor atual
+  if (data.length > 1) {
+    data[data.length - 1].value = currentValue;
+    data[data.length - 1].profit = currentValue - investedAmount;
+    data[data.length - 1].profitPercent = investedAmount > 0 
+      ? parseFloat(((currentValue - investedAmount) / investedAmount * 100).toFixed(2))
+      : 0;
+  }
+  
+  return data;
+}
+
+// Gera dados de evolução do investimento ao longo do tempo (para outros ativos)
 function generateEvolutionData(
   investedAmount: number, 
   currentValue: number, 
@@ -118,10 +191,19 @@ export function InvestmentEvolutionChart({
   isOpen,
   onClose
 }: InvestmentEvolutionChartProps) {
-  const chartData = useMemo(() => 
-    generateEvolutionData(investment.investedAmount, investment.currentValue, investment.purchaseDate),
-    [investment.investedAmount, investment.currentValue, investment.purchaseDate]
-  );
+  const isRealEstate = investment.category === 'realestate';
+  
+  const chartData = useMemo(() => {
+    if (isRealEstate) {
+      return generateRealEstateEvolutionData(
+        investment.investedAmount, 
+        investment.currentValue, 
+        investment.purchaseDate,
+        investment.interestRate
+      );
+    }
+    return generateEvolutionData(investment.investedAmount, investment.currentValue, investment.purchaseDate);
+  }, [investment.investedAmount, investment.currentValue, investment.purchaseDate, investment.interestRate, isRealEstate]);
 
   const totalProfit = investment.currentValue - investment.investedAmount;
   const totalProfitPercent = investment.investedAmount > 0 ? (totalProfit / investment.investedAmount) * 100 : 0;
