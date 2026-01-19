@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { LayoutDashboard, PlusCircle, History } from 'lucide-react';
@@ -48,9 +48,25 @@ const Index = () => {
     const saved = localStorage.getItem('investment-tags');
     return saved ? JSON.parse(saved) : {};
   });
+  const [isNavSticky, setIsNavSticky] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+  const navPlaceholderRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Handle sticky nav on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (navPlaceholderRef.current) {
+        const navTop = navPlaceholderRef.current.getBoundingClientRect().top;
+        setIsNavSticky(navTop <= 0);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
 
   // Salva tags no localStorage
@@ -395,8 +411,22 @@ const Index = () => {
       <div className="min-h-screen w-full bg-background overflow-x-hidden">
         <Header onAddClick={handleAddClick} />
 
+        {/* Navigation Tabs Placeholder - maintains layout when nav becomes fixed */}
+        <div ref={navPlaceholderRef} className={isNavSticky ? "h-[49px]" : "h-0"} />
+        
         {/* Navigation Tabs */}
-        <nav className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-40 w-full">
+        <nav 
+          ref={navRef}
+          className={cn(
+            "border-b border-border/50 bg-card/95 backdrop-blur-md z-40 w-full transition-all duration-300 ease-out",
+            isNavSticky 
+              ? "fixed top-0 left-0 right-0 shadow-lg animate-slide-down" 
+              : "relative"
+          )}
+          style={{
+            transform: isNavSticky ? 'translateY(0)' : 'translateY(0)',
+          }}
+        >
           <div className="w-full max-w-7xl mx-auto px-2 sm:px-4">
             <div className="flex justify-around sm:justify-center gap-0 sm:gap-1 w-full">
               <button
