@@ -315,7 +315,7 @@ export function AltcoinForm({ onSubmit, onSell, onBack }: AltcoinFormProps) {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          Busque entre milhares de altcoins disponíveis no Yahoo Finance.
+          Busque entre milhares de altcoins disponíveis. Digite o nome ou símbolo e clique em Buscar.
         </p>
 
         <div className="space-y-4">
@@ -385,7 +385,7 @@ export function AltcoinForm({ onSubmit, onSell, onBack }: AltcoinFormProps) {
           {isSearchingCustom && (
             <div className="flex items-center justify-center py-8 gap-3 text-muted-foreground">
               <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Buscando altcoins no Yahoo Finance...</span>
+              <span>Buscando altcoins...</span>
             </div>
           )}
 

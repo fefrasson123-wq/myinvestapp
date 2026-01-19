@@ -309,7 +309,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          Busque entre milhares de criptomoedas disponíveis no Yahoo Finance. 
+          Busque entre milhares de criptomoedas disponíveis. 
           Digite o nome ou símbolo e clique em Buscar.
         </p>
 
@@ -381,7 +381,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
           {isSearchingCustom && (
             <div className="flex items-center justify-center py-8 gap-3 text-muted-foreground">
               <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Buscando criptomoedas no Yahoo Finance...</span>
+              <span>Buscando criptomoedas...</span>
             </div>
           )}
 
