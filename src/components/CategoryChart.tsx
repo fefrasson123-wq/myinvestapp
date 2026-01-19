@@ -39,16 +39,16 @@ export function CategoryChart({ categoryTotals, investments }: CategoryChartProp
   }
 
   const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-card border border-border/50 rounded-lg p-3 shadow-lg">
-          <p className="text-card-foreground font-medium">{payload[0].name}</p>
-          <p className="text-primary font-mono">{formatCurrency(payload[0].value)}</p>
-          <p className="text-xs text-muted-foreground mt-1">Clique para ver detalhes</p>
-        </div>
-      );
+    if (!active || !payload || !payload.length) {
+      return null;
     }
-    return null;
+    return (
+      <div className="bg-card border border-border/50 rounded-lg p-3 shadow-lg pointer-events-none">
+        <p className="text-card-foreground font-medium">{payload[0].name}</p>
+        <p className="text-primary font-mono">{formatCurrency(payload[0].value)}</p>
+        <p className="text-xs text-muted-foreground mt-1">Clique para ver detalhes</p>
+      </div>
+    );
   };
 
   const handlePieClick = (data: any) => {
