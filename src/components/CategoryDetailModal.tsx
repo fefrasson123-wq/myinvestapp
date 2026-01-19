@@ -82,6 +82,9 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
                         {inv.ticker && (
                           <span className="ml-1 text-primary text-sm font-mono">({inv.ticker})</span>
                         )}
+                        <span className="ml-2 text-sm font-mono text-card-foreground">
+                          {percentOfCategory.toFixed(1)}%
+                        </span>
                       </p>
                       <div className="flex items-center gap-1">
                         {isPositive ? (
@@ -97,14 +100,9 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-mono font-medium text-card-foreground">
-                        {formatCurrency(value)}
-                      </p>
-                      <span className="text-xs font-mono text-muted-foreground">
-                        {percentOfCategory.toFixed(1)}% da categoria
-                      </span>
-                    </div>
+                    <p className="font-mono font-medium text-card-foreground">
+                      {formatCurrency(value)}
+                    </p>
                   </div>
                 );
               })}
