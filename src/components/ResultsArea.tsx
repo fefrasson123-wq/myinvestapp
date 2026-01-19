@@ -22,7 +22,7 @@ const periods: { id: Period; label: string }[] = [
 ];
 
 export function ResultsArea({ investments }: ResultsAreaProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState<Period>('1m');
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>('total');
   const { formatCurrencyValue, formatPercent, usdBrlRate } = useValuesVisibility();
 
   // Calcula o valor total da carteira para percentuais
