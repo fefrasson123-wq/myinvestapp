@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { InvestmentTag } from '@/components/InvestmentsByTag';
 import { useAuth } from '@/contexts/AuthContext';
 import { InvestmentRegistration } from '@/components/InvestmentRegistration';
+import { Button } from '@/components/ui/button';
 
 import { EditInvestmentModal } from '@/components/EditInvestmentModal';
 import { SellAssetModal } from '@/components/SellAssetModal';
@@ -109,6 +110,7 @@ const Index = () => {
     addInvestment,
     updateInvestment,
     deleteInvestment,
+    restoreInvestment,
     getTotalValue,
     getTotalInvested,
     getTotalProfitLoss,
@@ -293,13 +295,39 @@ const Index = () => {
     });
   };
 
-  const handleDelete = (id: string) => {
-    requireAuth(() => {
-      deleteInvestment(id);
-      toast({
-        title: 'Investimento removido',
-        description: 'O investimento foi excluído com sucesso.',
-      });
+  const handleDelete = async (id: string) => {
+    requireAuth(async () => {
+      const deletedInvestment = await deleteInvestment(id);
+      
+      if (deletedInvestment) {
+        toast({
+          title: 'Investimento removido',
+          description: `${deletedInvestment.name} foi excluído.`,
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                const restored = await restoreInvestment(deletedInvestment);
+                if (restored) {
+                  toast({
+                    title: 'Investimento restaurado',
+                    description: `${deletedInvestment.name} foi restaurado com sucesso.`,
+                  });
+                } else {
+                  toast({
+                    variant: 'destructive',
+                    title: 'Erro ao restaurar',
+                    description: 'Não foi possível restaurar o investimento.',
+                  });
+                }
+              }}
+            >
+              Desfazer
+            </Button>
+          ),
+        });
+      }
     });
   };
 
