@@ -182,7 +182,7 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
                       )}
                     </div>
 
-                    <div className="flex gap-12 text-sm">
+                    <div className="flex gap-16 text-sm">
                       <div className="transition-colors">
                         <span className="text-muted-foreground block">Quantidade</span>
                         <p className="font-mono text-card-foreground">{formatQuantity(investment.quantity)}</p>
