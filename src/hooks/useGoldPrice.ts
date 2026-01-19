@@ -1,64 +1,49 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getPriceCache } from '@/lib/priceCache';
 
 interface GoldPriceData {
   pricePerGram: number;
   pricePerOunce: number;
-  currency: string;
   lastUpdated: string;
 }
+
+// Cache instance
+const goldCache = getPriceCache<GoldPriceData>('gold');
 
 // Preço base do ouro 24K (dezembro 2025: ~R$ 800/g)
 // Baseado em: 1 onça troy (~31.1g) = ~R$ 25.000
 const FALLBACK_GOLD_PRICE_PER_GRAM = 800;
 
-// Chave para cache local
-const CACHE_KEY = 'gold_price_cache';
-
-interface CachedPrice {
-  pricePerGram: number;
-  timestamp: number;
-}
-
-function getCachedPrice(): CachedPrice | null {
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      const data = JSON.parse(cached) as CachedPrice;
-      // Cache válido por 1 hora
-      if (Date.now() - data.timestamp < 60 * 60 * 1000) {
-        return data;
-      }
-    }
-  } catch {
-    // Ignora erros de localStorage
-  }
-  return null;
-}
-
-function setCachedPrice(pricePerGram: number) {
-  try {
-    const data: CachedPrice = {
-      pricePerGram,
-      timestamp: Date.now(),
-    };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-  } catch {
-    // Ignora erros de localStorage
-  }
-}
-
 export function useGoldPrice() {
-  const [pricePerGram, setPricePerGram] = useState<number | null>(() => {
-    // Inicializa com cache local se disponível
-    const cached = getCachedPrice();
-    return cached?.pricePerGram || null;
-  });
+  const [pricePerGram, setPricePerGram] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   
   // Mantém o último preço válido da API
   const lastValidPrice = useRef<number | null>(null);
+
+  // Inicializa com cache
+  useEffect(() => {
+    const initCache = async () => {
+      const cached = await goldCache.get();
+      if (cached) {
+        setPricePerGram(cached.data.pricePerGram);
+        setLastUpdate(new Date(goldCache.getTimestamp() || Date.now()));
+        lastValidPrice.current = cached.data.pricePerGram;
+      }
+    };
+    initCache();
+    
+    // Subscribe to cache updates from other tabs
+    const unsubscribe = goldCache.subscribe((data) => {
+      const goldData = data as GoldPriceData;
+      setPricePerGram(goldData.pricePerGram);
+      setLastUpdate(new Date());
+    });
+    
+    return unsubscribe;
+  }, []);
 
   const fetchPrice = useCallback(async () => {
     setIsLoading(true);
@@ -80,8 +65,13 @@ export function useGoldPrice() {
           const pricePerGramValue = pricePerOunce / 31.1035;
           const roundedPrice = Math.round(pricePerGramValue * 100) / 100;
           
-          // Salva no cache e atualiza estado
-          setCachedPrice(roundedPrice);
+          // Salva no cache
+          await goldCache.set({
+            pricePerGram: roundedPrice,
+            pricePerOunce,
+            lastUpdated: new Date().toISOString(),
+          });
+          
           lastValidPrice.current = roundedPrice;
           setPricePerGram(roundedPrice);
           setLastUpdate(new Date());
@@ -91,11 +81,11 @@ export function useGoldPrice() {
       }
 
       // Se API falhou, usa cache ou último preço válido
-      const cached = getCachedPrice();
-      if (cached) {
-        console.log('Using cached gold price:', cached.pricePerGram);
-        setPricePerGram(cached.pricePerGram);
-        setLastUpdate(new Date(cached.timestamp));
+      const cached = await goldCache.get();
+      if (cached && !cached.isStale) {
+        console.log('Using cached gold price:', cached.data.pricePerGram);
+        setPricePerGram(cached.data.pricePerGram);
+        setLastUpdate(new Date(goldCache.getTimestamp() || Date.now()));
         return;
       }
 
@@ -114,10 +104,10 @@ export function useGoldPrice() {
       setError(err instanceof Error ? err.message : 'Erro ao buscar cotação do ouro');
       
       // Tenta usar cache ou último preço válido antes do fallback
-      const cached = getCachedPrice();
+      const cached = await goldCache.get();
       if (cached) {
-        setPricePerGram(cached.pricePerGram);
-        setLastUpdate(new Date(cached.timestamp));
+        setPricePerGram(cached.data.pricePerGram);
+        setLastUpdate(new Date(goldCache.getTimestamp() || Date.now()));
         return;
       }
 
@@ -136,7 +126,20 @@ export function useGoldPrice() {
 
   // Busca preço na inicialização
   useEffect(() => {
-    fetchPrice();
+    const init = async () => {
+      const cached = await goldCache.get();
+      
+      if (cached?.isValid) {
+        console.log('Using valid cached gold price');
+        setPricePerGram(cached.data.pricePerGram);
+        setLastUpdate(new Date(goldCache.getTimestamp() || Date.now()));
+        lastValidPrice.current = cached.data.pricePerGram;
+      } else {
+        fetchPrice();
+      }
+    };
+    
+    init();
     
     // Atualiza a cada 60 segundos
     const interval = setInterval(fetchPrice, 60000);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { fiiList, StockAsset } from '@/data/stocksList';
+import { getPriceCache } from '@/lib/priceCache';
 
 interface FIIPrice {
   symbol: string;
@@ -13,47 +14,10 @@ interface FIIPrice {
   lastUpdated: string;
 }
 
-interface CachedFIIPrices {
-  prices: Record<string, FIIPrice>;
-  timestamp: number;
-}
+type FIIPriceMap = Record<string, FIIPrice>;
 
-const CACHE_KEY = 'fii_prices_cache';
-const MAX_CACHE_AGE_MS = 15 * 60 * 1000; // 15 minutos - cache válido
-const STALE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hora - força atualização
-
-// Funções de cache
-function getCachedPrices(): CachedFIIPrices | null {
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      return JSON.parse(cached) as CachedFIIPrices;
-    }
-  } catch {
-    // Ignora erros de localStorage
-  }
-  return null;
-}
-
-function setCachedPrices(prices: Record<string, FIIPrice>) {
-  try {
-    const data: CachedFIIPrices = {
-      prices,
-      timestamp: Date.now(),
-    };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-  } catch {
-    // Ignora erros de localStorage
-  }
-}
-
-function isCacheValid(timestamp: number): boolean {
-  return Date.now() - timestamp < MAX_CACHE_AGE_MS;
-}
-
-function isCacheStale(timestamp: number): boolean {
-  return Date.now() - timestamp > STALE_THRESHOLD_MS;
-}
+// Cache instance
+const fiiCache = getPriceCache<FIIPriceMap>('fii');
 
 // Dividend Yields aproximados dos FIIs (dados Status Invest Dez/2024)
 const fiiDividendYields: Record<string, number> = {
@@ -96,22 +60,36 @@ function getLocalFIIPrices(): Record<string, StockAsset> {
 const localFIIPrices = getLocalFIIPrices();
 
 export function useFIIPrices() {
-  const [prices, setPrices] = useState<Record<string, FIIPrice>>(() => {
-    // Inicializa com cache local se disponível
-    const cached = getCachedPrices();
-    return cached?.prices || {};
-  });
+  const [prices, setPrices] = useState<FIIPriceMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(() => {
-    const cached = getCachedPrices();
-    return cached?.timestamp ? new Date(cached.timestamp) : null;
-  });
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   
   // Mantém o último preço válido da API
-  const lastValidPrices = useRef<Record<string, FIIPrice>>({});
+  const lastValidPrices = useRef<FIIPriceMap>({});
   const retryCount = useRef(0);
   const maxRetries = 3;
+
+  // Inicializa com cache
+  useEffect(() => {
+    const initCache = async () => {
+      const cached = await fiiCache.get();
+      if (cached) {
+        setPrices(cached.data);
+        setLastUpdate(new Date(fiiCache.getTimestamp() || Date.now()));
+        lastValidPrices.current = cached.data;
+      }
+    };
+    initCache();
+    
+    // Subscribe to cache updates from other tabs
+    const unsubscribe = fiiCache.subscribe((data) => {
+      setPrices(data as FIIPriceMap);
+      setLastUpdate(new Date());
+    });
+    
+    return unsubscribe;
+  }, []);
 
   // Fetch a single FII price from BRAPI
   const fetchSinglePrice = async (symbol: string): Promise<FIIPrice | null> => {
@@ -146,13 +124,13 @@ export function useFIIPrices() {
   };
 
   // Get local fallback price for a symbol - usa cache primeiro
-  const getLocalFallback = (symbol: string): FIIPrice | null => {
+  const getLocalFallback = useCallback(async (symbol: string): Promise<FIIPrice | null> => {
     const upperSymbol = symbol.toUpperCase();
     
     // Primeiro tenta usar preço do cache se não for muito antigo
-    const cached = getCachedPrices();
-    if (cached && cached.prices[upperSymbol] && !isCacheStale(cached.timestamp)) {
-      return cached.prices[upperSymbol];
+    const cached = await fiiCache.get();
+    if (cached && cached.data[upperSymbol] && !cached.isStale) {
+      return cached.data[upperSymbol];
     }
     
     // Depois tenta último preço válido em memória
@@ -179,17 +157,17 @@ export function useFIIPrices() {
       low24h: Math.round(currentPrice * 0.985 * 100) / 100,
       lastUpdated: new Date().toISOString(),
     };
-  };
+  }, []);
 
   // Fetch prices for specific symbols only (on demand)
   const fetchPrices = useCallback(async (symbols?: string[]) => {
     if (!symbols || symbols.length === 0) {
       // Don't fetch all FIIs at once - use cached/local data for initial load
-      const priceMap: Record<string, FIIPrice> = {};
-      Object.keys(localFIIPrices).forEach(symbol => {
-        const fallback = getLocalFallback(symbol);
+      const priceMap: FIIPriceMap = {};
+      for (const symbol of Object.keys(localFIIPrices)) {
+        const fallback = await getLocalFallback(symbol);
         if (fallback) priceMap[symbol] = fallback;
-      });
+      }
       setPrices(priceMap);
       setLastUpdate(new Date());
       return;
@@ -200,7 +178,7 @@ export function useFIIPrices() {
 
     try {
       // Fetch each symbol individually to comply with BRAPI free tier
-      const newPrices: Record<string, FIIPrice> = {};
+      const newPrices: FIIPriceMap = {};
       let successCount = 0;
       
       for (const symbol of symbols) {
@@ -212,10 +190,10 @@ export function useFIIPrices() {
         if (livePrice) {
           newPrices[upperSymbol] = livePrice;
           successCount++;
-          console.log(`Updated ${upperSymbol} price from BRAPI:`, livePrice.price);
+          console.log(`Updated ${upperSymbol} price:`, livePrice.price);
         } else {
           // Fallback to cache/local data
-          const fallback = getLocalFallback(upperSymbol);
+          const fallback = await getLocalFallback(upperSymbol);
           if (fallback) {
             newPrices[upperSymbol] = fallback;
             console.log(`Using fallback for ${upperSymbol}:`, fallback.price);
@@ -223,11 +201,10 @@ export function useFIIPrices() {
         }
       }
 
-      const updatedPrices = { ...prices, ...newPrices };
+      // Merge with cache and save
+      const updatedPrices = await fiiCache.merge(newPrices);
       
-      // Salva no cache se teve sucesso
       if (successCount > 0) {
-        setCachedPrices(updatedPrices);
         lastValidPrices.current = { ...lastValidPrices.current, ...newPrices };
         retryCount.current = 0;
       }
@@ -241,11 +218,11 @@ export function useFIIPrices() {
       retryCount.current++;
       
       // Use fallback for all requested symbols
-      const fallbackPrices: Record<string, FIIPrice> = {};
-      symbols.forEach(symbol => {
-        const fallback = getLocalFallback(symbol.toUpperCase());
+      const fallbackPrices: FIIPriceMap = {};
+      for (const symbol of symbols) {
+        const fallback = await getLocalFallback(symbol.toUpperCase());
         if (fallback) fallbackPrices[symbol.toUpperCase()] = fallback;
-      });
+      }
       setPrices(prev => ({ ...prev, ...fallbackPrices }));
       
       // Retry se falhou
@@ -255,7 +232,7 @@ export function useFIIPrices() {
     } finally {
       setIsLoading(false);
     }
-  }, [prices]);
+  }, [getLocalFallback]);
 
   const getPrice = useCallback((symbol: string): number | null => {
     const upperSymbol = symbol.toUpperCase();
@@ -279,24 +256,24 @@ export function useFIIPrices() {
 
   // Load cached/local prices on mount and auto-refresh every 60 seconds
   useEffect(() => {
-    const loadPrices = () => {
-      const cached = getCachedPrices();
+    const loadPrices = async () => {
+      const cached = await fiiCache.get();
       
       // Se cache é válido, usa
-      if (cached && isCacheValid(cached.timestamp)) {
+      if (cached?.isValid) {
         console.log('Using valid cached FII prices');
-        setPrices(cached.prices);
-        setLastUpdate(new Date(cached.timestamp));
-        lastValidPrices.current = cached.prices;
+        setPrices(cached.data);
+        setLastUpdate(new Date(fiiCache.getTimestamp() || Date.now()));
+        lastValidPrices.current = cached.data;
         return;
       }
       
       // Senão usa fallback local
-      const priceMap: Record<string, FIIPrice> = {};
-      Object.keys(localFIIPrices).forEach(symbol => {
-        const fallback = getLocalFallback(symbol);
+      const priceMap: FIIPriceMap = {};
+      for (const symbol of Object.keys(localFIIPrices)) {
+        const fallback = await getLocalFallback(symbol);
         if (fallback) priceMap[symbol] = fallback;
-      });
+      }
       setPrices(priceMap);
       setLastUpdate(new Date());
     };
@@ -306,7 +283,7 @@ export function useFIIPrices() {
     // Atualiza a cada 60 segundos
     const interval = setInterval(loadPrices, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [getLocalFallback]);
 
   return {
     prices,
