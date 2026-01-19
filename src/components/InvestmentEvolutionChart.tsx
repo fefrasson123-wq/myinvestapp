@@ -231,6 +231,17 @@ export function InvestmentEvolutionChart({
 }: InvestmentEvolutionChartProps) {
   const isCompoundGrowth = COMPOUND_GROWTH_CATEGORIES.includes(investment.category);
   
+  console.log('InvestmentEvolutionChart - Investment data:', {
+    name: investment.name,
+    category: investment.category,
+    investedAmount: investment.investedAmount,
+    currentValue: investment.currentValue,
+    currentPrice: investment.currentPrice,
+    purchaseDate: investment.purchaseDate,
+    interestRate: investment.interestRate,
+    isCompoundGrowth
+  });
+  
   const chartData = useMemo(() => {
     if (isCompoundGrowth) {
       return generateCompoundEvolutionData(
