@@ -26,10 +26,6 @@ function formatLastUpdate(date: Date | null): string {
 }
 
 function getStatusColor(lastUpdate: Date | null, isLoading: boolean): { dot: string; icon: string } {
-  if (isLoading) {
-    return { dot: "bg-yellow-400 animate-pulse", icon: "text-yellow-400" };
-  }
-  
   if (!lastUpdate) {
     return { dot: "bg-destructive", icon: "text-destructive" };
   }
@@ -38,18 +34,27 @@ function getStatusColor(lastUpdate: Date | null, isLoading: boolean): { dot: str
   const diffMs = now.getTime() - lastUpdate.getTime();
   const diffSeconds = Math.floor(diffMs / 1000);
   
-  // Verde: até 10 minutos (600 segundos)
+  // Verde: até 10 minutos (600 segundos) - com animação se estiver carregando
   if (diffSeconds < 600) {
-    return { dot: "bg-success shadow-[0_0_8px_hsl(var(--success)/0.6)]", icon: "text-success" };
+    return { 
+      dot: isLoading ? "bg-success animate-pulse" : "bg-success shadow-[0_0_8px_hsl(var(--success)/0.6)]", 
+      icon: "text-success" 
+    };
   }
   
-  // Amarelo: de 10 minutos até 1 hora
+  // Amarelo: de 10 minutos até 1 hora - com animação se estiver carregando
   if (diffSeconds < 3600) {
-    return { dot: "bg-yellow-400", icon: "text-yellow-400" };
+    return { 
+      dot: isLoading ? "bg-yellow-400 animate-pulse" : "bg-yellow-400", 
+      icon: "text-yellow-400" 
+    };
   }
   
-  // Vermelho: após 1 hora (3600 segundos)
-  return { dot: "bg-destructive", icon: "text-destructive" };
+  // Vermelho: após 1 hora (3600 segundos) - com animação se estiver carregando
+  return { 
+    dot: isLoading ? "bg-destructive animate-pulse" : "bg-destructive", 
+    icon: "text-destructive" 
+  };
 }
 
 export function PriceUpdateIndicator({ lastUpdate, isLoading, onRefresh }: PriceUpdateIndicatorProps) {
