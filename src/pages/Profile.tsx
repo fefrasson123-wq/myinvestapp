@@ -173,7 +173,7 @@ export default function Profile() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="border-b border-border/50 bg-card/80 backdrop-blur-md">
-          <div className="container mx-auto px-4 py-4">
+          <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
@@ -195,151 +195,159 @@ export default function Profile() {
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="container mx-auto px-4 py-6 max-w-2xl">
-          {/* Profile Card */}
-          <div className="bg-card border border-border rounded-xl shadow-lg p-6 mb-6 animate-smooth-appear">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center glow-primary">
-                <User className="w-10 h-10 text-primary" />
-              </div>
-              <div className="flex-1">
-                {isEditing ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Nome de usuário</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="username"
-                        value={editUsername}
-                        onChange={(e) => setEditUsername(e.target.value)}
-                        placeholder="Seu nome"
-                      />
-                      <Button size="icon" onClick={handleSaveProfile} disabled={isSaving}>
-                        <Save className="w-4 h-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => setIsEditing(false)}>
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
+        {/* Main Content - Layout responsivo como o Dashboard */}
+        <main className="w-full max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Coluna da esquerda - Profile Card */}
+            <div className="space-y-6">
+              {/* Profile Card */}
+              <div className="bg-card border border-border rounded-xl shadow-lg p-6 animate-smooth-appear">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center glow-primary">
+                    <User className="w-10 h-10 text-primary" />
                   </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-2xl font-bold text-card-foreground">{displayName}</h2>
-                      <Button size="icon" variant="ghost" onClick={() => setIsEditing(true)}>
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
-                  </>
-                )}
-              </div>
-            </div>
+                  <div className="flex-1">
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="username">Nome de usuário</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="username"
+                            value={editUsername}
+                            onChange={(e) => setEditUsername(e.target.value)}
+                            placeholder="Seu nome"
+                          />
+                          <Button size="icon" onClick={handleSaveProfile} disabled={isSaving}>
+                            <Save className="w-4 h-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" onClick={() => setIsEditing(false)}>
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-2xl font-bold text-card-foreground">{displayName}</h2>
+                          <Button size="icon" variant="ghost" onClick={() => setIsEditing(true)}>
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </>
+                    )}
+                  </div>
+                </div>
 
-            <div className="border-t border-border pt-4">
-              <p className="text-xs text-muted-foreground mb-1">
-                Conta criada em {new Date(user.created_at).toLocaleDateString('pt-BR')}
-              </p>
-            </div>
-          </div>
-
-          {/* Currency Preference Card */}
-          <div className="bg-card border border-border rounded-xl shadow-lg p-6 mb-6 animate-smooth-appear" style={{ animationDelay: '50ms' }}>
-            <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-primary" />
-              Moeda de Exibição
-            </h3>
-            
-            <p className="text-sm text-muted-foreground mb-4">
-              Escolha a moeda para exibir seus saldos e valores no app.
-            </p>
-            
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <Button
-                variant={displayCurrency === 'BRL' ? 'default' : 'outline'}
-                className="w-full h-16 flex flex-col items-center justify-center gap-1"
-                onClick={() => setDisplayCurrency('BRL')}
-              >
-                <span className="text-lg font-bold">R$</span>
-                <span className="text-xs">Real Brasileiro</span>
-              </Button>
-              <Button
-                variant={displayCurrency === 'USD' ? 'default' : 'outline'}
-                className="w-full h-16 flex flex-col items-center justify-center gap-1"
-                onClick={() => setDisplayCurrency('USD')}
-              >
-                <span className="text-lg font-bold">$</span>
-                <span className="text-xs">Dólar Americano</span>
-              </Button>
-            </div>
-
-            {/* Exchange rate info */}
-            <div className="bg-background/50 rounded-lg p-3 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Cotação atual</p>
-                <p className="text-sm font-semibold text-card-foreground">
-                  {isRateLoading ? (
-                    <span className="animate-pulse">Carregando...</span>
-                  ) : (
-                    <>1 USD = R$ {usdBrlRate.toFixed(4)}</>
-                  )}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                  <RefreshCw className="w-3 h-3" />
-                  Tempo real
-                </p>
-                {rateLastUpdated && (
-                  <p className="text-xs text-muted-foreground">
-                    Atualizado: {rateLastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                <div className="border-t border-border pt-4">
+                  <p className="text-xs text-muted-foreground mb-1">
+                    Conta criada em {new Date(user.created_at).toLocaleDateString('pt-BR')}
                   </p>
-                )}
+                </div>
+              </div>
+
+              {/* Currency Preference Card */}
+              <div className="bg-card border border-border rounded-xl shadow-lg p-6 animate-smooth-appear" style={{ animationDelay: '50ms' }}>
+                <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-primary" />
+                  Moeda de Exibição
+                </h3>
+                
+                <p className="text-sm text-muted-foreground mb-4">
+                  Escolha a moeda para exibir seus saldos e valores no app.
+                </p>
+                
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <Button
+                    variant={displayCurrency === 'BRL' ? 'default' : 'outline'}
+                    className="w-full h-16 flex flex-col items-center justify-center gap-1"
+                    onClick={() => setDisplayCurrency('BRL')}
+                  >
+                    <span className="text-lg font-bold">R$</span>
+                    <span className="text-xs">Real Brasileiro</span>
+                  </Button>
+                  <Button
+                    variant={displayCurrency === 'USD' ? 'default' : 'outline'}
+                    className="w-full h-16 flex flex-col items-center justify-center gap-1"
+                    onClick={() => setDisplayCurrency('USD')}
+                  >
+                    <span className="text-lg font-bold">$</span>
+                    <span className="text-xs">Dólar Americano</span>
+                  </Button>
+                </div>
+
+                {/* Exchange rate info */}
+                <div className="bg-background/50 rounded-lg p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Cotação atual</p>
+                    <p className="text-sm font-semibold text-card-foreground">
+                      {isRateLoading ? (
+                        <span className="animate-pulse">Carregando...</span>
+                      ) : (
+                        <>1 USD = R$ {usdBrlRate.toFixed(4)}</>
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
+                      <RefreshCw className="w-3 h-3" />
+                      Tempo real
+                    </p>
+                    {rateLastUpdated && (
+                      <p className="text-xs text-muted-foreground">
+                        Atualizado: {rateLastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Realized Profit/Loss Card */}
-          <div className="bg-card border border-border rounded-xl shadow-lg p-6 mb-6 animate-smooth-appear" style={{ animationDelay: '100ms' }}>
-            <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
-              {isPositive ? (
-                <TrendingUp className="w-5 h-5 text-green-500" />
-              ) : (
-                <TrendingDown className="w-5 h-5 text-red-500" />
-              )}
-              Lucro / Prejuízo Realizado
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-background/50 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-1">Total</p>
-                <p className={`text-2xl font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                  {isPositive ? '+' : ''}{formatCurrencyValue(realizedProfitLoss.total)}
+            {/* Coluna da direita no desktop */}
+            <div className="space-y-6">
+              {/* Realized Profit/Loss Card */}
+              <div className="bg-card border border-border rounded-xl shadow-lg p-6 animate-smooth-appear" style={{ animationDelay: '100ms' }}>
+                <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
+                  {isPositive ? (
+                    <TrendingUp className="w-5 h-5 text-profit" />
+                  ) : (
+                    <TrendingDown className="w-5 h-5 text-loss" />
+                  )}
+                  Lucro / Prejuízo Realizado
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-background/50 rounded-lg p-4">
+                    <p className="text-sm text-muted-foreground mb-1">Total</p>
+                    <p className={`text-2xl font-bold ${isPositive ? 'text-profit' : 'text-loss'}`}>
+                      {isPositive ? '+' : ''}{formatCurrencyValue(realizedProfitLoss.total)}
+                    </p>
+                  </div>
+                  <div className="bg-background/50 rounded-lg p-4">
+                    <p className="text-sm text-muted-foreground mb-1">Percentual</p>
+                    <p className={`text-2xl font-bold ${isPositive ? 'text-profit' : 'text-loss'}`}>
+                      {isPositive ? '+' : ''}{realizedProfitLoss.percent.toFixed(2)}%
+                    </p>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-muted-foreground mt-4">
+                  * Lucro/Prejuízo realizado considera apenas ativos vendidos
                 </p>
               </div>
-              <div className="bg-background/50 rounded-lg p-4">
-                <p className="text-sm text-muted-foreground mb-1">Percentual</p>
-                <p className={`text-2xl font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                  {isPositive ? '+' : ''}{realizedProfitLoss.percent.toFixed(2)}%
-                </p>
+
+              {/* Logout Button */}
+              <div className="animate-smooth-appear" style={{ animationDelay: '150ms' }}>
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sair da conta
+                </Button>
               </div>
             </div>
-            
-            <p className="text-xs text-muted-foreground mt-4">
-              * Lucro/Prejuízo realizado considera apenas ativos vendidos
-            </p>
-          </div>
-
-          {/* Logout Button */}
-          <div className="animate-smooth-appear" style={{ animationDelay: '150ms' }}>
-            <Button
-              variant="destructive"
-              className="w-full"
-              onClick={handleSignOut}
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair da conta
-            </Button>
           </div>
         </main>
       </div>
