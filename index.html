@@ -39,44 +39,20 @@
       #root { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
       .initial-loader { 
         display: flex;
-        flex-direction: column;
         align-items: center;
-        gap: 16px;
+        justify-content: center;
       }
       .chart-arrow {
-        width: 64px;
-        height: 64px;
-        animation: pulse-glow 1.5s ease-in-out infinite;
+        width: 48px;
+        height: 48px;
+        animation: pulse-glow 1.2s ease-in-out infinite;
       }
       .chart-arrow path {
-        stroke: #22c55e;
-        stroke-width: 2.5;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        fill: none;
-      }
-      .chart-line {
-        stroke-dasharray: 100;
-        stroke-dashoffset: 100;
-        animation: draw-line 1s ease-out forwards, glow-line 1.5s ease-in-out infinite 1s;
-      }
-      .arrow-head {
-        opacity: 0;
-        animation: fade-arrow 0.3s ease-out 0.8s forwards, glow-line 1.5s ease-in-out infinite 1s;
-      }
-      @keyframes draw-line {
-        to { stroke-dashoffset: 0; }
-      }
-      @keyframes fade-arrow {
-        to { opacity: 1; }
+        fill: #22c55e;
       }
       @keyframes pulse-glow {
-        0%, 100% { filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.6)); }
-        50% { filter: drop-shadow(0 0 20px rgba(34, 197, 94, 0.9)); }
-      }
-      @keyframes glow-line {
-        0%, 100% { stroke: #22c55e; }
-        50% { stroke: #4ade80; }
+        0%, 100% { filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.5)); transform: scale(1); }
+        50% { filter: drop-shadow(0 0 16px rgba(34, 197, 94, 0.8)); transform: scale(1.05); }
       }
     </style>
     <meta property="og:title" content="My Invest">
@@ -89,12 +65,8 @@
   <body>
     <div id="root">
       <div class="initial-loader">
-        <svg class="chart-arrow" viewBox="0 0 64 64">
-          <!-- Linha do gráfico subindo -->
-          <path class="chart-line" d="M8 52 L24 40 L36 44 L52 16" />
-          <!-- Seta apontando para cima -->
-          <path class="arrow-head" d="M46 12 L52 16 L48 22" />
-          <path class="arrow-head" d="M52 16 L52 8" />
+        <svg class="chart-arrow" viewBox="0 0 24 24">
+          <path d="M3 17L9 11L13 15L21 7M21 7V13M21 7H15" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         </svg>
       </div>
     </div>
