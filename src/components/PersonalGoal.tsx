@@ -411,97 +411,113 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
         </button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto glass-card border-primary/30 shadow-xl shadow-primary/10">
         <button 
           onClick={() => setIsDialogOpen(false)}
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+          className="absolute right-4 top-4 p-1.5 rounded-lg bg-secondary/50 hover:bg-secondary transition-all duration-200 hover:scale-105"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4 text-muted-foreground" />
           <span className="sr-only">Fechar</span>
         </button>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-primary" />
-            {goal ? 'Editar Meta' : 'Definir Meta Pessoal'}
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-3 text-lg">
+            <div className="p-2 rounded-lg bg-primary/20 glow-primary">
+              <Target className="w-5 h-5 text-primary" />
+            </div>
+            <span className="gradient-text font-bold">
+              {goal ? 'Editar Meta' : 'Definir Meta Pessoal'}
+            </span>
           </DialogTitle>
           <DialogDescription className="sr-only">
             Configure sua meta pessoal de patrimônio
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-5 py-2">
           {/* Goal Name */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-card-foreground">
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Nome da Meta
             </label>
             <Input
               value={goalName}
               onChange={(e) => setGoalName(e.target.value)}
               placeholder="Ex: Aposentadoria, Reserva de Emergência..."
+              className="bg-secondary/50 border-border/50 focus:border-primary/50 focus:ring-primary/20"
             />
           </div>
 
           {/* Target Amount */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-card-foreground">
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Valor da Meta
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-medium">
                 R$
               </span>
               <Input
                 value={targetAmount}
                 onChange={handleInputChange}
                 placeholder="0,00"
-                className="pl-10"
+                className="pl-10 bg-secondary/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 font-mono text-lg"
               />
             </div>
           </div>
 
-          {/* Current Progress Preview - Always visible */}
-          <div className="bg-secondary/30 rounded-lg p-4 space-y-3">
+          {/* Current Progress Preview */}
+          <div className="investment-card space-y-4">
             {/* Portfolio / Goal summary */}
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">Patrimônio / Meta</span>
-              <span className="font-medium text-card-foreground">
-                {formatCurrency(currentPortfolioValue)} / {targetToUse > 0 ? formatCurrency(targetToUse) : '—'}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Patrimônio / Meta</span>
+              <span className="font-mono font-medium text-card-foreground">
+                {formatCurrency(currentPortfolioValue)} <span className="text-muted-foreground">/</span> {targetToUse > 0 ? formatCurrency(targetToUse) : '—'}
               </span>
             </div>
             
-            <Progress value={previewProgress} className="h-2" />
-            
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Progresso</span>
-              <span className={cn(
-                "font-medium",
-                previewProgress >= 100 ? "text-profit" : "text-card-foreground"
-              )}>
-                {previewProgress.toFixed(1).replace('.', ',')}%
-              </span>
+            <div className="relative">
+              <Progress value={previewProgress} className="h-3 bg-secondary" />
+              <div 
+                className="absolute inset-0 h-3 rounded-full overflow-hidden pointer-events-none"
+                style={{ 
+                  background: `linear-gradient(90deg, hsl(var(--primary) / 0.3) ${previewProgress}%, transparent ${previewProgress}%)`,
+                  boxShadow: previewProgress > 0 ? 'inset 0 0 10px hsl(var(--primary) / 0.3)' : 'none'
+                }}
+              />
             </div>
-
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Falta para a meta</span>
-              <span className={cn(
-                "font-medium",
-                previewRemaining <= 0 ? "text-profit" : "text-card-foreground"
-              )}>
-                {targetToUse <= 0 
-                  ? '—' 
-                  : previewRemaining <= 0 
-                    ? 'Meta atingida! 🎉' 
-                    : formatCurrency(previewRemaining)}
-              </span>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-3 rounded-lg bg-secondary/50">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Progresso</p>
+                <p className={cn(
+                  "text-xl font-bold font-mono",
+                  previewProgress >= 100 ? "text-success number-glow" : "text-primary"
+                )}>
+                  {previewProgress.toFixed(1).replace('.', ',')}%
+                </p>
+              </div>
+              
+              <div className="text-center p-3 rounded-lg bg-secondary/50">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Faltam</p>
+                <p className={cn(
+                  "text-lg font-bold font-mono",
+                  previewRemaining <= 0 ? "text-success" : "text-card-foreground"
+                )}>
+                  {targetToUse <= 0 
+                    ? '—' 
+                    : previewRemaining <= 0 
+                      ? '🎉' 
+                      : formatCurrency(previewRemaining)}
+                </p>
+              </div>
             </div>
           </div>
 
           {/* Evolution Chart - Only show when we have a target */}
           {targetToUse > 0 && chartData.length > 0 && (
-            <div className="bg-secondary/30 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-card-foreground mb-3">
-                Projeção: Aportes vs Aportes + Rentabilidade
+            <div className="investment-card">
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
+                Projeção de Crescimento
               </h4>
               <div className="h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -595,70 +611,75 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
               </div>
               
               {/* Legend */}
-              <div className="flex flex-wrap justify-center gap-4 mt-3 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-0.5 bg-muted-foreground" style={{ borderStyle: 'dashed', borderWidth: '1px 0 0 0' }} />
-                  <span className="text-muted-foreground">Só aportes</span>
+              <div className="flex flex-wrap justify-center gap-6 mt-4 pt-3 border-t border-border/30">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-0.5 bg-muted-foreground rounded" style={{ borderStyle: 'dashed', borderWidth: '2px 0 0 0' }} />
+                  <span className="text-xs text-muted-foreground">Só aportes</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-0.5 bg-profit rounded" />
-                  <span className="text-muted-foreground">Aportes + Juros</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-1 bg-success rounded glow-primary" />
+                  <span className="text-xs text-muted-foreground">Com rentabilidade</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-0.5 bg-primary" style={{ borderStyle: 'dashed', borderWidth: '1px 0 0 0' }} />
-                  <span className="text-muted-foreground">Meta</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-0.5 bg-primary rounded" style={{ borderStyle: 'dashed', borderWidth: '2px 0 0 0' }} />
+                  <span className="text-xs text-muted-foreground">Meta</span>
                 </div>
               </div>
 
-              {/* Projection Info */}
+              {/* Projection Stats */}
               {projectionData.monthlyRate > 0 && (
-                <div className="mt-4 pt-3 border-t border-border/50 space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <TrendingUp className="w-4 h-4 text-primary" />
-                    <span className="text-muted-foreground">Aporte médio mensal:</span>
-                    <span className="font-medium text-card-foreground">
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-secondary/50 text-center">
+                    <div className="flex items-center justify-center gap-1.5 mb-1">
+                      <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Aporte/mês</span>
+                    </div>
+                    <span className="font-mono font-bold text-card-foreground">
                       {formatCurrency(projectionData.monthlyRate)}
                     </span>
                   </div>
                   
                   {projectionData.annualReturnRate > 0 && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <TrendingUp className="w-4 h-4 text-profit" />
-                      <span className="text-muted-foreground">Rentabilidade anual:</span>
-                      <span className="font-medium text-profit">
-                        +{(projectionData.annualReturnRate * 100).toFixed(1).replace('.', ',')}% a.a.
+                    <div className="p-3 rounded-lg bg-secondary/50 text-center">
+                      <div className="flex items-center justify-center gap-1.5 mb-1">
+                        <TrendingUp className="w-3.5 h-3.5 text-success" />
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Rent. anual</span>
+                      </div>
+                      <span className="font-mono font-bold text-success">
+                        +{(projectionData.annualReturnRate * 100).toFixed(1).replace('.', ',')}%
                       </span>
-                    </div>
-                  )}
-                  
-                  {projectionData.monthsToGoal !== null && projectionData.monthsToGoal > 0 && projectionData.estimatedDate && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-profit" />
-                      <span className="text-muted-foreground">Previsão:</span>
-                      <span className="font-medium text-profit">
-                        {projectionData.estimatedDate.toLocaleDateString('pt-BR', { 
-                          month: 'long', 
-                          year: 'numeric' 
-                        })}
-                        {' '}
-                        <span className="text-muted-foreground font-normal">
-                          (~{Math.ceil(projectionData.monthsToGoal)} {Math.ceil(projectionData.monthsToGoal) === 1 ? 'mês' : 'meses'})
-                        </span>
-                      </span>
-                    </div>
-                  )}
-                  
-                  {projectionData.monthsToGoal === 0 && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-profit" />
-                      <span className="font-medium text-profit">🎉 Meta já atingida!</span>
                     </div>
                   )}
                 </div>
               )}
+              
+              {/* Estimated Date */}
+              {projectionData.monthsToGoal !== null && projectionData.monthsToGoal > 0 && projectionData.estimatedDate && (
+                <div className="mt-3 p-3 rounded-lg bg-success/10 border border-success/20 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <Calendar className="w-4 h-4 text-success" />
+                    <span className="text-sm text-muted-foreground">Previsão:</span>
+                    <span className="font-medium text-success">
+                      {projectionData.estimatedDate.toLocaleDateString('pt-BR', { 
+                        month: 'long', 
+                        year: 'numeric' 
+                      })}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      (~{Math.ceil(projectionData.monthsToGoal)} {Math.ceil(projectionData.monthsToGoal) === 1 ? 'mês' : 'meses'})
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {projectionData.monthsToGoal === 0 && (
+                <div className="mt-3 p-3 rounded-lg bg-success/10 border border-success/20 text-center">
+                  <span className="font-medium text-success">🎉 Meta já atingida!</span>
+                </div>
+              )}
 
               {projectionData.monthlyRate === 0 && previewRemaining > 0 && (
-                <p className="text-xs text-muted-foreground mt-3 text-center italic">
+                <p className="text-xs text-muted-foreground mt-4 text-center italic">
                   Sem aportes recentes para calcular projeção
                 </p>
               )}
@@ -666,35 +687,49 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
           )}
         </div>
 
-        <div className="flex justify-between gap-2">
+        <div className="flex justify-between items-center gap-3 pt-2 border-t border-border/30">
           {goal && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                  <Trash2 className="w-4 h-4" />
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  <span className="text-xs">Excluir</span>
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="glass-card border-destructive/30">
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Remover Meta?</AlertDialogTitle>
+                  <AlertDialogTitle className="text-destructive">Remover Meta?</AlertDialogTitle>
                   <AlertDialogDescription>
                     Sua meta será removida permanentemente.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>Remover</AlertDialogAction>
+                  <AlertDialogCancel className="bg-secondary hover:bg-secondary/80">Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                    Remover
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
           )}
-          <div className="flex gap-2 ml-auto">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+          <div className="flex gap-3 ml-auto">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDialogOpen(false)}
+              className="border-border/50 hover:bg-secondary/50"
+            >
               Cancelar
             </Button>
-            <Button onClick={handleSave}>
-              <Check className="w-4 h-4 mr-1" />
-              Salvar
+            <Button 
+              onClick={handleSave}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground glow-primary btn-interactive"
+            >
+              <Check className="w-4 h-4 mr-1.5" />
+              Salvar Meta
             </Button>
           </div>
         </div>
