@@ -203,31 +203,48 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
             </div>
           </div>
 
-          {/* Current Progress Preview */}
-          {targetAmount && (() => {
-            // Calculate preview values from the INPUT, not the saved goal
+          {/* Current Progress Preview - Always visible */}
+          {(() => {
             const inputTargetAmount = parsePtBrNumber(targetAmount);
-            const previewProgress = inputTargetAmount > 0
-              ? Math.min((currentPortfolioValue / inputTargetAmount) * 100, 100)
+            const targetToUse = inputTargetAmount > 0 ? inputTargetAmount : (goal?.target_amount || 0);
+            const previewProgress = targetToUse > 0
+              ? Math.min((currentPortfolioValue / targetToUse) * 100, 100)
               : 0;
-            const previewRemaining = inputTargetAmount - currentPortfolioValue;
+            const previewRemaining = targetToUse - currentPortfolioValue;
 
             return (
               <div className="bg-secondary/30 rounded-lg p-4 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Patrimônio Atual</span>
+                {/* Portfolio / Goal summary */}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Patrimônio / Meta</span>
                   <span className="font-medium text-card-foreground">
-                    {formatCurrency(currentPortfolioValue)}
+                    {formatCurrency(currentPortfolioValue)} / {targetToUse > 0 ? formatCurrency(targetToUse) : '—'}
                   </span>
                 </div>
+                
                 <Progress value={previewProgress} className="h-2" />
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Progresso</span>
+                  <span className={cn(
+                    "font-medium",
+                    previewProgress >= 100 ? "text-profit" : "text-card-foreground"
+                  )}>
+                    {previewProgress.toFixed(1).replace('.', ',')}%
+                  </span>
+                </div>
+
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Falta para a meta</span>
                   <span className={cn(
                     "font-medium",
                     previewRemaining <= 0 ? "text-profit" : "text-card-foreground"
                   )}>
-                    {previewRemaining <= 0 ? 'Meta atingida! 🎉' : formatCurrency(previewRemaining)}
+                    {targetToUse <= 0 
+                      ? '—' 
+                      : previewRemaining <= 0 
+                        ? 'Meta atingida! 🎉' 
+                        : formatCurrency(previewRemaining)}
                   </span>
                 </div>
               </div>
