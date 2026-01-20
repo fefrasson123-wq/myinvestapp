@@ -188,8 +188,17 @@ const Index = () => {
   }, [investments.length]); // Só executa quando o número de investimentos muda
 
   // Atualiza os preços em tempo real para todos os tipos de ativos
+  // Usa useRef para evitar dependência de investments e updateInvestment no array
+  const investmentsRef = useRef(investments);
+  investmentsRef.current = investments;
+  const updateInvestmentRef = useRef(updateInvestment);
+  updateInvestmentRef.current = updateInvestment;
+
   useEffect(() => {
-    investments.forEach(inv => {
+    const currentInvestments = investmentsRef.current;
+    const update = updateInvestmentRef.current;
+    
+    currentInvestments.forEach(inv => {
       let realTimePrice: number | null = null;
       
       if (inv.category === 'crypto' && inv.ticker) {
@@ -199,16 +208,15 @@ const Index = () => {
       } else if (inv.category === 'fii' && inv.ticker) {
         realTimePrice = getFIIPrice(inv.ticker);
       } else if (inv.category === 'gold' && goldPricePerGram && inv.weightGrams && inv.purity) {
-        // Para ouro, calcula o valor atual baseado no peso e pureza
         const purityMultiplier = inv.purity / 24;
         realTimePrice = goldPricePerGram * purityMultiplier;
       }
       
       if (realTimePrice && Math.abs(realTimePrice - inv.currentPrice) > 0.01) {
-        updateInvestment(inv.id, { currentPrice: realTimePrice });
+        update(inv.id, { currentPrice: realTimePrice });
       }
     });
-  }, [cryptoPrices, goldPricePerGram, investments, getCryptoPrice, getStockPrice, getFIIPrice, updateInvestment]);
+  }, [cryptoPrices, goldPricePerGram, getCryptoPrice, getStockPrice, getFIIPrice]);
 
   // Handler para venda direta do formulário de cadastro
   const handleDirectSell = (data: {
