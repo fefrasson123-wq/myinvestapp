@@ -444,7 +444,7 @@ const Index = () => {
       </Helmet>
 
       <div className="min-h-screen w-full bg-background overflow-x-hidden">
-        <Header onAddClick={handleAddClick} currentPortfolioValue={getTotalValue()} />
+        <Header onAddClick={handleAddClick} currentPortfolioValue={getTotalValue() || getTotalInvested()} />
 
         {/* Navigation Tabs Placeholder - maintains layout when nav becomes fixed */}
         <div ref={navPlaceholderRef} className={isNavSticky ? "h-[49px]" : "h-0"} />
@@ -506,7 +506,7 @@ const Index = () => {
             <div className="animate-smooth-appear">
               {/* Personal Goal - Mobile only (above price update) */}
               <div className="md:hidden mb-4">
-                <PersonalGoal currentPortfolioValue={getTotalValue()} className="w-full justify-center" />
+                <PersonalGoal currentPortfolioValue={getTotalValue() || getTotalInvested()} className="w-full justify-center" />
               </div>
 
               {/* Price Update Indicator */}
