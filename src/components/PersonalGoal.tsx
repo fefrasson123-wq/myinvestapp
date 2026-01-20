@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Target, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,15 @@ import { usePersonalGoal } from '@/hooks/usePersonalGoal';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import {
+  Area,
+  AreaChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+} from 'recharts';
 
 interface PersonalGoalProps {
   currentPortfolioValue: number;
@@ -45,6 +54,17 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
       style: 'currency',
       currency: 'BRL',
     });
+  };
+
+  const formatCompact = (value: number) => {
+    if (!showValues) return '•••';
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1).replace('.', ',')}M`;
+    }
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(0)}k`;
+    }
+    return value.toFixed(0);
   };
 
   const parsePtBrNumber = (value: string) => {
@@ -113,6 +133,36 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
     setIsDialogOpen(true);
   };
 
+  // Generate chart data for goal progression
+  const chartData = useMemo(() => {
+    const inputTargetAmount = parsePtBrNumber(targetAmount);
+    const targetToUse = inputTargetAmount > 0 ? inputTargetAmount : (goal?.target_amount || 0);
+    
+    if (targetToUse <= 0 || currentPortfolioValue <= 0) return [];
+
+    const data = [];
+    const startValue = 0;
+    const currentValue = currentPortfolioValue;
+    const goalValue = targetToUse;
+    
+    // Create points: Start -> Current -> Goal
+    // Show progression from 0 to current, then projected to goal
+    const progressPercent = Math.min((currentValue / goalValue) * 100, 100);
+    
+    // Historical/current portion (filled area)
+    data.push({ name: 'Início', value: startValue, projected: startValue });
+    data.push({ name: 'Hoje', value: currentValue, projected: currentValue });
+    
+    // Projected portion (if not yet at goal)
+    if (currentValue < goalValue) {
+      data.push({ name: 'Meta', value: currentValue, projected: goalValue });
+    } else {
+      data.push({ name: 'Meta ✓', value: goalValue, projected: goalValue });
+    }
+
+    return data;
+  }, [targetAmount, goal, currentPortfolioValue]);
+
   if (isLoading) {
     return (
       <div className={cn("flex items-center gap-2 animate-pulse", className)}>
@@ -127,6 +177,14 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
     : 0;
 
   const remaining = goal ? goal.target_amount - currentPortfolioValue : 0;
+
+  // Calculate values for the preview
+  const inputTargetAmount = parsePtBrNumber(targetAmount);
+  const targetToUse = inputTargetAmount > 0 ? inputTargetAmount : (goal?.target_amount || 0);
+  const previewProgress = targetToUse > 0
+    ? Math.min((currentPortfolioValue / targetToUse) * 100, 100)
+    : 0;
+  const previewRemaining = targetToUse - currentPortfolioValue;
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -164,7 +222,7 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
         </button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Target className="w-5 h-5 text-primary" />
@@ -204,52 +262,113 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
           </div>
 
           {/* Current Progress Preview - Always visible */}
-          {(() => {
-            const inputTargetAmount = parsePtBrNumber(targetAmount);
-            const targetToUse = inputTargetAmount > 0 ? inputTargetAmount : (goal?.target_amount || 0);
-            const previewProgress = targetToUse > 0
-              ? Math.min((currentPortfolioValue / targetToUse) * 100, 100)
-              : 0;
-            const previewRemaining = targetToUse - currentPortfolioValue;
+          <div className="bg-secondary/30 rounded-lg p-4 space-y-3">
+            {/* Portfolio / Goal summary */}
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">Patrimônio / Meta</span>
+              <span className="font-medium text-card-foreground">
+                {formatCurrency(currentPortfolioValue)} / {targetToUse > 0 ? formatCurrency(targetToUse) : '—'}
+              </span>
+            </div>
+            
+            <Progress value={previewProgress} className="h-2" />
+            
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Progresso</span>
+              <span className={cn(
+                "font-medium",
+                previewProgress >= 100 ? "text-profit" : "text-card-foreground"
+              )}>
+                {previewProgress.toFixed(1).replace('.', ',')}%
+              </span>
+            </div>
 
-            return (
-              <div className="bg-secondary/30 rounded-lg p-4 space-y-3">
-                {/* Portfolio / Goal summary */}
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Patrimônio / Meta</span>
-                  <span className="font-medium text-card-foreground">
-                    {formatCurrency(currentPortfolioValue)} / {targetToUse > 0 ? formatCurrency(targetToUse) : '—'}
-                  </span>
-                </div>
-                
-                <Progress value={previewProgress} className="h-2" />
-                
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Progresso</span>
-                  <span className={cn(
-                    "font-medium",
-                    previewProgress >= 100 ? "text-profit" : "text-card-foreground"
-                  )}>
-                    {previewProgress.toFixed(1).replace('.', ',')}%
-                  </span>
-                </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Falta para a meta</span>
+              <span className={cn(
+                "font-medium",
+                previewRemaining <= 0 ? "text-profit" : "text-card-foreground"
+              )}>
+                {targetToUse <= 0 
+                  ? '—' 
+                  : previewRemaining <= 0 
+                    ? 'Meta atingida! 🎉' 
+                    : formatCurrency(previewRemaining)}
+              </span>
+            </div>
+          </div>
 
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Falta para a meta</span>
-                  <span className={cn(
-                    "font-medium",
-                    previewRemaining <= 0 ? "text-profit" : "text-card-foreground"
-                  )}>
-                    {targetToUse <= 0 
-                      ? '—' 
-                      : previewRemaining <= 0 
-                        ? 'Meta atingida! 🎉' 
-                        : formatCurrency(previewRemaining)}
-                  </span>
-                </div>
+          {/* Evolution Chart - Only show when we have a target */}
+          {targetToUse > 0 && chartData.length > 0 && (
+            <div className="bg-secondary/30 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-card-foreground mb-3">
+                Evolução até a Meta
+              </h4>
+              <div className="h-[160px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorProjected" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      tickFormatter={(value) => formatCompact(value)}
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                      axisLine={false}
+                      tickLine={false}
+                      width={45}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => [formatCurrency(value), '']}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                      }}
+                      labelStyle={{ color: 'hsl(var(--card-foreground))' }}
+                    />
+                    <ReferenceLine 
+                      y={targetToUse} 
+                      stroke="hsl(var(--profit))" 
+                      strokeDasharray="5 5"
+                      strokeWidth={2}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="projected"
+                      stroke="hsl(var(--muted-foreground))"
+                      strokeDasharray="5 5"
+                      fill="url(#colorProjected)"
+                      strokeWidth={1.5}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="hsl(var(--primary))"
+                      fill="url(#colorValue)"
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
-            );
-          })()}
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Linha tracejada verde = sua meta
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-between gap-2">
