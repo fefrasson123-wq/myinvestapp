@@ -1,9 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, memo, useCallback } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, X } from 'lucide-react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Investment, categoryLabels } from '@/types/investment';
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -57,7 +56,6 @@ function generateCompoundEvolutionData(
   const totalDays = Math.max(30, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
   const totalYears = totalDays / 365.25;
   
-  // Calcula a taxa anual real baseada na diferença entre valor investido e atual
   let effectiveRate: number;
   if (currentValue > 0 && investedAmount > 0 && totalYears > 0) {
     effectiveRate = (Math.pow(currentValue / investedAmount, 1 / totalYears) - 1) * 100;
@@ -65,7 +63,6 @@ function generateCompoundEvolutionData(
     effectiveRate = annualRate || 7.73;
   }
   
-  // Define quantidade de pontos baseado no período
   let points: number;
   if (totalYears <= 1) {
     points = 12;
@@ -124,19 +121,19 @@ function generateCompoundEvolutionData(
 function generateEvolutionData(
   investedAmount: number, 
   currentValue: number, 
-  purchaseDate?: string
+  purchaseDate?: string,
+  seed?: number
 ): ChartDataPoint[] {
   const data: ChartDataPoint[] = [];
   
   const startDate = purchaseDate ? new Date(purchaseDate) : new Date();
   if (!purchaseDate) {
-    startDate.setMonth(startDate.getMonth() - 6); // Fallback: 6 meses atrás
+    startDate.setMonth(startDate.getMonth() - 6);
   }
   
   const endDate = new Date();
   const totalDays = Math.max(7, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
   
-  // Define quantidade de pontos baseado no período
   let points: number;
   if (totalDays <= 30) {
     points = Math.min(totalDays, 15);
@@ -152,16 +149,19 @@ function generateEvolutionData(
   
   const totalProfit = currentValue - investedAmount;
   
+  // Usa seed determinística para evitar re-render com valores aleatórios diferentes
+  const seededRandom = (n: number) => {
+    const x = Math.sin(n * 12.9898 + (seed || 0) * 78.233) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  
   for (let i = 0; i <= points; i++) {
     const progress = i / points;
     
-    // Simula evolução do investimento com volatilidade realista
-    // Começa mais estável e vai convergindo para o valor atual
     const baseGrowth = Math.pow(progress, 0.85);
     
-    // Adiciona volatilidade de mercado (mais no meio, menos nas pontas)
     const volatilityFactor = Math.sin(progress * Math.PI) * 0.15;
-    const randomNoise = (Math.random() - 0.5) * volatilityFactor * (1 - Math.pow(progress - 0.5, 2) * 4);
+    const randomNoise = (seededRandom(i) - 0.5) * volatilityFactor * (1 - Math.pow(progress - 0.5, 2) * 4);
     
     const adjustedProgress = Math.max(0, Math.min(1, baseGrowth + randomNoise * 0.3));
     
@@ -171,7 +171,6 @@ function generateEvolutionData(
     
     const pointDate = new Date(startDate.getTime() + (totalDays * progress * 24 * 60 * 60 * 1000));
     
-    // Formata label baseado no período total
     let label: string;
     if (totalDays <= 30) {
       label = pointDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
@@ -189,14 +188,12 @@ function generateEvolutionData(
     });
   }
   
-  // Garante que o primeiro ponto seja o valor investido
   if (data.length > 0) {
     data[0].value = investedAmount;
     data[0].profit = 0;
     data[0].profitPercent = 0;
   }
   
-  // Garante que o último ponto seja o valor atual
   if (data.length > 1) {
     data[data.length - 1].value = currentValue;
     data[data.length - 1].profit = currentValue - investedAmount;
@@ -208,12 +205,94 @@ function generateEvolutionData(
   return data;
 }
 
+// Componente do gráfico memoizado para evitar re-renders desnecessários
+const EvolutionAreaChart = memo(function EvolutionAreaChart({
+  chartData,
+  isPositive,
+  yDomain,
+  formatCurrency,
+}: {
+  chartData: ChartDataPoint[];
+  isPositive: boolean;
+  yDomain: [number, number];
+  formatCurrency: (value: number) => string;
+}) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={chartData} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+        <defs>
+          <linearGradient id="evolutionGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop 
+              offset="0%" 
+              stopColor={isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'} 
+              stopOpacity={0.4}
+            />
+            <stop 
+              offset="100%" 
+              stopColor={isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'} 
+              stopOpacity={0.05}
+            />
+          </linearGradient>
+        </defs>
+        <XAxis 
+          dataKey="date" 
+          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+          axisLine={false}
+          tickLine={false}
+          interval="preserveStartEnd"
+        />
+        <YAxis 
+          domain={yDomain}
+          hide 
+          axisLine={false}
+          tickLine={false}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--border))',
+            borderRadius: '8px',
+            fontSize: '12px',
+          }}
+          formatter={(value: number, name: string) => {
+            if (name === 'value') return [formatCurrency(value), 'Valor'];
+            if (name === 'profit') return [formatCurrency(value), 'Lucro/Prejuízo'];
+            if (name === 'profitPercent') return [`${value}%`, 'Rentabilidade'];
+            return [value, name];
+          }}
+          labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
+          isAnimationActive={false}
+        />
+        <Area
+          type="monotone"
+          dataKey="value"
+          stroke={isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'}
+          strokeWidth={2.5}
+          fill="url(#evolutionGradient)"
+          isAnimationActive={false}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+});
+
 export function InvestmentEvolutionChart({ 
   investment,
   isOpen,
   onClose
 }: InvestmentEvolutionChartProps) {
   const isCompoundGrowth = COMPOUND_GROWTH_CATEGORIES.includes(investment.category);
+  
+  // Seed determinística baseada no ID do investimento para consistência
+  const seed = useMemo(() => {
+    let hash = 0;
+    const str = investment.id;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return hash;
+  }, [investment.id]);
   
   const chartData = useMemo(() => {
     if (isCompoundGrowth) {
@@ -224,8 +303,13 @@ export function InvestmentEvolutionChart({
         investment.interestRate
       );
     }
-    return generateEvolutionData(investment.investedAmount, investment.currentValue, investment.purchaseDate);
-  }, [investment.investedAmount, investment.currentValue, investment.purchaseDate, investment.interestRate, isCompoundGrowth]);
+    return generateEvolutionData(
+      investment.investedAmount, 
+      investment.currentValue, 
+      investment.purchaseDate,
+      seed
+    );
+  }, [investment.investedAmount, investment.currentValue, investment.purchaseDate, investment.interestRate, isCompoundGrowth, seed]);
 
   const totalProfit = investment.currentValue - investment.investedAmount;
   const totalProfitPercent = investment.investedAmount > 0 ? (totalProfit / investment.investedAmount) * 100 : 0;
@@ -233,18 +317,17 @@ export function InvestmentEvolutionChart({
   const isCrypto = investment.category === 'crypto';
   const currency = isCrypto ? 'USD' : 'BRL';
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = useCallback((value: number) => {
     if (currency === 'USD') {
       return `$ ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  }, [currency]);
 
-  const formatPercent = (value: number) => 
-    `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+  const formatPercent = useCallback((value: number) => 
+    `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`, []);
 
-  // Calcula período do investimento
-  const getPeriodText = () => {
+  const getPeriodText = useCallback(() => {
     if (!investment.purchaseDate) return 'Período estimado';
     const start = new Date(investment.purchaseDate);
     const now = new Date();
@@ -261,23 +344,21 @@ export function InvestmentEvolutionChart({
       return `${years} ano${years > 1 ? 's' : ''}${months > 0 ? ` e ${months} mês${months > 1 ? 'es' : ''}` : ''}`;
     }
     return `${months} mês${months !== 1 ? 'es' : ''}`;
-  };
+  }, [investment.purchaseDate]);
 
-  // Calcula domínio do Y - para mostrar curva exponencial, começa do zero ou valor menor
-  const minValue = Math.min(...chartData.map(d => d.value));
-  const maxValue = Math.max(...chartData.map(d => d.value));
-  const valueRange = maxValue - minValue;
-  
-  // Para mostrar a curvatura real de juros compostos, o eixo Y deve começar de 0
-  // ou de um valor que represente ~70% do valor inicial para dar perspectiva
-  const yMin = isCompoundGrowth 
-    ? Math.max(0, minValue * 0.7) // Começa em 70% do valor inicial para mostrar curvatura
-    : Math.floor(minValue - valueRange * 0.1);
-  
-  const yDomain = [
-    yMin,
-    Math.ceil(maxValue + valueRange * 0.05)
-  ];
+  const yDomain = useMemo((): [number, number] => {
+    const minValue = Math.min(...chartData.map(d => d.value));
+    const maxValue = Math.max(...chartData.map(d => d.value));
+    const valueRange = maxValue - minValue;
+    
+    const yMin = isCompoundGrowth 
+      ? Math.max(0, minValue * 0.7)
+      : Math.floor(minValue - valueRange * 0.1);
+    
+    return [yMin, Math.ceil(maxValue + valueRange * 0.05)];
+  }, [chartData, isCompoundGrowth]);
+
+  if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -322,59 +403,12 @@ export function InvestmentEvolutionChart({
 
           {/* Gráfico de Evolução */}
           <div className="w-full h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
-                <defs>
-                  <linearGradient id="evolutionGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop 
-                      offset="0%" 
-                      stopColor={isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'} 
-                      stopOpacity={0.4}
-                    />
-                    <stop 
-                      offset="100%" 
-                      stopColor={isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'} 
-                      stopOpacity={0.05}
-                    />
-                  </linearGradient>
-                </defs>
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                  axisLine={false}
-                  tickLine={false}
-                  interval="preserveStartEnd"
-                />
-                <YAxis 
-                  domain={yDomain}
-                  hide 
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                  }}
-                  formatter={(value: number, name: string) => {
-                    if (name === 'value') return [formatCurrency(value), 'Valor'];
-                    if (name === 'profit') return [formatCurrency(value), 'Lucro/Prejuízo'];
-                    if (name === 'profitPercent') return [`${value}%`, 'Rentabilidade'];
-                    return [value, name];
-                  }}
-                  labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={isPositive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'}
-                  strokeWidth={2.5}
-                  fill="url(#evolutionGradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <EvolutionAreaChart 
+              chartData={chartData}
+              isPositive={isPositive}
+              yDomain={yDomain}
+              formatCurrency={formatCurrency}
+            />
           </div>
 
           {/* Info Cards */}
