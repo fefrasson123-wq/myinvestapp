@@ -157,17 +157,32 @@ export function PersonalGoal({ currentPortfolioValue, transactions = [], classNa
       return { monthlyRate: 0, monthsToGoal: null, estimatedDate: null };
     }
 
-    // Calculate total invested in the period
-    const totalInvested = recentBuys.reduce((sum, tx) => sum + tx.total, 0);
-    
-    // Calculate the period in months
-    const oldestTx = recentBuys.reduce((oldest, tx) => {
-      const txDate = new Date(tx.date);
-      return txDate < oldest ? txDate : oldest;
-    }, new Date(recentBuys[0].date));
-    
-    const monthsSpan = Math.max(1, (now.getTime() - oldestTx.getTime()) / (1000 * 60 * 60 * 24 * 30));
-    const monthlyRate = totalInvested / monthsSpan;
+    // Calculate total invested in the period (robust against bad/legacy data)
+    const investedValues = recentBuys
+      .map(tx => Number(tx.total))
+      .filter(v => Number.isFinite(v) && v > 0);
+
+    if (investedValues.length === 0) {
+      return { monthlyRate: 0, monthsToGoal: null, estimatedDate: null };
+    }
+
+    const totalInvested = investedValues.reduce((sum, v) => sum + v, 0);
+
+    // Use distinct months in the last 12 months to avoid inflated rates when there's only 1 recent transaction
+    const monthsCount = Math.min(
+      12,
+      Math.max(
+        1,
+        new Set(
+          recentBuys.map(tx => {
+            const d = new Date(tx.date);
+            return `${d.getFullYear()}-${d.getMonth()}`;
+          })
+        ).size
+      )
+    );
+
+    const monthlyRate = totalInvested / monthsCount;
     
     // Calculate months to reach goal
     const remaining = targetToUse - currentPortfolioValue;
