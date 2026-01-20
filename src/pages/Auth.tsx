@@ -258,8 +258,8 @@ export default function Auth() {
 
         {/* Main Content */}
         <main className="flex-1 flex items-center justify-center p-4">
-          <div className="w-full max-w-md">
-            <div className="bg-card border border-border rounded-xl shadow-2xl p-6 sm:p-8 animate-scale-in">
+          <div className="w-full max-w-md lg:max-w-2xl">
+            <div className="bg-card border border-border rounded-xl shadow-2xl p-6 sm:p-8 lg:p-10 animate-scale-in">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-card-foreground mb-2">
                   {mode === 'login' && 'Bem-vindo de volta!'}
