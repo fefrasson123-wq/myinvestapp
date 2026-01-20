@@ -1,6 +1,6 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Investment, InvestmentCategory, categoryLabels, categoryColors } from '@/types/investment';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Investment, InvestmentCategory, categoryColors, categoryLabels } from '@/types/investment';
+import { TrendingDown, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
 
@@ -29,24 +29,28 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
   const { rate: usdToBrl } = useUsdBrlRate();
 
   const categoryInvestments = investments
-    .filter(inv => inv.category === category)
+    .filter((inv) => inv.category === category)
     .sort((a, b) => b.profitLoss - a.profitLoss);
-  
-  // Calcula o valor de cada investimento considerando a conversão USD/BRL para crypto
-  const investmentsWithValues = categoryInvestments.map(inv => {
+
+  const investmentsWithValues = categoryInvestments.map((inv) => {
     const isCrypto = inv.category === 'crypto';
-    const value = isCrypto ? inv.currentValue * usdToBrl : inv.currentValue;
-    return { ...inv, calculatedValue: value };
+    const calculatedValue = isCrypto ? inv.currentValue * usdToBrl : inv.currentValue;
+    return { ...inv, calculatedValue };
   });
-  
+
   const totalValue = investmentsWithValues.reduce((acc, inv) => acc + inv.calculatedValue, 0);
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div 
+            <div
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: categoryColors[category] }}
             />
@@ -56,27 +60,23 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
             Detalhes dos ativos na categoria {categoryLabels[category]}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="p-4 rounded-lg bg-secondary/30">
             <p className="text-sm text-muted-foreground">Valor Total na Categoria</p>
-            <p className="text-2xl font-mono font-bold text-primary">
-              {formatCurrency(totalValue)}
-            </p>
+            <p className="text-2xl font-mono font-bold text-primary">{formatCurrency(totalValue)}</p>
           </div>
-          
+
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">
-              Ativos ({categoryInvestments.length})
-            </h4>
-            
+            <h4 className="text-sm font-medium text-muted-foreground">Ativos ({categoryInvestments.length})</h4>
+
             <div className="space-y-2 max-h-[300px] overflow-y-auto">
               {investmentsWithValues.map((inv, index) => {
                 const isPositive = inv.profitLoss >= 0;
                 const percentOfCategory = totalValue > 0 ? (inv.calculatedValue / totalValue) * 100 : 0;
-                
+
                 return (
-                  <div 
+                  <div
                     key={inv.id}
                     className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 animate-smooth-appear"
                     style={{ animationDelay: `${index * 50}ms` }}
@@ -87,27 +87,23 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
                         {inv.ticker && (
                           <span className="ml-1 text-primary text-sm font-mono">({inv.ticker})</span>
                         )}
-                        <span className="ml-2 text-sm font-mono text-card-foreground">
-                          {percentOfCategory.toFixed(1)}%
-                        </span>
+                        <span className="ml-2 text-sm font-mono text-card-foreground">{percentOfCategory.toFixed(1)}%</span>
                       </p>
+
                       <div className="flex items-center gap-1">
                         {isPositive ? (
                           <TrendingUp className="w-3 h-3 text-success" />
                         ) : (
                           <TrendingDown className="w-3 h-3 text-destructive" />
                         )}
-                        <span className={cn(
-                          "text-xs font-mono",
-                          isPositive ? "text-success" : "text-destructive"
-                        )}>
-                          {isPositive ? '+' : ''}{formatPercent(inv.profitLossPercent)}
+                        <span className={cn('text-xs font-mono', isPositive ? 'text-success' : 'text-destructive')}>
+                          {isPositive ? '+' : ''}
+                          {formatPercent(inv.profitLossPercent)}
                         </span>
                       </div>
                     </div>
-                    <p className="font-mono font-medium text-card-foreground">
-                      {formatCurrency(inv.calculatedValue)}
-                    </p>
+
+                    <p className="font-mono font-medium text-card-foreground">{formatCurrency(inv.calculatedValue)}</p>
                   </div>
                 );
               })}
