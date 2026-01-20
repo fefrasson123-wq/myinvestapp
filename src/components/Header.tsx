@@ -4,13 +4,15 @@ import { UserMenu } from '@/components/UserMenu';
 import { useNavigate } from 'react-router-dom';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { PersonalGoal } from '@/components/PersonalGoal';
+import { Transaction } from '@/types/investment';
 
 interface HeaderProps {
   onAddClick: () => void;
   currentPortfolioValue?: number;
+  transactions?: Transaction[];
 }
 
-export function Header({ onAddClick, currentPortfolioValue = 0 }: HeaderProps) {
+export function Header({ onAddClick, currentPortfolioValue = 0, transactions = [] }: HeaderProps) {
   const navigate = useNavigate();
   const { showValues, toggleValuesVisibility } = useValuesVisibility();
 
@@ -39,7 +41,7 @@ export function Header({ onAddClick, currentPortfolioValue = 0 }: HeaderProps) {
           
           {/* Personal Goal - Desktop: between logo and eye icon */}
           <div className="hidden md:flex flex-1 justify-center px-4">
-            <PersonalGoal currentPortfolioValue={currentPortfolioValue} />
+            <PersonalGoal currentPortfolioValue={currentPortfolioValue} transactions={transactions} />
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3">
