@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Target, Check, Trash2, TrendingUp, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,8 +48,26 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
   const { showValues } = useValuesVisibility();
   const { toast } = useToast();
   const [targetAmount, setTargetAmount] = useState('');
+  const [debouncedTargetAmount, setDebouncedTargetAmount] = useState('');
   const [goalName, setGoalName] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounce targetAmount changes to prevent heavy recalculations on every keystroke
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      setDebouncedTargetAmount(targetAmount);
+    }, 300);
+    
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [targetAmount]);
 
   const formatCurrency = (value: number) => {
     if (!showValues) return '•••••';
@@ -137,8 +155,9 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
   };
 
   // Calculate average monthly contribution rate and annual return from transactions
+  // Use debounced value for heavy calculations to prevent blocking input
   const projectionData = useMemo(() => {
-    const inputTargetAmount = parsePtBrNumber(targetAmount);
+    const inputTargetAmount = parsePtBrNumber(debouncedTargetAmount);
     const targetToUse = inputTargetAmount > 0 ? inputTargetAmount : (goal?.target_amount || 0);
     
     if (targetToUse <= 0 || currentPortfolioValue <= 0) {
@@ -240,11 +259,11 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
     const estimatedDate = new Date(now.getTime() + months * 30 * 24 * 60 * 60 * 1000);
     
     return { monthlyRate, annualReturnRate, monthsToGoal: months, estimatedDate };
-  }, [transactions, targetAmount, goal, currentPortfolioValue, totalInvestedAmount]);
+  }, [transactions, debouncedTargetAmount, goal, currentPortfolioValue, totalInvestedAmount]);
 
   // Generate chart data for goal progression with two projection lines
   const chartData = useMemo(() => {
-    const inputTargetAmount = parsePtBrNumber(targetAmount);
+    const inputTargetAmount = parsePtBrNumber(debouncedTargetAmount);
     const targetToUse = inputTargetAmount > 0 ? inputTargetAmount : (goal?.target_amount || 0);
     
     if (targetToUse <= 0 || currentPortfolioValue <= 0) return [];
@@ -330,7 +349,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
     }
 
     return data;
-  }, [targetAmount, goal, currentPortfolioValue, projectionData]);
+  }, [debouncedTargetAmount, goal, currentPortfolioValue, projectionData]);
 
   if (isLoading) {
     return (
