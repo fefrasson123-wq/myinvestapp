@@ -47,9 +47,21 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
     });
   };
 
+  const parsePtBrNumber = (value: string) => {
+    // Accepts: "200", "200,50", "200.000", "200.000,50"
+    const cleaned = value
+      .replace(/\s/g, '')
+      .replace(/R\$/gi, '')
+      .replace(/\./g, '')
+      .replace(',', '.');
+
+    const parsed = Number(cleaned);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
   const handleSave = async () => {
-    const amount = parseFloat(targetAmount.replace(/\D/g, '')) / 100;
-    if (isNaN(amount) || amount <= 0) {
+    const amount = parsePtBrNumber(targetAmount);
+    if (!amount || amount <= 0) {
       toast({
         variant: 'destructive',
         title: 'Valor inválido',
@@ -69,7 +81,6 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
         description: `Sua meta de ${formatCurrency(amount)} foi salva.`,
       });
       setIsDialogOpen(false);
-      setIsDialogOpen(false);
     }
   };
 
@@ -83,18 +94,7 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '');
-    const numericValue = parseInt(value) / 100;
-    if (!isNaN(numericValue)) {
-      setTargetAmount(
-        numericValue.toLocaleString('pt-BR', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-      );
-    } else {
-      setTargetAmount('');
-    }
+    setTargetAmount(e.target.value);
   };
 
   const openEditDialog = () => {
@@ -206,7 +206,7 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
           {/* Current Progress Preview */}
           {targetAmount && (() => {
             // Calculate preview values from the INPUT, not the saved goal
-            const inputTargetAmount = parseFloat(targetAmount.replace(/\./g, '').replace(',', '.')) || 0;
+            const inputTargetAmount = parsePtBrNumber(targetAmount);
             const previewProgress = inputTargetAmount > 0
               ? Math.min((currentPortfolioValue / inputTargetAmount) * 100, 100)
               : 0;
