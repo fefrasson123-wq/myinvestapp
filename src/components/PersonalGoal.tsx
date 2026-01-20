@@ -242,35 +242,95 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
     return { monthlyRate, annualReturnRate, monthsToGoal: months, estimatedDate };
   }, [transactions, targetAmount, goal, currentPortfolioValue, totalInvestedAmount]);
 
-  // Generate chart data for goal progression
+  // Generate chart data for goal progression with two projection lines
   const chartData = useMemo(() => {
     const inputTargetAmount = parsePtBrNumber(targetAmount);
     const targetToUse = inputTargetAmount > 0 ? inputTargetAmount : (goal?.target_amount || 0);
     
     if (targetToUse <= 0 || currentPortfolioValue <= 0) return [];
 
+    const { monthlyRate, annualReturnRate } = projectionData;
+    
+    // If no monthly rate, just show current progress
+    if (monthlyRate <= 0) {
+      return [
+        { name: 'Início', current: 0, onlyContributions: 0, withReturns: 0 },
+        { name: 'Hoje', current: currentPortfolioValue, onlyContributions: currentPortfolioValue, withReturns: currentPortfolioValue },
+      ];
+    }
+
+    const monthlyReturnRate = Math.pow(1 + annualReturnRate, 1/12) - 1;
+    
+    // Calculate months needed for each scenario
+    let monthsOnlyContributions = 0;
+    let monthsWithReturns = 0;
+    let valueOnlyContributions = currentPortfolioValue;
+    let valueWithReturns = currentPortfolioValue;
+    const maxMonths = 600;
+    
+    // Calculate for only contributions (no returns)
+    while (valueOnlyContributions < targetToUse && monthsOnlyContributions < maxMonths) {
+      valueOnlyContributions += monthlyRate;
+      monthsOnlyContributions++;
+    }
+    
+    // Calculate with contributions + returns
+    while (valueWithReturns < targetToUse && monthsWithReturns < maxMonths) {
+      valueWithReturns = valueWithReturns * (1 + monthlyReturnRate) + monthlyRate;
+      monthsWithReturns++;
+    }
+    
+    // Determine the longest timeline to show
+    const maxMonthsToShow = Math.min(Math.max(monthsOnlyContributions, monthsWithReturns) + 3, maxMonths);
+    
+    // Generate data points at regular intervals
+    const numPoints = Math.min(12, maxMonthsToShow); // Max 12 points for readability
+    const interval = Math.max(1, Math.floor(maxMonthsToShow / numPoints));
+    
     const data = [];
-    const startValue = 0;
-    const currentValue = currentPortfolioValue;
-    const goalValue = targetToUse;
     
-    // Create points: Start -> Current -> Goal
-    // Show progression from 0 to current, then projected to goal
-    const progressPercent = Math.min((currentValue / goalValue) * 100, 100);
+    // Starting point
+    data.push({
+      name: 'Hoje',
+      current: currentPortfolioValue,
+      onlyContributions: currentPortfolioValue,
+      withReturns: currentPortfolioValue,
+    });
     
-    // Historical/current portion (filled area)
-    data.push({ name: 'Início', value: startValue, projected: startValue });
-    data.push({ name: 'Hoje', value: currentValue, projected: currentValue });
-    
-    // Projected portion (if not yet at goal)
-    if (currentValue < goalValue) {
-      data.push({ name: 'Meta', value: currentValue, projected: goalValue });
-    } else {
-      data.push({ name: 'Meta ✓', value: goalValue, projected: goalValue });
+    // Generate projection points
+    for (let month = interval; month <= maxMonthsToShow; month += interval) {
+      const projectedOnlyContributions = Math.min(
+        currentPortfolioValue + (monthlyRate * month),
+        targetToUse * 1.1 // Cap slightly above goal for visual purposes
+      );
+      
+      // Compound growth calculation
+      let projectedWithReturns = currentPortfolioValue;
+      for (let m = 0; m < month; m++) {
+        projectedWithReturns = projectedWithReturns * (1 + monthlyReturnRate) + monthlyRate;
+      }
+      projectedWithReturns = Math.min(projectedWithReturns, targetToUse * 1.1);
+      
+      // Format month label
+      let label = '';
+      if (month < 12) {
+        label = `${month}m`;
+      } else {
+        const years = Math.floor(month / 12);
+        const remainingMonths = month % 12;
+        label = remainingMonths > 0 ? `${years}a${remainingMonths}m` : `${years}a`;
+      }
+      
+      data.push({
+        name: label,
+        current: null, // Only show current value at "Hoje"
+        onlyContributions: projectedOnlyContributions,
+        withReturns: projectedWithReturns,
+      });
     }
 
     return data;
-  }, [targetAmount, goal, currentPortfolioValue]);
+  }, [targetAmount, goal, currentPortfolioValue, projectionData]);
 
   if (isLoading) {
     return (
@@ -411,24 +471,24 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
           {targetToUse > 0 && chartData.length > 0 && (
             <div className="bg-secondary/30 rounded-lg p-4">
               <h4 className="text-sm font-medium text-card-foreground mb-3">
-                Evolução até a Meta
+                Projeção: Aportes vs Aportes + Rentabilidade
               </h4>
-              <div className="h-[160px]">
+              <div className="h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorProjected" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.2}/>
+                      <linearGradient id="colorOnlyContributions" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.3}/>
                         <stop offset="95%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorWithReturns" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--profit))" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="hsl(var(--profit))" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <XAxis 
                       dataKey="name" 
-                      tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                       axisLine={{ stroke: 'hsl(var(--border))' }}
                       tickLine={false}
                     />
@@ -440,7 +500,15 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                       width={45}
                     />
                     <Tooltip 
-                      formatter={(value: number) => [formatCurrency(value), '']}
+                      formatter={(value: number, name: string) => {
+                        if (value === null) return [null, null];
+                        const label = name === 'onlyContributions' 
+                          ? 'Só aportes' 
+                          : name === 'withReturns' 
+                            ? 'Aportes + Juros' 
+                            : 'Atual';
+                        return [formatCurrency(value), label];
+                      }}
                       contentStyle={{
                         backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
@@ -451,31 +519,66 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                     />
                     <ReferenceLine 
                       y={targetToUse} 
-                      stroke="hsl(var(--profit))" 
+                      stroke="hsl(var(--primary))" 
                       strokeDasharray="5 5"
                       strokeWidth={2}
+                      label={{ 
+                        value: 'Meta', 
+                        position: 'right', 
+                        fill: 'hsl(var(--primary))', 
+                        fontSize: 10 
+                      }}
                     />
+                    {/* Only contributions line (slower growth) */}
                     <Area
                       type="monotone"
-                      dataKey="projected"
+                      dataKey="onlyContributions"
                       stroke="hsl(var(--muted-foreground))"
-                      strokeDasharray="5 5"
-                      fill="url(#colorProjected)"
-                      strokeWidth={1.5}
+                      fill="url(#colorOnlyContributions)"
+                      strokeWidth={2}
+                      strokeDasharray="4 4"
+                      dot={false}
+                      connectNulls
                     />
+                    {/* With returns line (faster growth - compound interest) */}
                     <Area
                       type="monotone"
-                      dataKey="value"
+                      dataKey="withReturns"
+                      stroke="hsl(var(--profit))"
+                      fill="url(#colorWithReturns)"
+                      strokeWidth={2.5}
+                      dot={false}
+                      connectNulls
+                    />
+                    {/* Current value point */}
+                    <Area
+                      type="monotone"
+                      dataKey="current"
                       stroke="hsl(var(--primary))"
-                      fill="url(#colorValue)"
-                      strokeWidth={2}
+                      fill="hsl(var(--primary))"
+                      strokeWidth={0}
+                      dot={{ r: 5, fill: 'hsl(var(--primary))' }}
+                      connectNulls={false}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
-            </div>
-              <p className="text-xs text-muted-foreground mt-2 text-center">
-                Linha tracejada verde = sua meta
-              </p>
+              </div>
+              
+              {/* Legend */}
+              <div className="flex flex-wrap justify-center gap-4 mt-3 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-0.5 bg-muted-foreground" style={{ borderStyle: 'dashed', borderWidth: '1px 0 0 0' }} />
+                  <span className="text-muted-foreground">Só aportes</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-0.5 bg-profit rounded" />
+                  <span className="text-muted-foreground">Aportes + Juros</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-0.5 bg-primary" style={{ borderStyle: 'dashed', borderWidth: '1px 0 0 0' }} />
+                  <span className="text-muted-foreground">Meta</span>
+                </div>
+              </div>
 
               {/* Projection Info */}
               {projectionData.monthlyRate > 0 && (
@@ -501,7 +604,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                   {projectionData.monthsToGoal !== null && projectionData.monthsToGoal > 0 && projectionData.estimatedDate && (
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="w-4 h-4 text-profit" />
-                      <span className="text-muted-foreground">Previsão para atingir:</span>
+                      <span className="text-muted-foreground">Com juros compostos:</span>
                       <span className="font-medium text-profit">
                         {projectionData.estimatedDate.toLocaleDateString('pt-BR', { 
                           month: 'long', 
