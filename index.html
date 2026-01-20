@@ -37,7 +37,47 @@
     <style>
       body { margin: 0; background-color: #0a0a0a; }
       #root { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-      .initial-loader { color: #8b5cf6; font-family: system-ui, -apple-system, sans-serif; }
+      .initial-loader { 
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      }
+      .chart-arrow {
+        width: 64px;
+        height: 64px;
+        animation: pulse-glow 1.5s ease-in-out infinite;
+      }
+      .chart-arrow path {
+        stroke: #22c55e;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+      }
+      .chart-line {
+        stroke-dasharray: 100;
+        stroke-dashoffset: 100;
+        animation: draw-line 1s ease-out forwards, glow-line 1.5s ease-in-out infinite 1s;
+      }
+      .arrow-head {
+        opacity: 0;
+        animation: fade-arrow 0.3s ease-out 0.8s forwards, glow-line 1.5s ease-in-out infinite 1s;
+      }
+      @keyframes draw-line {
+        to { stroke-dashoffset: 0; }
+      }
+      @keyframes fade-arrow {
+        to { opacity: 1; }
+      }
+      @keyframes pulse-glow {
+        0%, 100% { filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.6)); }
+        50% { filter: drop-shadow(0 0 20px rgba(34, 197, 94, 0.9)); }
+      }
+      @keyframes glow-line {
+        0%, 100% { stroke: #22c55e; }
+        50% { stroke: #4ade80; }
+      }
     </style>
     <meta property="og:title" content="My Invest">
   <meta name="twitter:title" content="My Invest">
@@ -47,7 +87,17 @@
 </head>
 
   <body>
-    <div id="root"><div class="initial-loader">Carregando...</div></div>
+    <div id="root">
+      <div class="initial-loader">
+        <svg class="chart-arrow" viewBox="0 0 64 64">
+          <!-- Linha do gráfico subindo -->
+          <path class="chart-line" d="M8 52 L24 40 L36 44 L52 16" />
+          <!-- Seta apontando para cima -->
+          <path class="arrow-head" d="M46 12 L52 16 L48 22" />
+          <path class="arrow-head" d="M52 16 L52 8" />
+        </svg>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
