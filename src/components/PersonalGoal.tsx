@@ -256,37 +256,27 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
     // If no monthly rate, just show current progress
     if (monthlyRate <= 0) {
       return [
-        { name: 'Início', current: 0, onlyContributions: 0, withReturns: 0 },
-        { name: 'Hoje', current: currentPortfolioValue, onlyContributions: currentPortfolioValue, withReturns: currentPortfolioValue },
+        { name: 'Hoje', patrimonio: currentPortfolioValue, meta: targetToUse },
       ];
     }
 
     const monthlyReturnRate = Math.pow(1 + annualReturnRate, 1/12) - 1;
     
-    // Calculate months needed for each scenario
-    let monthsOnlyContributions = 0;
-    let monthsWithReturns = 0;
-    let valueOnlyContributions = currentPortfolioValue;
-    let valueWithReturns = currentPortfolioValue;
+    // Calculate months needed to reach goal with compound returns
+    let monthsToGoal = 0;
+    let projectedValue = currentPortfolioValue;
     const maxMonths = 600;
     
-    // Calculate for only contributions (no returns)
-    while (valueOnlyContributions < targetToUse && monthsOnlyContributions < maxMonths) {
-      valueOnlyContributions += monthlyRate;
-      monthsOnlyContributions++;
+    while (projectedValue < targetToUse && monthsToGoal < maxMonths) {
+      projectedValue = projectedValue * (1 + monthlyReturnRate) + monthlyRate;
+      monthsToGoal++;
     }
     
-    // Calculate with contributions + returns
-    while (valueWithReturns < targetToUse && monthsWithReturns < maxMonths) {
-      valueWithReturns = valueWithReturns * (1 + monthlyReturnRate) + monthlyRate;
-      monthsWithReturns++;
-    }
-    
-    // Determine the longest timeline to show
-    const maxMonthsToShow = Math.min(Math.max(monthsOnlyContributions, monthsWithReturns) + 3, maxMonths);
+    // Determine timeline to show (add a bit more to show reaching the goal)
+    const maxMonthsToShow = Math.min(monthsToGoal + 2, maxMonths);
     
     // Generate data points at regular intervals
-    const numPoints = Math.min(12, maxMonthsToShow); // Max 12 points for readability
+    const numPoints = Math.min(10, maxMonthsToShow);
     const interval = Math.max(1, Math.floor(maxMonthsToShow / numPoints));
     
     const data = [];
@@ -294,24 +284,17 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
     // Starting point
     data.push({
       name: 'Hoje',
-      current: currentPortfolioValue,
-      onlyContributions: currentPortfolioValue,
-      withReturns: currentPortfolioValue,
+      patrimonio: currentPortfolioValue,
+      meta: targetToUse,
     });
     
     // Generate projection points
     for (let month = interval; month <= maxMonthsToShow; month += interval) {
-      const projectedOnlyContributions = Math.min(
-        currentPortfolioValue + (monthlyRate * month),
-        targetToUse * 1.1 // Cap slightly above goal for visual purposes
-      );
-      
       // Compound growth calculation
       let projectedWithReturns = currentPortfolioValue;
       for (let m = 0; m < month; m++) {
         projectedWithReturns = projectedWithReturns * (1 + monthlyReturnRate) + monthlyRate;
       }
-      projectedWithReturns = Math.min(projectedWithReturns, targetToUse * 1.1);
       
       // Format month label
       let label = '';
@@ -325,9 +308,8 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
       
       data.push({
         name: label,
-        current: null, // Only show current value at "Hoje"
-        onlyContributions: projectedOnlyContributions,
-        withReturns: projectedWithReturns,
+        patrimonio: projectedWithReturns,
+        meta: targetToUse,
       });
     }
 
@@ -498,11 +480,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="colorOnlyContributions" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorWithReturns" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="colorPatrimonio" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="hsl(var(--profit))" stopOpacity={0.4}/>
                         <stop offset="95%" stopColor="hsl(var(--profit))" stopOpacity={0}/>
                       </linearGradient>
@@ -519,15 +497,12 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                       axisLine={false}
                       tickLine={false}
                       width={45}
+                      domain={[0, (dataMax: number) => Math.max(dataMax, targetToUse) * 1.1]}
                     />
                     <Tooltip 
                       formatter={(value: number, name: string) => {
                         if (value === null) return [null, null];
-                        const label = name === 'onlyContributions' 
-                          ? 'Só aportes' 
-                          : name === 'withReturns' 
-                            ? 'Aportes + Juros' 
-                            : 'Atual';
+                        const label = name === 'patrimonio' ? 'Patrimônio' : 'Meta';
                         return [formatCurrency(value), label];
                       }}
                       contentStyle={{
@@ -538,48 +513,29 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                       }}
                       labelStyle={{ color: 'hsl(var(--card-foreground))' }}
                     />
+                    {/* Meta line - horizontal reference */}
                     <ReferenceLine 
                       y={targetToUse} 
                       stroke="hsl(var(--primary))" 
                       strokeDasharray="5 5"
                       strokeWidth={2}
                       label={{ 
-                        value: 'Meta', 
-                        position: 'right', 
+                        value: `Meta: ${formatCompact(targetToUse)}`, 
+                        position: 'insideTopRight', 
                         fill: 'hsl(var(--primary))', 
-                        fontSize: 10 
+                        fontSize: 11,
+                        fontWeight: 600
                       }}
                     />
-                    {/* Only contributions line (slower growth) */}
+                    {/* Patrimônio projection line */}
                     <Area
                       type="monotone"
-                      dataKey="onlyContributions"
-                      stroke="hsl(var(--muted-foreground))"
-                      fill="url(#colorOnlyContributions)"
-                      strokeWidth={2}
-                      strokeDasharray="4 4"
-                      dot={false}
-                      connectNulls
-                    />
-                    {/* With returns line (faster growth - compound interest) */}
-                    <Area
-                      type="monotone"
-                      dataKey="withReturns"
+                      dataKey="patrimonio"
                       stroke="hsl(var(--profit))"
-                      fill="url(#colorWithReturns)"
+                      fill="url(#colorPatrimonio)"
                       strokeWidth={2.5}
-                      dot={false}
-                      connectNulls
-                    />
-                    {/* Current value point */}
-                    <Area
-                      type="monotone"
-                      dataKey="current"
-                      stroke="hsl(var(--primary))"
-                      fill="hsl(var(--primary))"
-                      strokeWidth={0}
-                      dot={{ r: 5, fill: 'hsl(var(--primary))' }}
-                      connectNulls={false}
+                      dot={{ r: 4, fill: 'hsl(var(--profit))', strokeWidth: 0 }}
+                      activeDot={{ r: 6, fill: 'hsl(var(--profit))', strokeWidth: 2, stroke: 'hsl(var(--card))' }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -588,12 +544,8 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
               {/* Legend */}
               <div className="flex flex-wrap justify-center gap-6 mt-4 pt-3 border-t border-border/30">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-0.5 bg-muted-foreground rounded" style={{ borderStyle: 'dashed', borderWidth: '2px 0 0 0' }} />
-                  <span className="text-xs text-muted-foreground">Só aportes</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-1 bg-success rounded glow-primary" />
-                  <span className="text-xs text-muted-foreground">Com rentabilidade</span>
+                  <div className="w-6 h-1 bg-success rounded" />
+                  <span className="text-xs text-muted-foreground">Patrimônio Projetado</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-0.5 bg-primary rounded" style={{ borderStyle: 'dashed', borderWidth: '2px 0 0 0' }} />
