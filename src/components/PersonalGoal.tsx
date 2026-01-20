@@ -207,26 +207,35 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
           </div>
 
           {/* Current Progress Preview */}
-          {targetAmount && (
-            <div className="bg-secondary/30 rounded-lg p-4 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Patrimônio Atual</span>
-                <span className="font-medium text-card-foreground">
-                  {formatCurrency(currentPortfolioValue)}
-                </span>
+          {targetAmount && (() => {
+            // Calculate preview values from the INPUT, not the saved goal
+            const inputTargetAmount = parseFloat(targetAmount.replace(/\./g, '').replace(',', '.')) || 0;
+            const previewProgress = inputTargetAmount > 0
+              ? Math.min((currentPortfolioValue / inputTargetAmount) * 100, 100)
+              : 0;
+            const previewRemaining = inputTargetAmount - currentPortfolioValue;
+
+            return (
+              <div className="bg-secondary/30 rounded-lg p-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Patrimônio Atual</span>
+                  <span className="font-medium text-card-foreground">
+                    {formatCurrency(currentPortfolioValue)}
+                  </span>
+                </div>
+                <Progress value={previewProgress} className="h-2" />
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Falta para a meta</span>
+                  <span className={cn(
+                    "font-medium",
+                    previewRemaining <= 0 ? "text-profit" : "text-card-foreground"
+                  )}>
+                    {previewRemaining <= 0 ? 'Meta atingida! 🎉' : formatCurrency(previewRemaining)}
+                  </span>
+                </div>
               </div>
-              <Progress value={progress} className="h-2" />
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Falta para a meta</span>
-                <span className={cn(
-                  "font-medium",
-                  remaining <= 0 ? "text-profit" : "text-card-foreground"
-                )}>
-                  {remaining <= 0 ? 'Meta atingida! 🎉' : formatCurrency(remaining)}
-                </span>
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         <div className="flex justify-between gap-2">
