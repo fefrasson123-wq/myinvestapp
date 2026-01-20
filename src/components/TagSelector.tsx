@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,9 +15,9 @@ interface TagSelectorProps {
   onTagChange: (tag: InvestmentTag | null) => void;
 }
 
-export function TagSelector({ currentTag, onTagChange }: TagSelectorProps) {
+export const TagSelector = memo(function TagSelector({ currentTag, onTagChange }: TagSelectorProps) {
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -61,4 +62,4 @@ export function TagSelector({ currentTag, onTagChange }: TagSelectorProps) {
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+});

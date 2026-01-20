@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, memo, useCallback } from 'react';
 import { Trash2, Edit, TrendingUp, TrendingDown, DollarSign, BarChart3, LineChart, Building2 } from 'lucide-react';
 import { Investment, categoryLabels, categoryColors } from '@/types/investment';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ interface InvestmentListProps {
   onTagChange?: (investmentId: string, tag: InvestmentTag | null) => void;
 }
 
-export function InvestmentList({ investments, onEdit, onDelete, onSell, investmentTags = {}, onTagChange }: InvestmentListProps) {
+function InvestmentListComponent({ investments, onEdit, onDelete, onSell, investmentTags = {}, onTagChange }: InvestmentListProps) {
   const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
   const [evolutionInvestment, setEvolutionInvestment] = useState<Investment | null>(null);
   const [realEstateChartInvestment, setRealEstateChartInvestment] = useState<Investment | null>(null);
@@ -346,3 +346,5 @@ export function InvestmentList({ investments, onEdit, onDelete, onSell, investme
     </>
   );
 }
+
+export const InvestmentList = memo(InvestmentListComponent);
