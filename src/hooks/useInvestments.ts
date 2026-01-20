@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Investment, InvestmentCategory } from '@/types/investment';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +11,10 @@ export function useInvestments() {
   const { rate: usdToBrl } = useUsdBrlRate();
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Use ref to avoid stale closure issues in callbacks
+  const investmentsRef = useRef<Investment[]>(investments);
+  investmentsRef.current = investments;
 
   // Load from Supabase or localStorage
   useEffect(() => {
@@ -136,22 +140,23 @@ export function useInvestments() {
 
   // Encontra investimento existente pelo ticker ou nome
   const findExistingInvestment = useCallback((data: { ticker?: string; name: string; category: InvestmentCategory }) => {
+    const currentInvestments = investmentsRef.current;
     // Para ativos com ticker, busca pelo ticker
     if (data.ticker) {
-      return investments.find(inv => 
+      return currentInvestments.find(inv => 
         inv.ticker?.toLowerCase() === data.ticker?.toLowerCase() && 
         inv.category === data.category
       );
     }
     // Para outros ativos, busca pelo nome exato e categoria
-    return investments.find(inv => 
+    return currentInvestments.find(inv => 
       inv.name.toLowerCase() === data.name.toLowerCase() && 
       inv.category === data.category
     );
-  }, [investments]);
+  }, []);
 
   const updateInvestment = useCallback(async (id: string, data: Partial<Omit<Investment, 'id' | 'createdAt' | 'updatedAt'>>) => {
-    const investment = investments.find(inv => inv.id === id);
+    const investment = investmentsRef.current.find(inv => inv.id === id);
     if (!investment) return;
 
     const updatedInv = { ...investment, ...data };
@@ -217,7 +222,7 @@ export function useInvestments() {
       saveToStorage(updated);
       return updated;
     });
-  }, [user, investments, saveToStorage]);
+  }, [user, saveToStorage]);
 
   const addInvestment = useCallback(async (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
     const isFixedIncome = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(data.category);
@@ -245,7 +250,7 @@ export function useInvestments() {
       });
       
       // Retorna o investimento atualizado
-      return investments.find(inv => inv.id === existingInvestment.id) || existingInvestment;
+      return investmentsRef.current.find(inv => inv.id === existingInvestment.id) || existingInvestment;
     }
 
     // Se não existe, cria um novo investimento
@@ -339,11 +344,11 @@ export function useInvestments() {
 
       return newInvestment;
     }
-  }, [user, saveToStorage, findExistingInvestment, updateInvestment, investments]);
+  }, [user, saveToStorage, findExistingInvestment, updateInvestment]);
 
   const deleteInvestment = useCallback(async (id: string): Promise<Investment | null> => {
     // Find the investment before deleting
-    const deletedInvestment = investments.find(inv => inv.id === id);
+    const deletedInvestment = investmentsRef.current.find(inv => inv.id === id);
     if (!deletedInvestment) return null;
 
     // Remove from local state immediately for instant UI feedback
@@ -423,7 +428,7 @@ export function useInvestments() {
     }
 
     return deletedInvestment;
-  }, [user, investments]);
+  }, [user]);
 
   const restoreInvestment = useCallback(async (investment: Investment): Promise<boolean> => {
     if (user) {
