@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Target, Check, Trash2, TrendingUp, Calendar } from 'lucide-react';
+import { Target, Check, Trash2, TrendingUp, Calendar, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -410,12 +411,22 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
         </button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <button 
+          onClick={() => setIsDialogOpen(false)}
+          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Fechar</span>
+        </button>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Target className="w-5 h-5 text-primary" />
             {goal ? 'Editar Meta' : 'Definir Meta Pessoal'}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Configure sua meta pessoal de patrimônio
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
