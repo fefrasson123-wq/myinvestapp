@@ -30,10 +30,13 @@ const ResultsArea = lazy(() => import('@/components/ResultsArea').then(m => ({ d
 const TransactionHistory = lazy(() => import('@/components/TransactionHistory').then(m => ({ default: m.TransactionHistory })));
 const InvestmentsByTag = lazy(() => import('@/components/InvestmentsByTag').then(m => ({ default: m.InvestmentsByTag })));
 
-// Loading fallback component
+// Loading fallback component - matches app loader
 const LoadingFallback = () => (
   <div className="flex items-center justify-center p-8">
-    <div className="text-primary animate-pulse">Carregando...</div>
+    <svg className="w-8 h-8 animate-pulse" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0 0 6px hsl(var(--primary) / 0.6))' }}>
+      <path d="M3 17L9 11L13 15L21 7" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M15 7H21V13" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
   </div>
 );
 
@@ -429,7 +432,10 @@ const Index = () => {
   if (isLoading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-primary animate-pulse text-glow">Carregando...</div>
+        <svg className="w-12 h-12 animate-pulse" viewBox="0 0 24 24" fill="none" style={{ filter: 'drop-shadow(0 0 8px hsl(var(--primary) / 0.6))' }}>
+          <path d="M3 17L9 11L13 15L21 7" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M15 7H21V13" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
       </div>
     );
   }
