@@ -7,7 +7,6 @@ export interface PersonalGoal {
   user_id: string;
   name: string;
   target_amount: number;
-  current_amount: number;
   deadline: string | null;
   created_at: string;
   updated_at: string;
@@ -35,7 +34,20 @@ export function usePersonalGoal() {
         .maybeSingle();
 
       if (error) throw error;
-      setGoal(data);
+      
+      if (data) {
+        setGoal({
+          id: data.id,
+          user_id: data.user_id,
+          name: data.name,
+          target_amount: Number(data.target_amount),
+          deadline: data.deadline,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+        });
+      } else {
+        setGoal(null);
+      }
     } catch (error) {
       console.error('Error fetching goal:', error);
     } finally {
@@ -69,8 +81,18 @@ export function usePersonalGoal() {
           .single();
 
         if (error) throw error;
-        setGoal(updated);
-        return updated;
+        
+        const mappedGoal: PersonalGoal = {
+          id: updated.id,
+          user_id: updated.user_id,
+          name: updated.name,
+          target_amount: Number(updated.target_amount),
+          deadline: updated.deadline,
+          created_at: updated.created_at,
+          updated_at: updated.updated_at,
+        };
+        setGoal(mappedGoal);
+        return mappedGoal;
       } else {
         // Create new goal
         const { data: created, error } = await supabase
@@ -86,32 +108,24 @@ export function usePersonalGoal() {
           .single();
 
         if (error) throw error;
-        setGoal(created);
-        return created;
+        
+        const mappedGoal: PersonalGoal = {
+          id: created.id,
+          user_id: created.user_id,
+          name: created.name,
+          target_amount: Number(created.target_amount),
+          deadline: created.deadline,
+          created_at: created.created_at,
+          updated_at: created.updated_at,
+        };
+        setGoal(mappedGoal);
+        return mappedGoal;
       }
     } catch (error) {
       console.error('Error saving goal:', error);
       return null;
     }
   }, [user, goal]);
-
-  const updateCurrentAmount = useCallback(async (amount: number) => {
-    if (!goal) return;
-
-    try {
-      const { data: updated, error } = await supabase
-        .from('personal_goals')
-        .update({ current_amount: amount })
-        .eq('id', goal.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      setGoal(updated);
-    } catch (error) {
-      console.error('Error updating current amount:', error);
-    }
-  }, [goal]);
 
   const deleteGoal = useCallback(async () => {
     if (!goal) return;
@@ -133,7 +147,6 @@ export function usePersonalGoal() {
     goal,
     isLoading,
     saveGoal,
-    updateCurrentAmount,
     deleteGoal,
     refetch: fetchGoal,
   };

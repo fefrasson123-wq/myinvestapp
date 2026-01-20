@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Target, Edit2, Check, X, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Target, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
@@ -32,20 +32,12 @@ interface PersonalGoalProps {
 }
 
 export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalProps) {
-  const { goal, isLoading, saveGoal, updateCurrentAmount, deleteGoal } = usePersonalGoal();
+  const { goal, isLoading, saveGoal, deleteGoal } = usePersonalGoal();
   const { showValues } = useValuesVisibility();
   const { toast } = useToast();
-  const [isEditing, setIsEditing] = useState(false);
   const [targetAmount, setTargetAmount] = useState('');
   const [goalName, setGoalName] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  // Sync current portfolio value with goal
-  useEffect(() => {
-    if (goal && currentPortfolioValue !== goal.current_amount) {
-      updateCurrentAmount(currentPortfolioValue);
-    }
-  }, [goal, currentPortfolioValue, updateCurrentAmount]);
 
   const formatCurrency = (value: number) => {
     if (!showValues) return '•••••';
@@ -76,7 +68,7 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
         title: goal ? 'Meta atualizada' : 'Meta criada',
         description: `Sua meta de ${formatCurrency(amount)} foi salva.`,
       });
-      setIsEditing(false);
+      setIsDialogOpen(false);
       setIsDialogOpen(false);
     }
   };
@@ -118,7 +110,6 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
       setGoalName('');
       setTargetAmount('');
     }
-    setIsEditing(true);
     setIsDialogOpen(true);
   };
 
