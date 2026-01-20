@@ -143,7 +143,13 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground hidden sm:inline">{goal.name}:</span>
               <span className="text-sm font-medium text-card-foreground">
-                {showValues ? `${progress.toFixed(0)}%` : '•••'}
+                {!showValues
+                  ? '•••'
+                  : progress < 0.1
+                    ? '<0,1%'
+                    : progress < 1
+                      ? `${progress.toFixed(1).replace('.', ',')}%`
+                      : `${progress.toFixed(0)}%`}
               </span>
               <div className="hidden sm:block w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
