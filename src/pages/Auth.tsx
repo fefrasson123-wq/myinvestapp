@@ -18,7 +18,7 @@ const loginSchema = z.object({
 const signupSchema = z.object({
   username: z.string().min(3, 'Nome de usuário deve ter pelo menos 3 caracteres').max(50),
   email: z.string().email('E-mail inválido'),
-  whatsapp: z.string().min(10, 'WhatsApp deve ter pelo menos 10 dígitos').max(15, 'WhatsApp deve ter no máximo 15 dígitos').regex(/^[0-9]+$/, 'WhatsApp deve conter apenas números'),
+  whatsapp: z.string().min(10, 'Celular deve ter pelo menos 10 dígitos').max(15, 'Celular deve ter no máximo 15 dígitos').regex(/^[0-9]+$/, 'Celular deve conter apenas números'),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -31,6 +31,15 @@ const resetPasswordSchema = z.object({
 });
 
 type AuthMode = 'login' | 'signup' | 'forgot-password';
+
+// Format phone number with mask: (11) 99999-9999
+const formatPhoneDisplay = (value: string): string => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length === 0) return '';
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+};
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -340,16 +349,16 @@ export default function Auth() {
                     <div className="space-y-2">
                       <Label htmlFor="whatsapp" className="flex items-center gap-2">
                         <Phone className="w-4 h-4 text-muted-foreground" />
-                        WhatsApp
+                        Celular
                       </Label>
                       <Input
                         id="whatsapp"
                         type="tel"
-                        placeholder="11999999999"
-                        value={whatsapp}
+                        placeholder="(11) 99999-9999"
+                        value={formatPhoneDisplay(whatsapp)}
                         onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ''))}
                         className={errors.whatsapp ? 'border-destructive' : ''}
-                        maxLength={15}
+                        maxLength={16}
                       />
                       {errors.whatsapp && (
                         <p className="text-xs text-destructive">{errors.whatsapp}</p>
