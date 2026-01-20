@@ -5,6 +5,7 @@ import { LayoutDashboard, PlusCircle, History } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { PortfolioStats } from '@/components/PortfolioStats';
 import { PriceUpdateIndicator } from '@/components/PriceUpdateIndicator';
+import { PersonalGoal } from '@/components/PersonalGoal';
 import { useInvestments } from '@/hooks/useInvestments';
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
@@ -443,7 +444,7 @@ const Index = () => {
       </Helmet>
 
       <div className="min-h-screen w-full bg-background overflow-x-hidden">
-        <Header onAddClick={handleAddClick} />
+        <Header onAddClick={handleAddClick} currentPortfolioValue={getTotalValue()} />
 
         {/* Navigation Tabs Placeholder - maintains layout when nav becomes fixed */}
         <div ref={navPlaceholderRef} className={isNavSticky ? "h-[49px]" : "h-0"} />
@@ -503,6 +504,11 @@ const Index = () => {
         <main className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6">
           {activeTab === 'dashboard' && (
             <div className="animate-smooth-appear">
+              {/* Personal Goal - Mobile only (above price update) */}
+              <div className="md:hidden mb-4">
+                <PersonalGoal currentPortfolioValue={getTotalValue()} className="w-full justify-center" />
+              </div>
+
               {/* Price Update Indicator */}
               <div className="mb-4">
                 <PriceUpdateIndicator
