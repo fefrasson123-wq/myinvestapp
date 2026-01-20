@@ -38,11 +38,12 @@ import { Transaction } from '@/types/investment';
 
 interface PersonalGoalProps {
   currentPortfolioValue: number;
+  totalInvestedAmount: number;
   transactions?: Transaction[];
   className?: string;
 }
 
-export function PersonalGoal({ currentPortfolioValue, transactions = [], className }: PersonalGoalProps) {
+export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, transactions = [], className }: PersonalGoalProps) {
   const { goal, isLoading, saveGoal, deleteGoal } = usePersonalGoal();
   const { showValues } = useValuesVisibility();
   const { toast } = useToast();
@@ -135,13 +136,39 @@ export function PersonalGoal({ currentPortfolioValue, transactions = [], classNa
     setIsDialogOpen(true);
   };
 
-  // Calculate average monthly contribution rate from transactions
+  // Calculate average monthly contribution rate and annual return from transactions
   const projectionData = useMemo(() => {
     const inputTargetAmount = parsePtBrNumber(targetAmount);
     const targetToUse = inputTargetAmount > 0 ? inputTargetAmount : (goal?.target_amount || 0);
     
     if (targetToUse <= 0 || currentPortfolioValue <= 0) {
-      return { monthlyRate: 0, monthsToGoal: null, estimatedDate: null };
+      return { monthlyRate: 0, annualReturnRate: 0, monthsToGoal: null, estimatedDate: null };
+    }
+
+    // Calculate annual return rate from portfolio performance
+    // (currentValue - totalInvested) / totalInvested = total return
+    // Then annualize based on how long the user has been investing
+    let annualReturnRate = 0;
+    
+    if (totalInvestedAmount > 0 && currentPortfolioValue > totalInvestedAmount) {
+      const totalReturn = (currentPortfolioValue - totalInvestedAmount) / totalInvestedAmount;
+      
+      // Find the oldest transaction to calculate investment period
+      const sortedTx = [...transactions].sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      
+      if (sortedTx.length > 0) {
+        const oldestDate = new Date(sortedTx[0].date);
+        const now = new Date();
+        const yearsInvesting = Math.max(0.5, (now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24 * 365));
+        
+        // Annualized return: (1 + totalReturn)^(1/years) - 1
+        annualReturnRate = Math.pow(1 + totalReturn, 1 / yearsInvesting) - 1;
+        
+        // Cap at reasonable bounds (0% to 50% annual)
+        annualReturnRate = Math.max(0, Math.min(0.5, annualReturnRate));
+      }
     }
 
     // Filter only buy transactions in the last 12 months
@@ -154,7 +181,7 @@ export function PersonalGoal({ currentPortfolioValue, transactions = [], classNa
     });
 
     if (recentBuys.length === 0) {
-      return { monthlyRate: 0, monthsToGoal: null, estimatedDate: null };
+      return { monthlyRate: 0, annualReturnRate, monthsToGoal: null, estimatedDate: null };
     }
 
     // Calculate total invested in the period (robust against bad/legacy data)
@@ -163,7 +190,7 @@ export function PersonalGoal({ currentPortfolioValue, transactions = [], classNa
       .filter(v => Number.isFinite(v) && v > 0);
 
     if (investedValues.length === 0) {
-      return { monthlyRate: 0, monthsToGoal: null, estimatedDate: null };
+      return { monthlyRate: 0, annualReturnRate, monthsToGoal: null, estimatedDate: null };
     }
 
     const totalInvested = investedValues.reduce((sum, v) => sum + v, 0);
@@ -184,17 +211,36 @@ export function PersonalGoal({ currentPortfolioValue, transactions = [], classNa
 
     const monthlyRate = totalInvested / monthsCount;
     
-    // Calculate months to reach goal
+    // Calculate months to reach goal considering compound returns
     const remaining = targetToUse - currentPortfolioValue;
     if (remaining <= 0) {
-      return { monthlyRate, monthsToGoal: 0, estimatedDate: now };
+      return { monthlyRate, annualReturnRate, monthsToGoal: 0, estimatedDate: now };
     }
     
-    const monthsToGoal = remaining / monthlyRate;
-    const estimatedDate = new Date(now.getTime() + monthsToGoal * 30 * 24 * 60 * 60 * 1000);
+    // Monthly return rate from annual
+    const monthlyReturnRate = Math.pow(1 + annualReturnRate, 1/12) - 1;
     
-    return { monthlyRate, monthsToGoal, estimatedDate };
-  }, [transactions, targetAmount, goal, currentPortfolioValue]);
+    // Simulate month by month to find when goal is reached
+    // Formula: FV = PV * (1 + r)^n + PMT * ((1 + r)^n - 1) / r
+    // We solve iteratively since it's cleaner
+    let projectedValue = currentPortfolioValue;
+    let months = 0;
+    const maxMonths = 600; // 50 years cap
+    
+    while (projectedValue < targetToUse && months < maxMonths) {
+      // Apply monthly return to current value
+      projectedValue = projectedValue * (1 + monthlyReturnRate) + monthlyRate;
+      months++;
+    }
+    
+    if (months >= maxMonths) {
+      return { monthlyRate, annualReturnRate, monthsToGoal: null, estimatedDate: null };
+    }
+    
+    const estimatedDate = new Date(now.getTime() + months * 30 * 24 * 60 * 60 * 1000);
+    
+    return { monthlyRate, annualReturnRate, monthsToGoal: months, estimatedDate };
+  }, [transactions, targetAmount, goal, currentPortfolioValue, totalInvestedAmount]);
 
   // Generate chart data for goal progression
   const chartData = useMemo(() => {
@@ -441,6 +487,16 @@ export function PersonalGoal({ currentPortfolioValue, transactions = [], classNa
                       {formatCurrency(projectionData.monthlyRate)}
                     </span>
                   </div>
+                  
+                  {projectionData.annualReturnRate > 0 && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <TrendingUp className="w-4 h-4 text-profit" />
+                      <span className="text-muted-foreground">Rentabilidade anual:</span>
+                      <span className="font-medium text-profit">
+                        +{(projectionData.annualReturnRate * 100).toFixed(1).replace('.', ',')}% a.a.
+                      </span>
+                    </div>
+                  )}
                   
                   {projectionData.monthsToGoal !== null && projectionData.monthsToGoal > 0 && projectionData.estimatedDate && (
                     <div className="flex items-center gap-2 text-sm">

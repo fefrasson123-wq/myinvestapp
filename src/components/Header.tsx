@@ -9,10 +9,11 @@ import { Transaction } from '@/types/investment';
 interface HeaderProps {
   onAddClick: () => void;
   currentPortfolioValue?: number;
+  totalInvestedAmount?: number;
   transactions?: Transaction[];
 }
 
-export function Header({ onAddClick, currentPortfolioValue = 0, transactions = [] }: HeaderProps) {
+export function Header({ onAddClick, currentPortfolioValue = 0, totalInvestedAmount = 0, transactions = [] }: HeaderProps) {
   const navigate = useNavigate();
   const { showValues, toggleValuesVisibility } = useValuesVisibility();
 
@@ -41,7 +42,7 @@ export function Header({ onAddClick, currentPortfolioValue = 0, transactions = [
           
           {/* Personal Goal - Desktop: between logo and eye icon */}
           <div className="hidden md:flex flex-1 justify-center px-4">
-            <PersonalGoal currentPortfolioValue={currentPortfolioValue} transactions={transactions} />
+            <PersonalGoal currentPortfolioValue={currentPortfolioValue} totalInvestedAmount={totalInvestedAmount} transactions={transactions} />
           </div>
           
           <div className="flex items-center gap-2 sm:gap-3">
