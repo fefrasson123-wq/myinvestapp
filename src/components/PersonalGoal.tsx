@@ -375,7 +375,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
   const previewRemaining = targetToUse - currentPortfolioValue;
 
   return (
-    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen} modal={false}>
       <DialogTrigger asChild>
         <button
           onClick={openEditDialog}
