@@ -51,11 +51,17 @@ export function CategoryChart({ categoryTotals, investments }: CategoryChartProp
     );
   };
 
-  const handlePieClick = (data: any, index: number) => {
-    // Recharts passa o objeto de dados diretamente com a propriedade payload
-    const category = data?.category || data?.payload?.category;
+  const handlePieClick = (slice: any, index: number, e?: any) => {
+    // Evita que o click seja interpretado como "click outside" por overlays/portais
+    e?.stopPropagation?.();
+
+    // Recharts pode passar o objeto direto ou dentro de payload
+    const category: InvestmentCategory | undefined = slice?.category || slice?.payload?.category;
     if (category) {
+      console.log('[CategoryChart] click slice', { category, index });
       setSelectedCategory(category);
+    } else {
+      console.log('[CategoryChart] click slice (no category)', { slice, index });
     }
   };
 
@@ -85,7 +91,7 @@ export function CategoryChart({ categoryTotals, investments }: CategoryChartProp
                     <Cell
                       key={`cell-${index}`}
                       fill={entry.color}
-                      onClick={() => setSelectedCategory(entry.category)}
+                      onMouseDown={(e) => handlePieClick(entry, index, e)}
                       style={{
                         filter: isSelected 
                           ? 'drop-shadow(0 0 12px ' + entry.color + ') brightness(1.2)'
