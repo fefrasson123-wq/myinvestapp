@@ -623,7 +623,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                   {projectionData.monthsToGoal !== null && projectionData.monthsToGoal > 0 && projectionData.estimatedDate && (
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="w-4 h-4 text-profit" />
-                      <span className="text-muted-foreground">Com juros compostos:</span>
+                      <span className="text-muted-foreground">Previsão:</span>
                       <span className="font-medium text-profit">
                         {projectionData.estimatedDate.toLocaleDateString('pt-BR', { 
                           month: 'long', 
