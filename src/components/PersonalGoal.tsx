@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Target, Check, Trash2, TrendingUp, Calendar, X } from 'lucide-react';
+import { Target, Check, Trash2, TrendingUp, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
@@ -191,45 +191,27 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
       }
     }
 
-    // Filter only buy transactions in the last 12 months
+    // Filter only buy transactions to count distinct months of investment
     const now = new Date();
-    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
     
-    const recentBuys = transactions.filter(tx => {
-      const txDate = new Date(tx.date);
-      return tx.type === 'buy' && txDate >= oneYearAgo && txDate <= now;
-    });
+    const buyTransactions = transactions.filter(tx => tx.type === 'buy');
 
-    if (recentBuys.length === 0) {
+    if (buyTransactions.length === 0) {
       return { monthlyRate: 0, annualReturnRate, monthsToGoal: null, estimatedDate: null };
     }
 
-    // Calculate total invested in the period (robust against bad/legacy data)
-    const investedValues = recentBuys
-      .map(tx => Number(tx.total))
-      .filter(v => Number.isFinite(v) && v > 0);
+    // Count distinct months where user made investments (all time, not just last 12 months)
+    const distinctMonths = new Set(
+      buyTransactions.map(tx => {
+        const d = new Date(tx.date);
+        return `${d.getFullYear()}-${d.getMonth()}`;
+      })
+    ).size;
 
-    if (investedValues.length === 0) {
-      return { monthlyRate: 0, annualReturnRate, monthsToGoal: null, estimatedDate: null };
-    }
+    const monthsCount = Math.max(1, distinctMonths);
 
-    const totalInvested = investedValues.reduce((sum, v) => sum + v, 0);
-
-    // Use distinct months in the last 12 months to avoid inflated rates when there's only 1 recent transaction
-    const monthsCount = Math.min(
-      12,
-      Math.max(
-        1,
-        new Set(
-          recentBuys.map(tx => {
-            const d = new Date(tx.date);
-            return `${d.getFullYear()}-${d.getMonth()}`;
-          })
-        ).size
-      )
-    );
-
-    const monthlyRate = totalInvested / monthsCount;
+    // Monthly rate = total invested amount / number of distinct months with investments
+    const monthlyRate = totalInvestedAmount / monthsCount;
     
     // Calculate months to reach goal considering compound returns
     const remaining = targetToUse - currentPortfolioValue;
@@ -412,13 +394,6 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto glass-card border-primary/30 shadow-xl shadow-primary/10">
-        <button 
-          onClick={() => setIsDialogOpen(false)}
-          className="absolute right-4 top-4 p-1.5 rounded-lg bg-secondary/50 hover:bg-secondary transition-all duration-200 hover:scale-105"
-        >
-          <X className="h-4 w-4 text-muted-foreground" />
-          <span className="sr-only">Fechar</span>
-        </button>
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-3 text-lg">
             <div className="p-2 rounded-lg bg-primary/20 glow-primary">
