@@ -79,17 +79,25 @@ export function CategoryChart({ categoryTotals, investments }: CategoryChartProp
                 onClick={handlePieClick}
                 style={{ cursor: 'pointer' }}
               >
-                {data.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={entry.color}
-                    onClick={() => setSelectedCategory(entry.category)}
-                    style={{
-                      filter: 'drop-shadow(0 0 8px ' + entry.color + ')',
-                      cursor: 'pointer',
-                    }}
-                  />
-                ))}
+                {data.map((entry, index) => {
+                  const isSelected = selectedCategory === entry.category;
+                  return (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.color}
+                      onClick={() => setSelectedCategory(entry.category)}
+                      style={{
+                        filter: isSelected 
+                          ? 'drop-shadow(0 0 12px ' + entry.color + ') brightness(1.2)'
+                          : 'drop-shadow(0 0 8px ' + entry.color + ')',
+                        cursor: 'pointer',
+                        transform: isSelected ? 'scale(1.05)' : 'scale(1)',
+                        transformOrigin: 'center',
+                        transition: 'transform 0.2s ease-out, filter 0.2s ease-out',
+                      }}
+                    />
+                  );
+                })}
               </Pie>
               <Tooltip
                 content={<CustomTooltip />}
