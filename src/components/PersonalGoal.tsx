@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Target, Check, Trash2 } from 'lucide-react';
+import { Target, Check, Trash2, TrendingUp, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
@@ -34,13 +34,15 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
+import { Transaction } from '@/types/investment';
 
 interface PersonalGoalProps {
   currentPortfolioValue: number;
+  transactions?: Transaction[];
   className?: string;
 }
 
-export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalProps) {
+export function PersonalGoal({ currentPortfolioValue, transactions = [], className }: PersonalGoalProps) {
   const { goal, isLoading, saveGoal, deleteGoal } = usePersonalGoal();
   const { showValues } = useValuesVisibility();
   const { toast } = useToast();
@@ -132,6 +134,52 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
     }
     setIsDialogOpen(true);
   };
+
+  // Calculate average monthly contribution rate from transactions
+  const projectionData = useMemo(() => {
+    const inputTargetAmount = parsePtBrNumber(targetAmount);
+    const targetToUse = inputTargetAmount > 0 ? inputTargetAmount : (goal?.target_amount || 0);
+    
+    if (targetToUse <= 0 || currentPortfolioValue <= 0) {
+      return { monthlyRate: 0, monthsToGoal: null, estimatedDate: null };
+    }
+
+    // Filter only buy transactions in the last 12 months
+    const now = new Date();
+    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    
+    const recentBuys = transactions.filter(tx => {
+      const txDate = new Date(tx.date);
+      return tx.type === 'buy' && txDate >= oneYearAgo && txDate <= now;
+    });
+
+    if (recentBuys.length === 0) {
+      return { monthlyRate: 0, monthsToGoal: null, estimatedDate: null };
+    }
+
+    // Calculate total invested in the period
+    const totalInvested = recentBuys.reduce((sum, tx) => sum + tx.total, 0);
+    
+    // Calculate the period in months
+    const oldestTx = recentBuys.reduce((oldest, tx) => {
+      const txDate = new Date(tx.date);
+      return txDate < oldest ? txDate : oldest;
+    }, new Date(recentBuys[0].date));
+    
+    const monthsSpan = Math.max(1, (now.getTime() - oldestTx.getTime()) / (1000 * 60 * 60 * 24 * 30));
+    const monthlyRate = totalInvested / monthsSpan;
+    
+    // Calculate months to reach goal
+    const remaining = targetToUse - currentPortfolioValue;
+    if (remaining <= 0) {
+      return { monthlyRate, monthsToGoal: 0, estimatedDate: now };
+    }
+    
+    const monthsToGoal = remaining / monthlyRate;
+    const estimatedDate = new Date(now.getTime() + monthsToGoal * 30 * 24 * 60 * 60 * 1000);
+    
+    return { monthlyRate, monthsToGoal, estimatedDate };
+  }, [transactions, targetAmount, goal, currentPortfolioValue]);
 
   // Generate chart data for goal progression
   const chartData = useMemo(() => {
@@ -363,10 +411,53 @@ export function PersonalGoal({ currentPortfolioValue, className }: PersonalGoalP
                     />
                   </AreaChart>
                 </ResponsiveContainer>
-              </div>
+            </div>
               <p className="text-xs text-muted-foreground mt-2 text-center">
                 Linha tracejada verde = sua meta
               </p>
+
+              {/* Projection Info */}
+              {projectionData.monthlyRate > 0 && (
+                <div className="mt-4 pt-3 border-t border-border/50 space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <TrendingUp className="w-4 h-4 text-primary" />
+                    <span className="text-muted-foreground">Aporte médio mensal:</span>
+                    <span className="font-medium text-card-foreground">
+                      {formatCurrency(projectionData.monthlyRate)}
+                    </span>
+                  </div>
+                  
+                  {projectionData.monthsToGoal !== null && projectionData.monthsToGoal > 0 && projectionData.estimatedDate && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-profit" />
+                      <span className="text-muted-foreground">Previsão para atingir:</span>
+                      <span className="font-medium text-profit">
+                        {projectionData.estimatedDate.toLocaleDateString('pt-BR', { 
+                          month: 'long', 
+                          year: 'numeric' 
+                        })}
+                        {' '}
+                        <span className="text-muted-foreground font-normal">
+                          (~{Math.ceil(projectionData.monthsToGoal)} {Math.ceil(projectionData.monthsToGoal) === 1 ? 'mês' : 'meses'})
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  
+                  {projectionData.monthsToGoal === 0 && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-profit" />
+                      <span className="font-medium text-profit">🎉 Meta já atingida!</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {projectionData.monthlyRate === 0 && previewRemaining > 0 && (
+                <p className="text-xs text-muted-foreground mt-3 text-center italic">
+                  Sem aportes recentes para calcular projeção
+                </p>
+              )}
             </div>
           )}
         </div>
