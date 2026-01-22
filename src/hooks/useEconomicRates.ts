@@ -8,7 +8,7 @@ interface EconomicRates {
   lastUpdated: Date;
 }
 
-const RATES_STORAGE_KEY = 'economic-rates-v3';
+const RATES_STORAGE_KEY = 'economic-rates-v4';
 const CACHE_DURATION = 1 * 60 * 60 * 1000; // 1 hora
 
 // Taxas aproximadas atuais (fallback)
@@ -34,7 +34,7 @@ async function fetchIbovespa12mReturn(): Promise<number | null> {
         body: JSON.stringify({
           action: 'historical',
           symbols: ['^BVSP'],
-          market: 'br',
+          market: 'usa', // Usar 'usa' para índices globais (não adiciona .SA)
           range: '1y'
         }),
       }
@@ -43,11 +43,13 @@ async function fetchIbovespa12mReturn(): Promise<number | null> {
     if (!response.ok) return null;
     
     const data = await response.json();
-    const prices = data['^BVSP'] || data['BVSP'];
+    // A resposta vem em data.history[symbol]
+    const prices = data.history?.['^BVSP'] || data.history?.['BVSP'];
     
     if (prices && prices.length >= 2) {
       const firstPrice = prices[0].price;
       const lastPrice = prices[prices.length - 1].price;
+      console.log(`IBOVESPA 12m: ${firstPrice} -> ${lastPrice} = ${((lastPrice - firstPrice) / firstPrice) * 100}%`);
       return ((lastPrice - firstPrice) / firstPrice) * 100;
     }
     return null;
@@ -80,11 +82,13 @@ async function fetchSP50012mReturn(): Promise<number | null> {
     if (!response.ok) return null;
     
     const data = await response.json();
-    const prices = data['^GSPC'] || data['GSPC'];
+    // A resposta vem em data.history[symbol]
+    const prices = data.history?.['^GSPC'] || data.history?.['GSPC'];
     
     if (prices && prices.length >= 2) {
       const firstPrice = prices[0].price;
       const lastPrice = prices[prices.length - 1].price;
+      console.log(`S&P 500 12m: ${firstPrice} -> ${lastPrice} = ${((lastPrice - firstPrice) / firstPrice) * 100}%`);
       return ((lastPrice - firstPrice) / firstPrice) * 100;
     }
     return null;
