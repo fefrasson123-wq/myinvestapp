@@ -63,7 +63,15 @@ function formatPercent(value: number): string {
   }).format(value / 100);
 }
 
-function calculateBenchmarkReturn(invested: number, purchaseDate: string | undefined, annualRate: number): number {
+// Calcula retorno do benchmark baseado no tipo de taxa
+// CDI: taxa anual composta
+// IBOVESPA, S&P500, IPCA, Bitcoin: retorno acumulado de 12 meses
+function calculateBenchmarkReturn(
+  invested: number, 
+  purchaseDate: string | undefined, 
+  rate: number,
+  isAnnualRate: boolean = false
+): number {
   if (!purchaseDate) return invested;
   
   const start = new Date(purchaseDate);
@@ -72,27 +80,35 @@ function calculateBenchmarkReturn(invested: number, purchaseDate: string | undef
   
   if (years <= 0) return invested;
   
-  return invested * Math.pow(1 + annualRate / 100, years);
+  if (isAnnualRate) {
+    // CDI: taxa anual composta
+    return invested * Math.pow(1 + rate / 100, years);
+  } else {
+    // Retorno de 12 meses: projetar proporcionalmente ao período
+    // Se investiu há 2 anos, o retorno é composto: (1 + rate/100)^years
+    return invested * Math.pow(1 + rate / 100, years);
+  }
 }
 
 export function BenchmarkComparison({ investment, onClose }: BenchmarkComparisonProps) {
   const { rates, isLoading: ratesLoading } = useEconomicRates();
   const { return12m: btcReturn, isLoading: btcLoading } = useBitcoin12MonthReturn();
   
-  // Usar taxas em tempo real - todas são retornos dos últimos 12 meses
+  // Usar taxas em tempo real - todas são retornos dos últimos 12 meses (exceto CDI que é a.a.)
   const benchmarks = [
-    { name: 'CDI', rate: rates.cdi, color: 'hsl(140, 100%, 50%)', label: 'a.a.' },
-    { name: 'IBOVESPA', rate: rates.ibovespa, color: 'hsl(200, 100%, 50%)', label: '12m' },
-    { name: 'IPCA', rate: rates.ipca, color: 'hsl(30, 100%, 50%)', label: '12m' },
-    { name: 'S&P 500', rate: rates.sp500, color: 'hsl(280, 100%, 50%)', label: '12m' },
-    { name: 'Bitcoin', rate: btcReturn ?? 50, color: 'hsl(45, 100%, 50%)', label: '12m' },
+    { name: 'CDI', rate: rates.cdi, color: 'hsl(140, 100%, 50%)', label: 'a.a.', isAnnualRate: true },
+    { name: 'IBOVESPA', rate: rates.ibovespa, color: 'hsl(200, 100%, 50%)', label: '12m', isAnnualRate: false },
+    { name: 'IPCA', rate: rates.ipca, color: 'hsl(30, 100%, 50%)', label: '12m', isAnnualRate: false },
+    { name: 'S&P 500', rate: rates.sp500, color: 'hsl(280, 100%, 50%)', label: '12m', isAnnualRate: false },
+    { name: 'Bitcoin', rate: btcReturn ?? 50, color: 'hsl(45, 100%, 50%)', label: '12m', isAnnualRate: false },
   ];
   
   const benchmarkReturns = benchmarks.map(benchmark => {
     const expectedValue = calculateBenchmarkReturn(
       investment.investedAmount, 
       investment.purchaseDate, 
-      benchmark.rate
+      benchmark.rate,
+      benchmark.isAnnualRate
     );
     const expectedProfit = expectedValue - investment.investedAmount;
     const actualProfit = investment.profitLoss;
