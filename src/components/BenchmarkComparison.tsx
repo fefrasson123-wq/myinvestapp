@@ -99,24 +99,25 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
     (investment.ticker?.toUpperCase() === 'BTC' ||
      investment.name?.toLowerCase().includes('bitcoin'));
   
-  // Categorias de renda fixa que usam CDI
+  // Categorias de renda fixa
   const fixedIncomeCategories = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'];
   const isFixedIncome = fixedIncomeCategories.includes(investment.category);
-  
-  // CDI: verifica tipo, notas e também o nome do investimento
-  const isCDIInvestment = isFixedIncome && 
-    (investment.fixedIncomeType === 'pos' || 
-     investment.fixedIncomeType === 'cdi' ||
-     investment.name?.toLowerCase().includes('cdi') ||
-     investment.notes?.toLowerCase().includes('cdi') || 
-     investment.notes?.toLowerCase().includes('pós-fixado') ||
-     investment.notes?.toLowerCase().includes('pos-fixado'));
   
   // IPCA: verifica tipo, notas e também o nome do investimento
   const isIPCAInvestment = isFixedIncome && 
     (investment.fixedIncomeType === 'ipca' ||
      investment.name?.toLowerCase().includes('ipca') ||
      investment.notes?.toLowerCase().includes('ipca'));
+  
+  // Pré-fixado: verifica tipo e nome
+  const isPreFixedInvestment = isFixedIncome &&
+    (investment.fixedIncomeType === 'pre' ||
+     investment.name?.toLowerCase().includes('pré-fixado') ||
+     investment.name?.toLowerCase().includes('pre-fixado') ||
+     investment.name?.toLowerCase().includes('prefixado'));
+  
+  // CDI: Se é renda fixa e NÃO é IPCA nem Pré-fixado, então é CDI (padrão da maioria)
+  const isCDIInvestment = isFixedIncome && !isIPCAInvestment && !isPreFixedInvestment;
   
   // Usar taxas em tempo real - todas são retornos dos últimos 12 meses (exceto CDI que é a.a.)
   const benchmarks = [
