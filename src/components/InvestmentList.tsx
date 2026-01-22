@@ -212,7 +212,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                         <p className="font-mono text-card-foreground">{formatCurrency(effectiveCurrentPrice, currency)}</p>
                       </div>
                       <div className="w-32">
-                        <span className="text-muted-foreground block">Valor Atual</span>
+                        <span className="text-muted-foreground block">Acumulado Total</span>
                         <p className="font-mono text-primary font-medium">{formatCurrency(effectiveCurrentValue, currency)}</p>
                       </div>
                     </div>
