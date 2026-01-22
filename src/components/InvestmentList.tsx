@@ -26,7 +26,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
   const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
   const [evolutionInvestment, setEvolutionInvestment] = useState<Investment | null>(null);
   const [realEstateChartInvestment, setRealEstateChartInvestment] = useState<Investment | null>(null);
-  const { showValues, formatPercent, formatCurrencyValue, usdBrlRate } = useValuesVisibility();
+  const { showValues, formatPercent, formatCurrencyValue, usdBrlRate, displayCurrency } = useValuesVisibility();
 
   // Live prices (best-effort). If unavailable, we fall back to the stored DB price.
   const stock = useStockPrices();
@@ -213,7 +213,17 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                       </div>
                       <div className="w-32">
                         <span className="text-muted-foreground block">Acumulado Total</span>
-                        <p className="font-mono text-primary font-medium">{formatCurrency(effectiveCurrentValue, currency)}</p>
+                        <p className="font-mono text-primary font-medium">
+                          {isCrypto 
+                            ? formatCurrency(
+                                displayCurrency === 'BRL' 
+                                  ? effectiveCurrentValue * usdBrlRate 
+                                  : effectiveCurrentValue, 
+                                displayCurrency
+                              )
+                            : formatCurrency(effectiveCurrentValue, currency)
+                          }
+                        </p>
                       </div>
                     </div>
                   </div>
