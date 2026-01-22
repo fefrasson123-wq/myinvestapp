@@ -231,8 +231,8 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
                 <div className="text-right">
                   {benchmark.isSameAsInvestment ? (
                     <>
-                      <p className="text-sm font-mono text-muted-foreground">—</p>
-                      <p className="text-sm font-mono text-muted-foreground">Mesmo ativo</p>
+                      <p className="text-lg font-mono text-primary font-medium">———</p>
+                      <p className="text-sm font-mono text-primary">Mesmo ativo</p>
                     </>
                   ) : (
                     <>
