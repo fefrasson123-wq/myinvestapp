@@ -12,8 +12,42 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    
+
+    // Verificar autorização do chamador
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Não autorizado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Criar cliente com o token do usuário para verificar permissões
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    })
+
+    // Verificar se o usuário está autenticado
+    const { data: { user: callerUser }, error: authError } = await supabaseClient.auth.getUser()
+    if (authError || !callerUser) {
+      return new Response(
+        JSON.stringify({ error: 'Não autorizado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Verificar se o usuário é admin
+    const { data: isAdmin, error: adminCheckError } = await supabaseClient.rpc('is_admin')
+    if (adminCheckError || !isAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Acesso negado. Apenas administradores podem alterar roles.' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Criar cliente admin para operações privilegiadas
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -26,6 +60,15 @@ Deno.serve(async (req) => {
     if (!email || !role) {
       return new Response(
         JSON.stringify({ error: 'Email e role são obrigatórios' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Validar role permitida
+    const validRoles = ['admin', 'moderator', 'user']
+    if (!validRoles.includes(role)) {
+      return new Response(
+        JSON.stringify({ error: `Role inválida. Roles permitidas: ${validRoles.join(', ')}` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
