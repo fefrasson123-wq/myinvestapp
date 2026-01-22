@@ -8,7 +8,7 @@ interface EconomicRates {
   lastUpdated: Date;
 }
 
-const RATES_STORAGE_KEY = 'economic-rates-v2';
+const RATES_STORAGE_KEY = 'economic-rates-v3';
 const CACHE_DURATION = 1 * 60 * 60 * 1000; // 1 hora
 
 // Taxas aproximadas atuais (fallback)
@@ -20,30 +20,35 @@ const DEFAULT_RATES: EconomicRates = {
   lastUpdated: new Date(),
 };
 
-// Função para buscar retorno 12 meses do IBOVESPA
+// Função para buscar retorno 12 meses do IBOVESPA via edge function
 async function fetchIbovespa12mReturn(): Promise<number | null> {
   try {
-    // Usar API de cotações via proxy CORS
-    const endDate = Math.floor(Date.now() / 1000);
-    const startDate = endDate - (365 * 24 * 60 * 60); // 12 meses atrás
-    
     const response = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/%5EBVSP?period1=${startDate}&period2=${endDate}&interval=1d`,
-      { headers: { 'Accept': 'application/json' } }
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stock-quotes`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          action: 'historical',
+          symbols: ['^BVSP'],
+          market: 'br',
+          range: '1y'
+        }),
+      }
     );
     
     if (!response.ok) return null;
     
     const data = await response.json();
-    const quotes = data.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+    const prices = data['^BVSP'] || data['BVSP'];
     
-    if (quotes && quotes.length >= 2) {
-      const firstValidPrice = quotes.find((p: number | null) => p !== null);
-      const lastValidPrice = [...quotes].reverse().find((p: number | null) => p !== null);
-      
-      if (firstValidPrice && lastValidPrice) {
-        return ((lastValidPrice - firstValidPrice) / firstValidPrice) * 100;
-      }
+    if (prices && prices.length >= 2) {
+      const firstPrice = prices[0].price;
+      const lastPrice = prices[prices.length - 1].price;
+      return ((lastPrice - firstPrice) / firstPrice) * 100;
     }
     return null;
   } catch (error) {
@@ -52,29 +57,35 @@ async function fetchIbovespa12mReturn(): Promise<number | null> {
   }
 }
 
-// Função para buscar retorno 12 meses do S&P 500
+// Função para buscar retorno 12 meses do S&P 500 via edge function
 async function fetchSP50012mReturn(): Promise<number | null> {
   try {
-    const endDate = Math.floor(Date.now() / 1000);
-    const startDate = endDate - (365 * 24 * 60 * 60);
-    
     const response = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?period1=${startDate}&period2=${endDate}&interval=1d`,
-      { headers: { 'Accept': 'application/json' } }
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stock-quotes`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          action: 'historical',
+          symbols: ['^GSPC'],
+          market: 'usa',
+          range: '1y'
+        }),
+      }
     );
     
     if (!response.ok) return null;
     
     const data = await response.json();
-    const quotes = data.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+    const prices = data['^GSPC'] || data['GSPC'];
     
-    if (quotes && quotes.length >= 2) {
-      const firstValidPrice = quotes.find((p: number | null) => p !== null);
-      const lastValidPrice = [...quotes].reverse().find((p: number | null) => p !== null);
-      
-      if (firstValidPrice && lastValidPrice) {
-        return ((lastValidPrice - firstValidPrice) / firstValidPrice) * 100;
-      }
+    if (prices && prices.length >= 2) {
+      const firstPrice = prices[0].price;
+      const lastPrice = prices[prices.length - 1].price;
+      return ((lastPrice - firstPrice) / firstPrice) * 100;
     }
     return null;
   } catch (error) {
