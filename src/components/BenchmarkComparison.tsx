@@ -94,13 +94,32 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
   const { rates, isLoading: ratesLoading } = useEconomicRates();
   const { return12m: btcReturn, isLoading: btcLoading } = useBitcoin12MonthReturn();
   
+  // Detectar se o investimento é do mesmo tipo que o benchmark
+  const isBitcoinInvestment = investment.category === 'crypto' && 
+    (investment.ticker?.toUpperCase() === 'BTC' ||
+     investment.name?.toLowerCase().includes('bitcoin'));
+  
+  // Categorias de renda fixa que usam CDI
+  const fixedIncomeCategories = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'];
+  const isFixedIncome = fixedIncomeCategories.includes(investment.category);
+  
+  const isCDIInvestment = isFixedIncome && 
+    (investment.fixedIncomeType === 'pos' || 
+     investment.fixedIncomeType === 'cdi' ||
+     investment.notes?.toLowerCase().includes('cdi') || 
+     investment.notes?.toLowerCase().includes('pós-fixado'));
+  
+  const isIPCAInvestment = isFixedIncome && 
+    (investment.fixedIncomeType === 'ipca' ||
+     investment.notes?.toLowerCase().includes('ipca'));
+  
   // Usar taxas em tempo real - todas são retornos dos últimos 12 meses (exceto CDI que é a.a.)
   const benchmarks = [
-    { name: 'CDI', rate: rates.cdi, color: 'hsl(140, 100%, 50%)', label: 'a.a.', isAnnualRate: true },
-    { name: 'IBOVESPA', rate: rates.ibovespa, color: 'hsl(200, 100%, 50%)', label: '12m', isAnnualRate: false },
-    { name: 'IPCA', rate: rates.ipca, color: 'hsl(30, 100%, 50%)', label: '12m', isAnnualRate: false },
-    { name: 'S&P 500', rate: rates.sp500, color: 'hsl(280, 100%, 50%)', label: '12m', isAnnualRate: false },
-    { name: 'Bitcoin', rate: btcReturn ?? 50, color: 'hsl(45, 100%, 50%)', label: '12m', isAnnualRate: false },
+    { name: 'CDI', rate: rates.cdi, color: 'hsl(140, 100%, 50%)', label: 'a.a.', isAnnualRate: true, isSameAsInvestment: isCDIInvestment },
+    { name: 'IBOVESPA', rate: rates.ibovespa, color: 'hsl(200, 100%, 50%)', label: '12m', isAnnualRate: false, isSameAsInvestment: false },
+    { name: 'IPCA', rate: rates.ipca, color: 'hsl(30, 100%, 50%)', label: '12m', isAnnualRate: false, isSameAsInvestment: isIPCAInvestment },
+    { name: 'S&P 500', rate: rates.sp500, color: 'hsl(280, 100%, 50%)', label: '12m', isAnnualRate: false, isSameAsInvestment: false },
+    { name: 'Bitcoin', rate: btcReturn ?? 50, color: 'hsl(45, 100%, 50%)', label: '12m', isAnnualRate: false, isSameAsInvestment: isBitcoinInvestment },
   ];
   
   const benchmarkReturns = benchmarks.map(benchmark => {
@@ -210,22 +229,31 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-mono text-muted-foreground">
-                    Teria: {formatCurrency(benchmark.expectedValue)}
-                  </p>
-                  <div className="flex items-center gap-1 justify-end">
-                    {benchmark.performedBetter ? (
-                      <TrendingUp className="w-3 h-3 text-success" />
-                    ) : (
-                      <TrendingDown className="w-3 h-3 text-destructive" />
-                    )}
-                    <p className={cn(
-                      "text-sm font-mono font-medium",
-                      benchmark.performedBetter ? "text-success" : "text-destructive"
-                    )}>
-                      {benchmark.performedBetter ? 'Superou' : 'Perdeu'} {formatCurrency(Math.abs(benchmark.difference))}
-                    </p>
-                  </div>
+                  {benchmark.isSameAsInvestment ? (
+                    <>
+                      <p className="text-sm font-mono text-muted-foreground">—</p>
+                      <p className="text-sm font-mono text-muted-foreground">Mesmo ativo</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-mono text-muted-foreground">
+                        Teria: {formatCurrency(benchmark.expectedValue)}
+                      </p>
+                      <div className="flex items-center gap-1 justify-end">
+                        {benchmark.performedBetter ? (
+                          <TrendingUp className="w-3 h-3 text-success" />
+                        ) : (
+                          <TrendingDown className="w-3 h-3 text-destructive" />
+                        )}
+                        <p className={cn(
+                          "text-sm font-mono font-medium",
+                          benchmark.performedBetter ? "text-success" : "text-destructive"
+                        )}>
+                          {benchmark.performedBetter ? 'Superou' : 'Perdeu'} {formatCurrency(Math.abs(benchmark.difference))}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
