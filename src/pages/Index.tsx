@@ -230,9 +230,29 @@ const Index = () => {
     total: number;
   }) => {
     requireAuth(() => {
+      // Busca o investimento existente pelo ticker ou nome
+      const existingInvestment = investments.find(inv => {
+        if (data.ticker) {
+          return inv.ticker?.toLowerCase() === data.ticker.toLowerCase() && 
+                 inv.category === data.category;
+        }
+        return inv.name.toLowerCase() === data.name.toLowerCase() && 
+               inv.category === data.category;
+      });
+
+      // Calcula lucro/prejuízo se encontrou investimento
+      let profitLoss: number | undefined;
+      let profitLossPercent: number | undefined;
+      
+      if (existingInvestment) {
+        const costBasis = data.quantity * existingInvestment.averagePrice;
+        profitLoss = data.total - costBasis;
+        profitLossPercent = costBasis > 0 ? (profitLoss / costBasis) * 100 : 0;
+      }
+
       // Registra a transação de venda
       addTransaction({
-        investmentId: '',
+        investmentId: existingInvestment?.id || '',
         investmentName: data.name,
         ticker: data.ticker,
         category: data.category as Investment['category'],
@@ -240,8 +260,24 @@ const Index = () => {
         quantity: data.quantity,
         price: data.price,
         total: data.total,
+        profitLoss,
+        profitLossPercent,
         date: data.date,
       });
+
+      // Atualiza ou remove o investimento existente
+      if (existingInvestment) {
+        const remainingQuantity = existingInvestment.quantity - data.quantity;
+
+        if (remainingQuantity <= 0) {
+          deleteInvestment(existingInvestment.id);
+        } else {
+          updateInvestment(existingInvestment.id, {
+            quantity: remainingQuantity,
+            investedAmount: remainingQuantity * existingInvestment.averagePrice,
+          });
+        }
+      }
 
       toast({
         title: 'Venda registrada',
