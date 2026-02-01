@@ -228,10 +228,10 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                     </div>
                   </div>
 
-                  {/* Lucro/Prejuízo */}
-                  <div className="flex items-center justify-end gap-4 w-full md:w-[260px] flex-shrink-0">
-                    <div className="text-right w-[140px] flex-shrink-0">
-                      <div className="flex items-center gap-1 justify-end">
+                  {/* Lucro/Prejuízo e Ações */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between sm:justify-end gap-3 sm:gap-4 w-full md:w-[260px] flex-shrink-0">
+                    <div className="text-left sm:text-right">
+                      <div className="flex items-center gap-1 justify-start sm:justify-end">
                         {isPositive ? (
                           <TrendingUp className="w-4 h-4 text-success transition-transform group-hover:scale-110" />
                         ) : (
@@ -239,7 +239,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                         )}
                         <span
                           className={cn(
-                            'font-mono font-medium',
+                            'font-mono font-medium text-sm sm:text-base',
                             isPositive ? 'text-success' : 'text-destructive'
                           )}
                         >
@@ -248,7 +248,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                       </div>
                       <span
                         className={cn(
-                          'text-sm font-mono',
+                          'text-xs sm:text-sm font-mono',
                           isPositive ? 'text-success/70' : 'text-destructive/70'
                         )}
                       >
@@ -257,12 +257,12 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                     </div>
 
                     {/* Ações */}
-                    <div className="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity flex-wrap">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setEvolutionInvestment(investment)}
-                        className="hover:text-success hover:bg-success/10 btn-interactive"
+                        className="hover:text-success hover:bg-success/10 btn-interactive h-8 w-8 sm:h-10 sm:w-10"
                         title="Evolução do Investimento"
                       >
                         <LineChart className="w-4 h-4" />
@@ -271,7 +271,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                         variant="ghost"
                         size="icon"
                         onClick={() => setSelectedInvestment(investment)}
-                        className="hover:text-primary hover:bg-primary/10 btn-interactive"
+                        className="hover:text-primary hover:bg-primary/10 btn-interactive h-8 w-8 sm:h-10 sm:w-10"
                         title="Comparar com Benchmarks"
                       >
                         <BarChart3 className="w-4 h-4" />
@@ -286,7 +286,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                         variant="ghost"
                         size="icon"
                         onClick={() => onSell(investment)}
-                        className="hover:text-primary hover:bg-primary/10 btn-interactive"
+                        className="hover:text-primary hover:bg-primary/10 btn-interactive h-8 w-8 sm:h-10 sm:w-10"
                         title="Vender"
                       >
                         <DollarSign className="w-4 h-4" />
@@ -295,7 +295,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                         variant="ghost"
                         size="icon"
                         onClick={() => onEdit(investment)}
-                        className="btn-interactive"
+                        className="btn-interactive h-8 w-8 sm:h-10 sm:w-10"
                         title="Editar"
                       >
                         <Edit className="w-4 h-4" />
@@ -304,7 +304,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                         variant="ghost"
                         size="icon"
                         onClick={() => onDelete(investment.id)}
-                        className="hover:text-destructive hover:bg-destructive/10 btn-interactive"
+                        className="hover:text-destructive hover:bg-destructive/10 btn-interactive h-8 w-8 sm:h-10 sm:w-10"
                         title="Excluir"
                       >
                         <Trash2 className="w-4 h-4" />
