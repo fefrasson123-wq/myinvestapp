@@ -198,22 +198,22 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                       )}
                     </div>
 
-                    <div className="flex gap-4 text-sm">
-                      <div className="w-24 transition-colors">
-                        <span className="text-muted-foreground block">Quantidade</span>
-                        <p className="font-mono text-card-foreground">{formatQuantity(investment.quantity)}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-sm">
+                      <div className="min-w-0">
+                        <span className="text-muted-foreground block text-xs sm:text-sm">Quantidade</span>
+                        <p className="font-mono text-card-foreground truncate">{formatQuantity(investment.quantity)}</p>
                       </div>
-                      <div className="w-32">
-                        <span className="text-muted-foreground block">Preço Médio</span>
-                        <p className="font-mono text-card-foreground">{formatCurrency(investment.averagePrice, currency)}</p>
+                      <div className="min-w-0">
+                        <span className="text-muted-foreground block text-xs sm:text-sm">Preço Médio</span>
+                        <p className="font-mono text-card-foreground truncate">{formatCurrency(investment.averagePrice, currency)}</p>
                       </div>
-                      <div className="w-32">
-                        <span className="text-muted-foreground block">Cotação Atual</span>
-                        <p className="font-mono text-card-foreground">{formatCurrency(effectiveCurrentPrice, currency)}</p>
+                      <div className="min-w-0">
+                        <span className="text-muted-foreground block text-xs sm:text-sm">Cotação Atual</span>
+                        <p className="font-mono text-card-foreground truncate">{formatCurrency(effectiveCurrentPrice, currency)}</p>
                       </div>
-                      <div className="w-32">
-                        <span className="text-muted-foreground block">Acumulado Total</span>
-                        <p className="font-mono text-primary font-medium">
+                      <div className="min-w-0">
+                        <span className="text-muted-foreground block text-xs sm:text-sm">Acumulado Total</span>
+                        <p className="font-mono text-primary font-medium truncate">
                           {isCrypto 
                             ? formatCurrency(
                                 displayCurrency === 'BRL' 
