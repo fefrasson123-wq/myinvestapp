@@ -161,8 +161,14 @@ export function useInvestments() {
 
     const updatedInv = { ...investment, ...data };
     
+    // Recalcula o investedAmount se quantidade ou preço médio mudou
     if (data.quantity !== undefined || data.averagePrice !== undefined) {
       updatedInv.investedAmount = updatedInv.quantity * updatedInv.averagePrice;
+    }
+    
+    // Se investedAmount foi passado explicitamente, usa ele
+    if (data.investedAmount !== undefined) {
+      updatedInv.investedAmount = data.investedAmount;
     }
     
     const isFixedIncome = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(updatedInv.category);
@@ -180,6 +186,7 @@ export function useInvestments() {
         updatedInv.currentPrice = updatedInv.averagePrice;
       }
     } else {
+      // Recalcula o currentValue baseado na quantidade atual e preço atual
       updatedInv.currentValue = updatedInv.quantity * updatedInv.currentPrice;
     }
     
