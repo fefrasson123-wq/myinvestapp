@@ -68,7 +68,7 @@ export function CategoryChart({ categoryTotals, investments }: CategoryChartProp
   return (
     <>
       <div className="investment-card animate-fade-in">
-        <h3 className="text-lg font-semibold text-card-foreground mb-4">Distribuição por Categoria</h3>
+        <h3 className="text-base sm:text-lg font-semibold text-card-foreground mb-3 sm:mb-4">Distribuição por Categoria</h3>
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>

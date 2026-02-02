@@ -37,15 +37,15 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
     <div className="space-y-6">
       {/* Gráfico de Patrimônio Total */}
       <div className="investment-card overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <h2 className="text-lg font-semibold text-card-foreground shrink-0">Evolução do Patrimônio</h2>
-          <div className="flex flex-wrap gap-1 p-1 bg-secondary/50 rounded-lg w-fit">
+        <div className="flex flex-col gap-3 mb-4">
+          <h2 className="text-base sm:text-lg font-semibold text-card-foreground">Evolução do Patrimônio</h2>
+          <div className="flex flex-wrap gap-1 p-1 bg-secondary/50 rounded-lg w-full sm:w-fit">
             {periods.map((period) => (
               <button
                 key={period.id}
                 onClick={() => setSelectedPeriod(period.id)}
                 className={cn(
-                  "px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap",
+                  "flex-1 sm:flex-none px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap min-w-0",
                   selectedPeriod === period.id
                     ? "bg-primary text-primary-foreground shadow-md"
                     : "text-muted-foreground hover:text-card-foreground hover:bg-secondary/80"
@@ -62,10 +62,10 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
       {/* Lucro por Ativo */}
       {investments.length > 0 && (
         <div className="investment-card">
-          <div className="flex items-center gap-2 mb-4">
-            <Zap className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold text-card-foreground">Lucro/Prejuízo por Ativo</h3>
-            <span className="text-xs text-muted-foreground ml-auto font-mono">Tempo real</span>
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+            <h3 className="text-base sm:text-lg font-semibold text-card-foreground">Lucro/Prejuízo por Ativo</h3>
+            <span className="text-xs text-muted-foreground ml-auto font-mono whitespace-nowrap">Tempo real</span>
           </div>
           <div className="space-y-3">
             {sortedInvestments.map((inv, index) => {
@@ -78,54 +78,54 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
               return (
                 <div 
                   key={inv.id} 
-                  className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 transition-all duration-300 hover:bg-secondary/50 hover:translate-x-1 animate-smooth-appear"
+                  className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-secondary/30 transition-all duration-300 hover:bg-secondary/50 animate-smooth-appear gap-2"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     <div 
-                      className="w-2 h-8 rounded-full transition-all duration-300"
+                      className="w-1.5 sm:w-2 h-6 sm:h-8 rounded-full transition-all duration-300 flex-shrink-0"
                       style={{ backgroundColor: categoryColors[inv.category] }}
                     />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-card-foreground">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                        <p className="font-medium text-card-foreground text-sm sm:text-base truncate">
                           {inv.name}
                           {inv.ticker && (
-                            <span className="ml-1 text-primary text-sm font-mono">({inv.ticker})</span>
+                            <span className="ml-1 text-primary text-xs sm:text-sm font-mono">({inv.ticker})</span>
                           )}
                         </p>
-                        <span className="text-xs font-mono text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] sm:text-xs font-mono text-muted-foreground bg-secondary/50 px-1 sm:px-1.5 py-0.5 rounded flex-shrink-0">
                           {portfolioPercent.toFixed(1)}%
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate">
                           {categoryLabels[inv.category]}
                         </p>
                         {isCrypto && (
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono">
+                          <span className="text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono flex-shrink-0">
                             USD
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex-shrink-0">
                     <div className="flex items-center gap-1 justify-end">
                       {invIsPositive ? (
-                        <TrendingUp className="w-3 h-3 text-success" />
+                        <TrendingUp className="w-3 h-3 text-success flex-shrink-0" />
                       ) : (
-                        <TrendingDown className="w-3 h-3 text-destructive" />
+                        <TrendingDown className="w-3 h-3 text-destructive flex-shrink-0" />
                       )}
                       <p className={cn(
-                        "font-mono font-medium transition-colors duration-300",
+                        "font-mono font-medium transition-colors duration-300 text-xs sm:text-sm",
                         invIsPositive ? "text-success" : "text-destructive"
                       )}>
                         {invIsPositive ? '+' : ''}{formatCurrencyValue(displayProfitLoss)}
                       </p>
                     </div>
                     <p className={cn(
-                      "text-sm font-mono transition-colors duration-300",
+                      "text-xs font-mono transition-colors duration-300",
                       invIsPositive ? "text-success/70" : "text-destructive/70"
                     )}>
                       {formatPercent(inv.profitLossPercent)}

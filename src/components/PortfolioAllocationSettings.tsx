@@ -125,67 +125,67 @@ export function PortfolioAllocationSettings({ investments }: PortfolioAllocation
     <div className="space-y-4">
       {/* Card de Configuração */}
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <PieChart className="w-5 h-5 text-primary" />
-              <CardTitle className="text-lg">Alocação Ideal da Carteira</CardTitle>
+        <CardHeader className="pb-3 px-3 sm:px-6">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <PieChart className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+              <CardTitle className="text-base sm:text-lg truncate">Alocação Ideal da Carteira</CardTitle>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Editar</span>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">Editar</span>
               <Switch 
                 checked={isEditing} 
                 onCheckedChange={setIsEditing}
               />
             </div>
           </div>
-          <CardDescription>
+          <CardDescription className="text-xs sm:text-sm">
             Defina a porcentagem ideal para cada classe de ativo
           </CardDescription>
         </CardHeader>
 
         {isEditing && (
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 px-3 sm:px-6">
             {/* Status do total */}
             <div className={cn(
-              "flex items-center gap-2 p-3 rounded-lg",
+              "flex items-center gap-2 p-2 sm:p-3 rounded-lg",
               isValid 
                 ? "bg-success/10 text-success" 
                 : "bg-destructive/10 text-destructive"
             )}>
               {isValid ? (
-                <CheckCircle2 className="w-4 h-4" />
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
               ) : (
-                <AlertCircle className="w-4 h-4" />
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
               )}
-              <span className="text-sm font-medium">
+              <span className="text-xs sm:text-sm font-medium">
                 Total: {totalPercent.toFixed(1)}%
                 {!isValid && (totalPercent > 100 ? ' (excede 100%)' : ' (deve somar 100%)')}
               </span>
             </div>
 
             {/* Sliders por categoria */}
-            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+            <div className="space-y-4 max-h-[350px] sm:max-h-[400px] overflow-y-auto pr-1 sm:pr-2">
               {ALLOCATION_CATEGORIES.map(category => {
                 const currentPct = currentAllocations[category] || 0;
                 const targetPct = localAllocations[category] || 0;
                 
                 return (
                   <div key={category} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
                         <div 
-                          className="w-3 h-3 rounded-full" 
+                          className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0" 
                           style={{ backgroundColor: categoryColors[category] }}
                         />
-                        <span className="text-sm font-medium">{categoryLabels[category]}</span>
+                        <span className="text-xs sm:text-sm font-medium truncate">{categoryLabels[category]}</span>
                         {currentPct > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            (atual: {currentPct.toFixed(1)}%)
+                          <span className="text-[10px] sm:text-xs text-muted-foreground flex-shrink-0">
+                            ({currentPct.toFixed(1)}%)
                           </span>
                         )}
                       </div>
-                      <Badge variant={targetPct > 0 ? "default" : "outline"}>
+                      <Badge variant={targetPct > 0 ? "default" : "outline"} className="text-xs flex-shrink-0">
                         {targetPct.toFixed(0)}%
                       </Badge>
                     </div>
@@ -206,20 +206,22 @@ export function PortfolioAllocationSettings({ investments }: PortfolioAllocation
               <Button 
                 variant="outline" 
                 onClick={handleReset}
-                className="flex-1"
+                className="flex-1 text-xs sm:text-sm"
+                size="sm"
               >
-                <RotateCcw className="w-4 h-4 mr-2" />
+                <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 Resetar
               </Button>
               <Button 
                 onClick={handleSave} 
                 disabled={!isValid || isSaving}
-                className="flex-1"
+                className="flex-1 text-xs sm:text-sm"
+                size="sm"
               >
                 {isSaving ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 animate-spin" />
                 ) : (
-                  <Save className="w-4 h-4 mr-2" />
+                  <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                 )}
                 Salvar
               </Button>
