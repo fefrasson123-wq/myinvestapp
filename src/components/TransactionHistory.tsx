@@ -176,15 +176,15 @@ export function TransactionHistory({ transactions, onDelete, onEdit }: Transacti
         {/* Month Selector */}
         <Popover open={monthPopoverOpen} onOpenChange={setMonthPopoverOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full justify-between mt-3">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span className="capitalize">{selectedMonthLabel}</span>
+            <Button variant="outline" className="w-full justify-between text-sm">
+              <div className="flex items-center gap-2 min-w-0">
+                <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <span className="capitalize truncate">{selectedMonthLabel}</span>
               </div>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0 ml-2" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-full p-2" align="start">
+          <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-2 bg-popover border border-border shadow-lg z-50" align="start">
             <div className="space-y-1 max-h-64 overflow-y-auto">
               <button
                 onClick={() => {
@@ -199,7 +199,7 @@ export function TransactionHistory({ transactions, onDelete, onEdit }: Transacti
                 )}
               >
                 <span>Todos os meses</span>
-                {selectedMonth === 'all' && <Check className="w-4 h-4" />}
+                {selectedMonth === 'all' && <Check className="w-4 h-4 flex-shrink-0" />}
               </button>
               {availableMonths.map((month) => (
                 <button
@@ -215,8 +215,8 @@ export function TransactionHistory({ transactions, onDelete, onEdit }: Transacti
                       : "hover:bg-muted"
                   )}
                 >
-                  <span>{month.label}</span>
-                  {selectedMonth === month.key && <Check className="w-4 h-4" />}
+                  <span className="truncate">{month.label}</span>
+                  {selectedMonth === month.key && <Check className="w-4 h-4 flex-shrink-0 ml-2" />}
                 </button>
               ))}
             </div>
@@ -224,33 +224,33 @@ export function TransactionHistory({ transactions, onDelete, onEdit }: Transacti
         </Popover>
         
         {/* Filter Buttons */}
-        <div className="flex gap-2 mt-3">
+        <div className="grid grid-cols-3 gap-2 mt-3">
           <Button
             variant={filter === 'all' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('all')}
-            className="flex-1"
+            className="w-full px-2 text-xs sm:text-sm"
           >
-            <Filter className="w-3.5 h-3.5 mr-1.5" />
-            Todos
+            <Filter className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
+            <span className="truncate">Todos</span>
           </Button>
           <Button
             variant={filter === 'buy' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('buy')}
-            className={cn("flex-1", filter === 'buy' && "bg-success hover:bg-success/90")}
+            className={cn("w-full px-2 text-xs sm:text-sm", filter === 'buy' && "bg-success hover:bg-success/90")}
           >
-            <ArrowDownLeft className="w-3.5 h-3.5 mr-1.5" />
-            Aportes
+            <ArrowDownLeft className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
+            <span className="truncate">Aportes</span>
           </Button>
           <Button
             variant={filter === 'sell' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter('sell')}
-            className={cn("flex-1", filter === 'sell' && "bg-destructive hover:bg-destructive/90")}
+            className={cn("w-full px-2 text-xs sm:text-sm", filter === 'sell' && "bg-destructive hover:bg-destructive/90")}
           >
-            <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" />
-            Vendas
+            <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
+            <span className="truncate">Vendas</span>
           </Button>
         </div>
       </div>

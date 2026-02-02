@@ -24,77 +24,78 @@ export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: P
   return (
     <div className="space-y-4">
       {/* Cotação USD/BRL em tempo real + moeda selecionada */}
-      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground flex-wrap">
         <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
           {displayCurrency === 'BRL' ? 'R$' : '$'}
         </span>
-        <span>USD/BRL:</span>
+        <span className="hidden sm:inline">USD/BRL:</span>
+        <span className="sm:hidden">USD:</span>
         <span className="font-mono font-medium text-primary">
           {usdBrlRate.toFixed(4)}
         </span>
         {isRateLoading ? (
-          <RefreshCw className="w-3 h-3 animate-spin" />
+          <RefreshCw className="w-3 h-3 animate-spin flex-shrink-0" />
         ) : (
           rateLastUpdated && (
-            <span className="text-[10px]">
+            <span className="text-[10px] hidden sm:inline">
               ({rateLastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})
             </span>
           )
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {/* Total Patrimônio */}
         <div className="investment-card animate-slide-up stagger-1 group">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-lg bg-primary/20 transition-transform duration-300 group-hover:scale-110">
-              <Wallet className="w-5 h-5 text-primary" />
+          <div className="flex items-center gap-3 mb-2 sm:mb-3">
+            <div className="p-2 rounded-lg bg-primary/20 transition-transform duration-300 group-hover:scale-110 flex-shrink-0">
+              <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
-            <span className="stat-label">Patrimônio Total</span>
+            <span className="stat-label text-xs sm:text-sm">Patrimônio Total</span>
           </div>
-          <p className="stat-value number-glow">{formatCurrencyValue(totalValue)}</p>
+          <p className="stat-value number-glow text-lg sm:text-2xl truncate">{formatCurrencyValue(totalValue)}</p>
         </div>
 
-      {/* Total Investido */}
-      <div className="investment-card animate-slide-up stagger-2 group">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="p-2 rounded-lg bg-secondary transition-transform duration-300 group-hover:scale-110">
-            <PiggyBank className="w-5 h-5 text-muted-foreground" />
+        {/* Total Investido */}
+        <div className="investment-card animate-slide-up stagger-2 group">
+          <div className="flex items-center gap-3 mb-2 sm:mb-3">
+            <div className="p-2 rounded-lg bg-secondary transition-transform duration-300 group-hover:scale-110 flex-shrink-0">
+              <PiggyBank className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+            </div>
+            <span className="stat-label text-xs sm:text-sm">Total Investido</span>
           </div>
-          <span className="stat-label">Total Investido</span>
+          <p className="text-lg sm:text-2xl font-bold font-mono text-card-foreground truncate">{formatCurrencyValue(totalInvested)}</p>
         </div>
-        <p className="text-2xl font-bold font-mono text-card-foreground">{formatCurrencyValue(totalInvested)}</p>
-      </div>
 
-      {/* Lucro/Prejuízo */}
-      <div className="investment-card animate-slide-up stagger-3 group">
-        <div className="flex items-center gap-3 mb-3">
-          <div className={cn(
-            "p-2 rounded-lg transition-transform duration-300 group-hover:scale-110",
-            isPositive ? "bg-success/20" : "bg-destructive/20"
-          )}>
-            {isPositive ? (
-              <TrendingUp className="w-5 h-5 text-success" />
-            ) : (
-              <TrendingDown className="w-5 h-5 text-destructive" />
-            )}
+        {/* Lucro/Prejuízo */}
+        <div className="investment-card animate-slide-up stagger-3 group">
+          <div className="flex items-center gap-3 mb-2 sm:mb-3">
+            <div className={cn(
+              "p-2 rounded-lg transition-transform duration-300 group-hover:scale-110 flex-shrink-0",
+              isPositive ? "bg-success/20" : "bg-destructive/20"
+            )}>
+              {isPositive ? (
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
+              ) : (
+                <TrendingDown className="w-4 h-4 sm:w-5 sm:h-5 text-destructive" />
+              )}
+            </div>
+            <span className="stat-label text-xs sm:text-sm">Lucro / Prejuízo</span>
           </div>
-          <span className="stat-label">Lucro / Prejuízo</span>
-        </div>
-        <div className="flex items-baseline gap-2">
-          <p className={cn(
-            "text-2xl font-bold font-mono",
-            isPositive ? "text-success number-glow" : "text-destructive"
-          )}>
-            {formatCurrencyValue(totalProfitLoss)}
-          </p>
-          <span className={cn(
-            "text-sm font-mono transition-opacity",
-            isPositive ? "text-success/70" : "text-destructive/70"
-          )}>
-            ({formatPercent(profitLossPercent)})
-          </span>
-        </div>
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <p className={cn(
+              "text-lg sm:text-2xl font-bold font-mono truncate",
+              isPositive ? "text-success number-glow" : "text-destructive"
+            )}>
+              {formatCurrencyValue(totalProfitLoss)}
+            </p>
+            <span className={cn(
+              "text-xs sm:text-sm font-mono transition-opacity flex-shrink-0",
+              isPositive ? "text-success/70" : "text-destructive/70"
+            )}>
+              ({formatPercent(profitLossPercent)})
+            </span>
+          </div>
         </div>
       </div>
     </div>

@@ -198,22 +198,22 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 text-sm">
+                    <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="min-w-0">
-                        <span className="text-muted-foreground block text-xs sm:text-sm">Quantidade</span>
-                        <p className="font-mono text-card-foreground truncate">{formatQuantity(investment.quantity)}</p>
+                        <span className="text-muted-foreground block text-xs">Quantidade</span>
+                        <p className="font-mono text-card-foreground text-xs sm:text-sm truncate">{formatQuantity(investment.quantity)}</p>
                       </div>
                       <div className="min-w-0">
-                        <span className="text-muted-foreground block text-xs sm:text-sm">Preço Médio</span>
-                        <p className="font-mono text-card-foreground truncate">{formatCurrency(investment.averagePrice, currency)}</p>
+                        <span className="text-muted-foreground block text-xs">Preço Médio</span>
+                        <p className="font-mono text-card-foreground text-xs sm:text-sm truncate">{formatCurrency(investment.averagePrice, currency)}</p>
                       </div>
                       <div className="min-w-0">
-                        <span className="text-muted-foreground block text-xs sm:text-sm">Cotação Atual</span>
-                        <p className="font-mono text-card-foreground truncate">{formatCurrency(effectiveCurrentPrice, currency)}</p>
+                        <span className="text-muted-foreground block text-xs">Cotação Atual</span>
+                        <p className="font-mono text-card-foreground text-xs sm:text-sm truncate">{formatCurrency(effectiveCurrentPrice, currency)}</p>
                       </div>
                       <div className="min-w-0">
-                        <span className="text-muted-foreground block text-xs sm:text-sm">Acumulado Total</span>
-                        <p className="font-mono text-primary font-medium truncate">
+                        <span className="text-muted-foreground block text-xs">Acumulado Total</span>
+                        <p className="font-mono text-primary font-medium text-xs sm:text-sm truncate">
                           {isCrypto 
                             ? formatCurrency(
                                 displayCurrency === 'BRL' 
@@ -257,24 +257,24 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                     </div>
 
                     {/* Ações */}
-                    <div className="flex gap-1 opacity-70 group-hover:opacity-100 transition-opacity flex-wrap">
+                    <div className="flex gap-0.5 opacity-70 group-hover:opacity-100 transition-opacity">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setEvolutionInvestment(investment)}
-                        className="hover:text-success hover:bg-success/10 btn-interactive h-8 w-8 sm:h-10 sm:w-10"
+                        className="hover:text-success hover:bg-success/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
                         title="Evolução do Investimento"
                       >
-                        <LineChart className="w-4 h-4" />
+                        <LineChart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => setSelectedInvestment(investment)}
-                        className="hover:text-primary hover:bg-primary/10 btn-interactive h-8 w-8 sm:h-10 sm:w-10"
+                        className="hover:text-primary hover:bg-primary/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
                         title="Comparar com Benchmarks"
                       >
-                        <BarChart3 className="w-4 h-4" />
+                        <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </Button>
                       {onTagChange && (
                         <TagSelector
@@ -286,28 +286,28 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                         variant="ghost"
                         size="icon"
                         onClick={() => onSell(investment)}
-                        className="hover:text-primary hover:bg-primary/10 btn-interactive h-8 w-8 sm:h-10 sm:w-10"
+                        className="hover:text-primary hover:bg-primary/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
                         title="Vender"
                       >
-                        <DollarSign className="w-4 h-4" />
+                        <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => onEdit(investment)}
-                        className="btn-interactive h-8 w-8 sm:h-10 sm:w-10"
+                        className="btn-interactive h-7 w-7 sm:h-8 sm:w-8"
                         title="Editar"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => onDelete(investment.id)}
-                        className="hover:text-destructive hover:bg-destructive/10 btn-interactive h-8 w-8 sm:h-10 sm:w-10"
+                        className="hover:text-destructive hover:bg-destructive/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
                         title="Excluir"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </Button>
                     </div>
                   </div>
