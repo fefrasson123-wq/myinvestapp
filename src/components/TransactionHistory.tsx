@@ -119,48 +119,26 @@ export function TransactionHistory({ transactions, onDelete, onEdit }: Transacti
         </div>
         
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="p-3 rounded-lg bg-success/10 border border-success/20">
             <div className="flex items-center gap-1.5 mb-1">
-              <ArrowDownLeft className="w-3.5 h-3.5 text-success" />
-              <span className="text-xs text-muted-foreground">Aportes</span>
+              <ArrowDownLeft className="w-3.5 h-3.5 text-success flex-shrink-0" />
+              <span className="text-xs text-muted-foreground truncate">Aportes</span>
             </div>
-            <p className="font-mono text-sm font-semibold text-success">
+            <p className="font-mono text-xs sm:text-sm font-semibold text-success truncate">
               {formatCurrency(stats.totalInvested)}
             </p>
             <p className="text-xs text-muted-foreground">{stats.totalBuys} compras</p>
           </div>
           <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
             <div className="flex items-center gap-1.5 mb-1">
-              <ArrowUpRight className="w-3.5 h-3.5 text-destructive" />
-              <span className="text-xs text-muted-foreground">Vendas</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-destructive flex-shrink-0" />
+              <span className="text-xs text-muted-foreground truncate">Vendas</span>
             </div>
-            <p className="font-mono text-sm font-semibold text-destructive">
+            <p className="font-mono text-xs sm:text-sm font-semibold text-destructive truncate">
               {formatCurrency(stats.totalSold)}
             </p>
             <p className="text-xs text-muted-foreground">{stats.totalSells} vendas</p>
-          </div>
-          <div className={cn(
-            "p-3 rounded-lg border",
-            stats.totalProfit >= 0 
-              ? "bg-success/10 border-success/20" 
-              : "bg-destructive/10 border-destructive/20"
-          )}>
-            <div className="flex items-center gap-1.5 mb-1">
-              {stats.totalProfit >= 0 ? (
-                <TrendingUp className="w-3.5 h-3.5 text-success" />
-              ) : (
-                <TrendingDown className="w-3.5 h-3.5 text-destructive" />
-              )}
-              <span className="text-xs text-muted-foreground">Realizado</span>
-            </div>
-            <p className={cn(
-              "font-mono text-sm font-semibold",
-              stats.totalProfit >= 0 ? "text-success" : "text-destructive"
-            )}>
-              {stats.totalProfit >= 0 ? '+' : ''}{formatCurrency(stats.totalProfit)}
-            </p>
-            <p className="text-xs text-muted-foreground">lucro/prejuízo</p>
           </div>
         </div>
         
