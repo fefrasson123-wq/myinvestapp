@@ -14,7 +14,7 @@ interface SellAssetModalProps {
     date: Date;
     profitLoss: number;
     profitLossPercent: number;
-  }) => void;
+  }) => void | Promise<void>;
   onClose: () => void;
 }
 
