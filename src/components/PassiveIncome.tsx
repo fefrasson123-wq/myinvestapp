@@ -30,7 +30,6 @@ const typeColors: Record<IncomeType, string> = {
   dividend: 'hsl(var(--primary))',
   rent: 'hsl(280, 100%, 60%)',
   interest: 'hsl(140, 100%, 50%)',
-  jcp: 'hsl(45, 100%, 50%)',
 };
 
 // Categories that pay dividends
@@ -112,7 +111,6 @@ export function PassiveIncome() {
       dividend: { monthly: 0, yearly: 0 },
       rent: { monthly: 0, yearly: 0 },
       interest: { monthly: 0, yearly: 0 },
-      jcp: { monthly: 0, yearly: 0 },
     };
 
     // From projections (rent and interest)
@@ -131,16 +129,15 @@ export function PassiveIncome() {
         result[p.type].yearly += p.amount;
       });
 
-    // Calculate monthly average from yearly for dividends/JCP
+    // Calculate monthly average from yearly for dividends
     result.dividend.monthly = result.dividend.yearly / 12;
-    result.jcp.monthly = result.jcp.yearly / 12;
 
     return result;
   }, [projectedIncome, payments]);
 
   // Total income
-  const totalMonthly = totals.dividend.monthly + totals.rent.monthly + totals.interest.monthly + totals.jcp.monthly;
-  const totalYearly = totals.dividend.yearly + totals.rent.yearly + totals.interest.yearly + totals.jcp.yearly;
+  const totalMonthly = totals.dividend.monthly + totals.rent.monthly + totals.interest.monthly;
+  const totalYearly = totals.dividend.yearly + totals.rent.yearly + totals.interest.yearly;
 
   // Filtered totals
   const filteredMonthly = filter === 'all' ? totalMonthly : totals[filter as IncomeType]?.monthly || 0;
@@ -240,7 +237,7 @@ export function PassiveIncome() {
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">Distribuição por tipo</p>
           <div className="grid grid-cols-2 gap-2">
-            {([['dividend', 'Dividendos'], ['rent', 'Aluguéis'], ['interest', 'Juros'], ['jcp', 'JCP']] as [IncomeType, string][])
+            {([['dividend', 'Dividendos'], ['rent', 'Aluguéis'], ['interest', 'Juros']] as [IncomeType, string][])
               .filter(([type]) => totals[type].yearly > 0)
               .sort(([a], [b]) => totals[b].yearly - totals[a].yearly)
               .map(([type, label]) => (

@@ -105,16 +105,16 @@ export function AddIncomeModal({ isOpen, onClose, investments }: AddIncomeModalP
 
   // Determine available income types based on selected investment category
   const getAvailableTypes = (): IncomeType[] => {
-    if (!selectedInvestmentData) return ['dividend', 'rent', 'interest', 'jcp'];
+    if (!selectedInvestmentData) return ['dividend', 'rent', 'interest'];
     
     const cat = selectedInvestmentData.category;
     
     if (cat === 'realestate') return ['rent'];
     if (['fii', 'reits'].includes(cat)) return ['dividend', 'rent'];
     if (['cdb', 'lci', 'lca', 'treasury', 'debentures', 'cricra', 'fixedincomefund', 'savings'].includes(cat)) return ['interest'];
-    if (['stocks', 'bdr'].includes(cat)) return ['dividend', 'jcp'];
+    if (['stocks', 'bdr'].includes(cat)) return ['dividend'];
     
-    return ['dividend', 'rent', 'interest', 'jcp'];
+    return ['dividend', 'rent', 'interest'];
   };
 
   const availableTypes = getAvailableTypes();
