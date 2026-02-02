@@ -139,6 +139,7 @@ export default function Auth() {
       }
 
       // Use the Supabase built-in password reset which handles the token
+      // Note: Supabase sends its own email with the recovery link - no need for custom email
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth?mode=reset`,
       });
@@ -150,23 +151,6 @@ export default function Auth() {
           description: error.message,
         });
       } else {
-        // Send custom styled password reset email
-        try {
-          await supabase.functions.invoke('send-email', {
-            body: {
-              type: 'password-reset',
-              to: email,
-              data: {
-                username: 'Investidor',
-                resetUrl: `${window.location.origin}/auth?mode=reset`,
-                expiresIn: '1 hora'
-              }
-            }
-          });
-        } catch (emailError) {
-          console.error('Failed to send custom reset email:', emailError);
-        }
-
         toast({
           title: 'Email enviado!',
           description: 'Verifique sua caixa de entrada para redefinir sua senha.',
