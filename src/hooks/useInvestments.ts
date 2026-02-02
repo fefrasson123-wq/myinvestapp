@@ -309,8 +309,46 @@ export function useInvestments() {
   }, []);
 
   const updateInvestment = useCallback(async (id: string, data: Partial<Omit<Investment, 'id' | 'createdAt' | 'updatedAt'>>) => {
-    const investment = investmentsRef.current.find(inv => inv.id === id);
-    if (!investment) return;
+    // Busca o investimento no estado local OU diretamente no banco se não encontrar
+    let investment = investmentsRef.current.find(inv => inv.id === id);
+    
+    // Se não encontrou no estado local, busca do banco (pode acontecer após mesclagem)
+    if (!investment && user) {
+      const { data: dbInvestment } = await supabase
+        .from('investments')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (dbInvestment) {
+        investment = {
+          id: dbInvestment.id,
+          name: dbInvestment.name,
+          category: dbInvestment.category as Investment['category'],
+          ticker: dbInvestment.ticker || undefined,
+          quantity: Number(dbInvestment.quantity),
+          averagePrice: Number(dbInvestment.average_price),
+          currentPrice: Number(dbInvestment.current_price),
+          investedAmount: Number(dbInvestment.invested_amount),
+          currentValue: Number(dbInvestment.current_value),
+          profitLoss: Number(dbInvestment.profit_loss),
+          profitLossPercent: Number(dbInvestment.profit_loss_percent),
+          notes: dbInvestment.notes || undefined,
+          purchaseDate: dbInvestment.purchase_date || undefined,
+          maturityDate: dbInvestment.maturity_date || undefined,
+          interestRate: dbInvestment.interest_rate ? Number(dbInvestment.interest_rate) : undefined,
+          address: dbInvestment.address || undefined,
+          areaM2: dbInvestment.area_m2 ? Number(dbInvestment.area_m2) : undefined,
+          createdAt: new Date(dbInvestment.created_at),
+          updatedAt: new Date(dbInvestment.updated_at),
+        };
+      }
+    }
+    
+    if (!investment) {
+      console.error('Investment not found:', id);
+      return;
+    }
 
     const updatedInv = { ...investment, ...data };
     
