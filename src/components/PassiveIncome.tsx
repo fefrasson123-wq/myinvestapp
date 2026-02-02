@@ -1,12 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Wallet, TrendingUp, Calendar, Plus, Trash2, Building2, Landmark, BarChart3, RefreshCw } from 'lucide-react';
+import { Wallet, TrendingUp, Calendar, Trash2, Building2, Landmark, BarChart3, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIncomePayments, IncomeType, incomeTypeLabels } from '@/hooks/useIncomePayments';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { useInvestments } from '@/hooks/useInvestments';
 import { useDividendSync } from '@/hooks/useDividendSync';
 import { cn } from '@/lib/utils';
-import { AddIncomeModal } from '@/components/AddIncomeModal';
 import { Investment, categoryLabels } from '@/types/investment';
 import {
   BarChart,
@@ -58,7 +57,6 @@ export function PassiveIncome() {
   const { formatCurrencyValue, showValues } = useValuesVisibility();
   const { isSyncing, syncDividends, lastSync } = useDividendSync(investments);
   const [filter, setFilter] = useState<FilterType>('all');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Refetch payments after sync completes
   useEffect(() => {
@@ -188,21 +186,15 @@ export function PassiveIncome() {
             <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />
           )}
         </h3>
-        <div className="flex gap-2">
-          <Button 
-            size="sm" 
-            variant="ghost"
-            onClick={() => syncDividends(true)} 
-            disabled={isSyncing}
-            title="Sincronizar dividendos"
-          >
-            <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
-          </Button>
-          <Button size="sm" onClick={() => setIsAddModalOpen(true)} className="gap-1">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Dividendo</span>
-          </Button>
-        </div>
+        <Button 
+          size="sm" 
+          variant="ghost"
+          onClick={() => syncDividends(true)} 
+          disabled={isSyncing}
+          title="Sincronizar dividendos"
+        >
+          <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
+        </Button>
       </div>
 
       {/* Filter Tabs */}
@@ -418,12 +410,6 @@ export function PassiveIncome() {
         </div>
       </div>
 
-      {/* Add Income Modal */}
-      <AddIncomeModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        investments={investments}
-      />
     </div>
   );
 }
