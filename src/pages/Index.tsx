@@ -378,7 +378,7 @@ const Index = () => {
     requireAuth(() => setSellingInvestment(investment));
   };
 
-  const handleConfirmSell = (data: {
+  const handleConfirmSell = async (data: {
     quantity: number;
     price: number;
     date: Date;
@@ -387,41 +387,44 @@ const Index = () => {
   }) => {
     if (!sellingInvestment) return;
 
-    requireAuth(() => {
-      // Registra a transação de venda
-      addTransaction({
-        investmentId: sellingInvestment.id,
-        investmentName: sellingInvestment.name,
-        ticker: sellingInvestment.ticker,
-        category: sellingInvestment.category,
-        type: 'sell',
-        quantity: data.quantity,
-        price: data.price,
-        total: data.quantity * data.price,
-        profitLoss: data.profitLoss,
-        profitLossPercent: data.profitLossPercent,
-        date: data.date,
-      });
+    if (!user) {
+      requireAuth(() => {});
+      return;
+    }
 
-      // Atualiza ou remove o investimento
-      const remainingQuantity = sellingInvestment.quantity - data.quantity;
-
-      if (remainingQuantity <= 0) {
-        deleteInvestment(sellingInvestment.id);
-      } else {
-        updateInvestment(sellingInvestment.id, {
-          quantity: remainingQuantity,
-          investedAmount: remainingQuantity * sellingInvestment.averagePrice,
-        });
-      }
-
-      toast({
-        title: 'Venda registrada',
-        description: `${data.quantity} unidades de ${sellingInvestment.name} vendidas com sucesso.`,
-      });
-
-      setSellingInvestment(null);
+    // Registra a transação de venda
+    await addTransaction({
+      investmentId: sellingInvestment.id,
+      investmentName: sellingInvestment.name,
+      ticker: sellingInvestment.ticker,
+      category: sellingInvestment.category,
+      type: 'sell',
+      quantity: data.quantity,
+      price: data.price,
+      total: data.quantity * data.price,
+      profitLoss: data.profitLoss,
+      profitLossPercent: data.profitLossPercent,
+      date: data.date,
     });
+
+    // Atualiza ou remove o investimento
+    const remainingQuantity = sellingInvestment.quantity - data.quantity;
+
+    if (remainingQuantity <= 0) {
+      await deleteInvestment(sellingInvestment.id);
+    } else {
+      await updateInvestment(sellingInvestment.id, {
+        quantity: remainingQuantity,
+        investedAmount: remainingQuantity * sellingInvestment.averagePrice,
+      });
+    }
+
+    toast({
+      title: 'Venda registrada',
+      description: `${data.quantity} unidades de ${sellingInvestment.name} vendidas com sucesso.`,
+    });
+
+    setSellingInvestment(null);
   };
 
   const handleSubmit = async (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>, tag?: InvestmentTag | null) => {
