@@ -116,9 +116,10 @@ function getPeriodDays(period: string, oldestPurchaseDate?: Date): number {
 }
 
 function getYahooRange(period: string, days?: number): string {
-  // If days provided and more than 1 year, use max range
+  // If days provided and more than 1 year, use appropriate range
   if (days && days > 365) {
     if (days > 365 * 5) return '10y';
+    if (days > 365 * 3) return '5y';
     if (days > 365 * 2) return '5y';
     if (days > 365) return '2y';
   }
@@ -127,7 +128,7 @@ function getYahooRange(period: string, days?: number): string {
     case '24h':
       return '1d';
     case '1w':
-      return '1w';
+      return '5d'; // Yahoo tem melhor suporte para 5d com intervalo 1h
     case '1m':
       return '1mo';
     case '6m':

@@ -177,14 +177,19 @@ async function fetchHistoricalPrices(
   const result: Record<string, Array<{ date: string; price: number }>> = {};
   
   // Mapeia range para intervalo Yahoo
+  // IMPORTANTE: Para crypto (24/7), usamos intervalos menores que permitem dados completos
   const intervalMap: Record<string, string> = {
-    '1d': '5m',
-    '1w': '1h',
-    '1mo': '1d',
-    '6mo': '1d',
-    '1y': '1d',
-    '2y': '1wk',
-    'max': '1mo'
+    '1d': '15m',     // 15 min para 1 dia = ~96 pontos
+    '5d': '1h',      // 1h para 5 dias = ~120 pontos
+    '1w': '1h',      // 1h para 1 semana = ~168 pontos (crypto 24/7)
+    '1mo': '1d',     // 1 dia para 1 mês = ~30 pontos
+    '3mo': '1d',     // 1 dia para 3 meses = ~90 pontos
+    '6mo': '1d',     // 1 dia para 6 meses = ~180 pontos
+    '1y': '1d',      // 1 dia para 1 ano = ~252 pontos
+    '2y': '1wk',     // 1 semana para 2 anos = ~104 pontos
+    '5y': '1wk',     // 1 semana para 5 anos = ~260 pontos
+    '10y': '1mo',    // 1 mês para 10 anos = ~120 pontos
+    'max': '1mo'     // 1 mês para máximo
   };
   
   const interval = intervalMap[range] || '1d';
