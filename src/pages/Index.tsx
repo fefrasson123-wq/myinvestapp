@@ -220,7 +220,7 @@ const Index = () => {
   }, [cryptoPrices, goldPricePerGram, getCryptoPrice, getStockPrice, getFIIPrice]);
 
   // Handler para venda direta do formulário de cadastro
-  const handleDirectSell = (data: {
+  const handleDirectSell = async (data: {
     name: string;
     ticker: string;
     category: string;
@@ -229,60 +229,63 @@ const Index = () => {
     date: Date;
     total: number;
   }) => {
-    requireAuth(() => {
-      // Busca o investimento existente pelo ticker ou nome
-      const existingInvestment = investments.find(inv => {
-        if (data.ticker) {
-          return inv.ticker?.toLowerCase() === data.ticker.toLowerCase() && 
-                 inv.category === data.category;
-        }
-        return inv.name.toLowerCase() === data.name.toLowerCase() && 
+    if (!user) {
+      requireAuth(() => {});
+      return;
+    }
+
+    // Busca o investimento existente pelo ticker ou nome
+    const existingInvestment = investments.find(inv => {
+      if (data.ticker) {
+        return inv.ticker?.toLowerCase() === data.ticker.toLowerCase() && 
                inv.category === data.category;
-      });
-
-      // Calcula lucro/prejuízo se encontrou investimento
-      let profitLoss: number | undefined;
-      let profitLossPercent: number | undefined;
-      
-      if (existingInvestment) {
-        const costBasis = data.quantity * existingInvestment.averagePrice;
-        profitLoss = data.total - costBasis;
-        profitLossPercent = costBasis > 0 ? (profitLoss / costBasis) * 100 : 0;
       }
+      return inv.name.toLowerCase() === data.name.toLowerCase() && 
+             inv.category === data.category;
+    });
 
-      // Registra a transação de venda
-      addTransaction({
-        investmentId: existingInvestment?.id || '',
-        investmentName: data.name,
-        ticker: data.ticker,
-        category: data.category as Investment['category'],
-        type: 'sell',
-        quantity: data.quantity,
-        price: data.price,
-        total: data.total,
-        profitLoss,
-        profitLossPercent,
-        date: data.date,
-      });
+    // Calcula lucro/prejuízo se encontrou investimento
+    let profitLoss: number | undefined;
+    let profitLossPercent: number | undefined;
+    
+    if (existingInvestment) {
+      const costBasis = data.quantity * existingInvestment.averagePrice;
+      profitLoss = data.total - costBasis;
+      profitLossPercent = costBasis > 0 ? (profitLoss / costBasis) * 100 : 0;
+    }
 
-      // Atualiza ou remove o investimento existente
-      if (existingInvestment) {
-        const remainingQuantity = existingInvestment.quantity - data.quantity;
+    // Registra a transação de venda
+    addTransaction({
+      investmentId: existingInvestment?.id || '',
+      investmentName: data.name,
+      ticker: data.ticker,
+      category: data.category as Investment['category'],
+      type: 'sell',
+      quantity: data.quantity,
+      price: data.price,
+      total: data.total,
+      profitLoss,
+      profitLossPercent,
+      date: data.date,
+    });
 
-        if (remainingQuantity <= 0) {
-          deleteInvestment(existingInvestment.id);
-        } else {
-          updateInvestment(existingInvestment.id, {
-            quantity: remainingQuantity,
-            investedAmount: remainingQuantity * existingInvestment.averagePrice,
-          });
-        }
+    // Atualiza ou remove o investimento existente
+    if (existingInvestment) {
+      const remainingQuantity = existingInvestment.quantity - data.quantity;
+
+      if (remainingQuantity <= 0) {
+        await deleteInvestment(existingInvestment.id);
+      } else {
+        await updateInvestment(existingInvestment.id, {
+          quantity: remainingQuantity,
+          investedAmount: remainingQuantity * existingInvestment.averagePrice,
+        });
       }
+    }
 
-      toast({
-        title: 'Venda registrada',
-        description: `${data.quantity} unidades de ${data.name} vendidas com sucesso.`,
-      });
+    toast({
+      title: 'Venda registrada',
+      description: `${data.quantity} unidades de ${data.name} vendidas com sucesso.`,
     });
   };
 
