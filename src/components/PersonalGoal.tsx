@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Target, Check, Trash2, TrendingUp, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { usePersonalGoal } from '@/hooks/usePersonalGoal';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
@@ -47,7 +49,9 @@ interface PersonalGoalProps {
 export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, transactions = [], className }: PersonalGoalProps) {
   const { goal, isLoading, saveGoal, deleteGoal } = usePersonalGoal();
   const { showValues } = useValuesVisibility();
+  const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [targetAmount, setTargetAmount] = useState('');
   const [debouncedTargetAmount, setDebouncedTargetAmount] = useState('');
   const [goalName, setGoalName] = useState('');
@@ -140,6 +144,12 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
   };
 
   const openEditDialog = () => {
+    // Redirect to signup if not logged in
+    if (!user) {
+      navigate('/auth?mode=signup');
+      return;
+    }
+    
     if (goal) {
       setGoalName(goal.name);
       setTargetAmount(
