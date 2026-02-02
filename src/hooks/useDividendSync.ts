@@ -5,7 +5,7 @@ import { Investment } from '@/types/investment';
 import { toast } from 'sonner';
 
 // Categories that pay dividends and should be synced
-const DIVIDEND_CATEGORIES = ['stocks', 'fii', 'bdr', 'etf'];
+const DIVIDEND_CATEGORIES = ['stocks', 'fii', 'bdr', 'etf', 'reits', 'usastocks'];
 
 // Sync interval: 6 hours (in milliseconds)
 const SYNC_INTERVAL = 6 * 60 * 60 * 1000;
@@ -66,13 +66,14 @@ export function useDividendSync(investments: Investment[]) {
         .map(inv => inv.ticker?.toUpperCase())
         .filter((t): t is string => !!t);
       
-      const investmentMap: Record<string, { id: string; name: string; category: string }> = {};
+      const investmentMap: Record<string, { id: string; name: string; category: string; quantity: number }> = {};
       dividendInvestments.forEach(inv => {
         if (inv.ticker) {
           investmentMap[inv.ticker.toUpperCase()] = {
             id: inv.id,
             name: inv.name,
             category: inv.category,
+            quantity: inv.quantity || 1,
           };
         }
       });
