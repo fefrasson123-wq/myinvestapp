@@ -251,6 +251,7 @@ function convertHistoryToChartData(
 function useHistoricalChartData(investment: Investment, isOpen: boolean) {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [asset12mReturn, setAsset12mReturn] = useState<number | null>(null);
   const { usdBrlRate, displayCurrency } = useValuesVisibility();
   
   const isCompoundGrowth = COMPOUND_GROWTH_CATEGORIES.includes(investment.category);
@@ -269,6 +270,10 @@ function useHistoricalChartData(investment: Investment, isOpen: boolean) {
         investment.interestRate
       );
       setChartData(data);
+      // Para renda fixa, usa a taxa informada como retorno anual
+      if (investment.interestRate) {
+        setAsset12mReturn(investment.interestRate);
+      }
       return;
     }
     
@@ -280,8 +285,20 @@ function useHistoricalChartData(investment: Investment, isOpen: boolean) {
       const range = getRangeFromPurchaseDate(investment.purchaseDate);
       const ticker = investment.category === 'gold' ? 'GC=F' : investment.ticker;
       
-      fetchHistoricalPrices(ticker, market, range)
-        .then(history => {
+      // Busca histórico para o gráfico E para calcular retorno de 12 meses
+      Promise.all([
+        fetchHistoricalPrices(ticker, market, range),
+        fetchHistoricalPrices(ticker, market, '1y') // Sempre busca 1 ano para o retorno
+      ])
+        .then(([history, history1y]) => {
+          // Calcula retorno de 12 meses
+          if (history1y && history1y.length >= 2) {
+            const priceNow = history1y[history1y.length - 1].price;
+            const price12MonthsAgo = history1y[0].price;
+            const returnPercent = ((priceNow - price12MonthsAgo) / price12MonthsAgo) * 100;
+            setAsset12mReturn(returnPercent);
+          }
+          
           if (history.length > 0) {
             const isCrypto = investment.category === 'crypto';
             const isUSA = investment.category === 'usastocks' || investment.category === 'reits';
@@ -356,7 +373,7 @@ function useHistoricalChartData(investment: Investment, isOpen: boolean) {
     }
   }, [isOpen, investment, isCompoundGrowth, hasMarketData, usdBrlRate]);
   
-  return { chartData, isLoading, hasMarketData };
+  return { chartData, isLoading, hasMarketData, asset12mReturn };
 }
 
 // Componente do gráfico memoizado
@@ -436,7 +453,7 @@ export function InvestmentEvolutionChart({
   isOpen,
   onClose
 }: InvestmentEvolutionChartProps) {
-  const { chartData, isLoading, hasMarketData } = useHistoricalChartData(investment, isOpen);
+  const { chartData, isLoading, hasMarketData, asset12mReturn } = useHistoricalChartData(investment, isOpen);
   const { displayCurrency, formatCurrencyValue, usdBrlRate } = useValuesVisibility();
   
   // Verifica se o ativo é cotado em USD
@@ -459,22 +476,6 @@ export function InvestmentEvolutionChart({
   const totalProfit = currentValueBrl - investedAmountBrl;
   const totalProfitPercent = investedAmountBrl > 0 ? (totalProfit / investedAmountBrl) * 100 : 0;
   const isPositive = totalProfit >= 0;
-
-  // Calcula rentabilidade do ativo nos últimos 12 meses (baseado no histórico de preços)
-  const annual12mReturn = useMemo(() => {
-    if (chartData.length < 2) return null;
-    
-    // Pega o primeiro e último ponto do gráfico para calcular a variação
-    // Se o histórico for maior que 12 meses, precisamos pegar aproximadamente 12 meses atrás
-    const firstPoint = chartData[0];
-    const lastPoint = chartData[chartData.length - 1];
-    
-    if (firstPoint.price <= 0 || lastPoint.price <= 0) return null;
-    
-    // Retorno percentual do período do gráfico
-    const returnPercent = ((lastPoint.price - firstPoint.price) / firstPoint.price) * 100;
-    return returnPercent;
-  }, [chartData]);
 
   // Formata moeda respeitando a preferência global
   // Os valores já estão convertidos para BRL, o formatador global cuida do resto
@@ -647,20 +648,20 @@ export function InvestmentEvolutionChart({
             </div>
           </div>
           
-          {/* Rentabilidade do Ativo no Período */}
-          {annual12mReturn !== null && (
+          {/* Rentabilidade do Ativo nos últimos 12 meses */}
+          {asset12mReturn !== null && (
             <div className={cn(
               "p-3 rounded-lg border text-center",
-              annual12mReturn >= 0 
+              asset12mReturn >= 0 
                 ? "bg-success/10 border-success/30" 
                 : "bg-destructive/10 border-destructive/30"
             )}>
-              <span className="text-xs text-muted-foreground block mb-1">Variação do Ativo no Período</span>
+              <span className="text-xs text-muted-foreground block mb-1">Retorno do Ativo (12 meses)</span>
               <span className={cn(
                 "font-mono text-lg font-semibold",
-                annual12mReturn >= 0 ? "text-success" : "text-destructive"
+                asset12mReturn >= 0 ? "text-success" : "text-destructive"
               )}>
-                {annual12mReturn >= 0 ? '+' : ''}{annual12mReturn.toFixed(2)}%
+                {asset12mReturn >= 0 ? '+' : ''}{asset12mReturn.toFixed(2)}%
               </span>
             </div>
           )}
