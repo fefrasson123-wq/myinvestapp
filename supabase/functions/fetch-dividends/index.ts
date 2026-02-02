@@ -6,32 +6,62 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface BrapiDividend {
-  assetIssued: string;
-  paymentDate: string;
-  rate: number;
-  relatedTo: string;
-  approvedOn: string;
-  isinCode: string;
-  label: string;
-  lastDatePrior: string;
-  type: string;
+interface YahooDividend {
+  amount: number;
+  date: number; // Unix timestamp
 }
 
-interface BrapiResult {
-  symbol: string;
-  dividendsData: {
-    cashDividends: BrapiDividend[];
-  };
-}
-
-// Map BRAPI dividend types to our income types
-function mapDividendType(brapiType: string): 'dividend' | 'jcp' {
-  const type = brapiType?.toLowerCase() || '';
-  if (type.includes('jcp') || type.includes('juros sobre capital')) {
+// Map dividend type based on amount and label
+function mapDividendType(label?: string): 'dividend' | 'jcp' {
+  const text = label?.toLowerCase() || '';
+  if (text.includes('jcp') || text.includes('juros sobre capital')) {
     return 'jcp';
   }
   return 'dividend';
+}
+
+// Normalize Brazilian ticker to Yahoo format
+function normalizeToYahooSymbol(symbol: string): string {
+  let normalized = symbol.toUpperCase().replace('.SA', '');
+  // Remove 'N' from units (ex: ITUBN4 -> ITUB4)
+  normalized = normalized.replace(/^([A-Z]+)N(\d+)$/, '$1$2');
+  // Remove 'F' from fractional (ex: PETR4F -> PETR4)
+  normalized = normalized.replace(/^([A-Z]+\d+)F$/, '$1');
+  return `${normalized}.SA`;
+}
+
+// Fetch with timeout and retry
+async function fetchWithRetry(
+  url: string, 
+  options: RequestInit = {}, 
+  retries = 2, 
+  timeout = 10000
+): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.warn(`Fetch attempt ${i + 1} failed for ${url}: ${lastError.message}`);
+      
+      if (i < retries) {
+        await new Promise(resolve => setTimeout(resolve, 500 * (i + 1)));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Fetch failed');
 }
 
 serve(async (req) => {
@@ -65,11 +95,6 @@ serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub as string;
-    const BRAPI_TOKEN = Deno.env.get('BRAPI_TOKEN');
-    
-    if (!BRAPI_TOKEN) {
-      throw new Error('BRAPI_TOKEN not configured');
-    }
 
     const body = await req.json();
     const { tickers, investmentMap } = body;
@@ -82,7 +107,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Fetching dividends for ${tickers.length} tickers: ${tickers.join(', ')}`);
+    console.log(`Fetching dividends for ${tickers.length} tickers via Yahoo Finance: ${tickers.join(', ')}`);
 
     // Get existing income payments to avoid duplicates
     const { data: existingPayments, error: fetchError } = await supabase
@@ -113,27 +138,50 @@ serve(async (req) => {
       notes: string | null;
     }> = [];
 
-    // Fetch dividends for each ticker (BRAPI free tier: 1 ticker at a time)
-    for (const ticker of tickers) {
+    // Calculate date range (last 12 months)
+    const now = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    
+    const period1 = Math.floor(oneYearAgo.getTime() / 1000);
+    const period2 = Math.floor(now.getTime() / 1000);
+
+    // Fetch dividends for all tickers in parallel
+    const fetchPromises = tickers.map(async (ticker: string) => {
       try {
-        const url = `https://brapi.dev/api/quote/${ticker}?dividends=true&token=${BRAPI_TOKEN}`;
+        const yahooSymbol = normalizeToYahooSymbol(ticker);
         
-        const response = await fetch(url, {
+        // Yahoo Finance chart API with dividend events
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?period1=${period1}&period2=${period2}&interval=1d&events=div`;
+        
+        console.log(`Fetching dividends from Yahoo Finance for: ${yahooSymbol}`);
+        
+        const response = await fetchWithRetry(url, {
           method: 'GET',
-          headers: { 'Accept': 'application/json' },
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          },
         });
 
         if (!response.ok) {
-          console.error(`BRAPI error for ${ticker}: ${response.status}`);
-          continue;
+          console.error(`Yahoo Finance error for ${ticker}: ${response.status}`);
+          return [];
         }
 
         const data = await response.json();
-        const result: BrapiResult | undefined = data?.results?.[0];
+        const result = data?.chart?.result?.[0];
+        
+        if (!result) {
+          console.log(`No data found for ${ticker}`);
+          return [];
+        }
 
-        if (!result?.dividendsData?.cashDividends) {
-          console.log(`No dividend data for ${ticker}`);
-          continue;
+        // Get dividends from events
+        const dividends = result.events?.dividends;
+        if (!dividends || Object.keys(dividends).length === 0) {
+          console.log(`No dividend events for ${ticker}`);
+          return [];
         }
 
         const investment = investmentMap?.[ticker.toUpperCase()];
@@ -141,51 +189,52 @@ serve(async (req) => {
         const investmentName = investment?.name || ticker;
         const category = investment?.category || 'stocks';
 
-        // Filter dividends from last 12 months
-        const oneYearAgo = new Date();
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        const tickerDividends: typeof allDividends = [];
 
-        for (const div of result.dividendsData.cashDividends) {
-          const paymentDate = new Date(div.paymentDate);
-          
-          // Only include dividends from last 12 months
-          if (paymentDate < oneYearAgo) continue;
-
+        for (const [timestamp, div] of Object.entries(dividends)) {
+          const dividendData = div as YahooDividend;
+          const paymentDate = new Date(dividendData.date * 1000);
           const paymentDateStr = paymentDate.toISOString().split('T')[0];
-          const divType = mapDividendType(div.type);
+          const divType = mapDividendType();
+          const amount = Math.round(dividendData.amount * 100) / 100;
           
           // Check for duplicates
-          const key = `${investmentName}-${paymentDateStr}-${div.rate}-${divType}`;
+          const key = `${investmentName}-${paymentDateStr}-${amount}-${divType}`;
           if (existingKeys.has(key)) {
             console.log(`Skipping duplicate: ${key}`);
             continue;
           }
 
-          allDividends.push({
+          tickerDividends.push({
             user_id: userId,
             investment_id: investmentId,
             investment_name: investmentName,
             category: category,
             type: divType,
-            amount: div.rate,
+            amount: amount,
             payment_date: paymentDateStr,
-            ex_date: div.lastDatePrior ? new Date(div.lastDatePrior).toISOString().split('T')[0] : null,
-            notes: `Sincronizado automaticamente via BRAPI - ${div.label || div.type}`,
+            ex_date: null,
+            notes: `Sincronizado automaticamente via Yahoo Finance`,
           });
 
           // Add to existing keys to prevent duplicates within this batch
           existingKeys.add(key);
         }
 
-        console.log(`Found ${result.dividendsData.cashDividends.length} dividends for ${ticker}`);
-
-        // Small delay to respect rate limits
-        await new Promise(resolve => setTimeout(resolve, 200));
+        console.log(`Found ${tickerDividends.length} dividends for ${ticker}`);
+        return tickerDividends;
 
       } catch (error) {
         console.error(`Error fetching dividends for ${ticker}:`, error);
+        return [];
       }
-    }
+    });
+
+    // Wait for all fetches to complete
+    const results = await Promise.all(fetchPromises);
+    results.forEach(tickerDividends => {
+      allDividends.push(...tickerDividends);
+    });
 
     // Insert new dividends
     if (allDividends.length > 0) {
