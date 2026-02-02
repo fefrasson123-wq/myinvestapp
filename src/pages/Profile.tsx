@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { TrendingUp, ArrowLeft, User, TrendingDown, Edit2, Save, X, LogOut, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
+import { TrendingUp, ArrowLeft, User, Edit2, Save, X, LogOut, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { PortfolioAllocationSettings } from '@/components/PortfolioAllocationSettings';
 import { useInvestments } from '@/hooks/useInvestments';
+import { PassiveIncome } from '@/components/PassiveIncome';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,11 +27,6 @@ import {
 interface Profile {
   username: string | null;
   display_name: string | null;
-}
-
-interface RealizedProfitLoss {
-  total: number;
-  percent: number;
 }
 
 export default function Profile() {
@@ -52,7 +48,6 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [realizedProfitLoss, setRealizedProfitLoss] = useState<RealizedProfitLoss>({ total: 0, percent: 0 });
   
   // Load investments for allocation settings
   const { investments } = useInvestments();
@@ -92,41 +87,6 @@ export default function Profile() {
     }
 
     loadProfile();
-  }, [user]);
-
-  // Calculate realized profit/loss from transactions
-  useEffect(() => {
-    async function loadRealizedProfitLoss() {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('transactions')
-          .select('type, total_value, profit_loss, profit_loss_percent')
-          .eq('user_id', user.id)
-          .eq('type', 'sell');
-        
-        if (error) {
-          console.error('Error loading transactions:', error);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          const totalProfitLoss = data.reduce((sum, tx) => sum + (Number(tx.profit_loss) || 0), 0);
-          const totalSold = data.reduce((sum, tx) => sum + (Number(tx.total_value) || 0), 0);
-          const avgPercent = totalSold > 0 ? (totalProfitLoss / (totalSold - totalProfitLoss)) * 100 : 0;
-          
-          setRealizedProfitLoss({
-            total: totalProfitLoss,
-            percent: avgPercent,
-          });
-        }
-      } catch (err) {
-        console.error('Error loading realized profit/loss:', err);
-      }
-    }
-
-    loadRealizedProfitLoss();
   }, [user]);
 
   const handleSaveProfile = async () => {
@@ -211,7 +171,6 @@ export default function Profile() {
 
   if (!user) return null;
 
-  const isPositive = realizedProfitLoss.total >= 0;
   const displayName = profile?.display_name || profile?.username || user.email?.split('@')[0] || 'Usuário';
 
   return (
@@ -356,35 +315,9 @@ export default function Profile() {
 
             {/* Coluna da direita no desktop */}
             <div className="space-y-6">
-              {/* Realized Profit/Loss Card */}
-              <div className="bg-card border border-border rounded-xl shadow-lg p-6 animate-smooth-appear" style={{ animationDelay: '100ms' }}>
-                <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
-                  {isPositive ? (
-                    <TrendingUp className="w-5 h-5 text-profit" />
-                  ) : (
-                    <TrendingDown className="w-5 h-5 text-loss" />
-                  )}
-                  Lucro / Prejuízo Realizado
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-background/50 rounded-lg p-4">
-                    <p className="text-sm text-muted-foreground mb-1">Total</p>
-                    <p className={`text-2xl font-bold ${isPositive ? 'text-profit' : 'text-loss'}`}>
-                      {isPositive ? '+' : ''}{formatCurrencyValue(realizedProfitLoss.total)}
-                    </p>
-                  </div>
-                  <div className="bg-background/50 rounded-lg p-4">
-                    <p className="text-sm text-muted-foreground mb-1">Percentual</p>
-                    <p className={`text-2xl font-bold ${isPositive ? 'text-profit' : 'text-loss'}`}>
-                      {isPositive ? '+' : ''}{realizedProfitLoss.percent.toFixed(2)}%
-                    </p>
-                  </div>
-                </div>
-                
-                <p className="text-xs text-muted-foreground mt-4">
-                  * Lucro/Prejuízo realizado considera apenas ativos vendidos
-                </p>
+              {/* Passive Income Component */}
+              <div className="animate-smooth-appear" style={{ animationDelay: '100ms' }}>
+                <PassiveIncome />
               </div>
 
               {/* Portfolio Allocation Settings */}

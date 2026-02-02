@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      income_payments: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          ex_date: string | null
+          id: string
+          investment_id: string | null
+          investment_name: string
+          notes: string | null
+          payment_date: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          category: string
+          created_at?: string
+          ex_date?: string | null
+          id?: string
+          investment_id?: string | null
+          investment_name: string
+          notes?: string | null
+          payment_date: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          ex_date?: string | null
+          id?: string
+          investment_id?: string | null
+          investment_name?: string
+          notes?: string | null
+          payment_date?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "income_payments_investment_id_fkey"
+            columns: ["investment_id"]
+            isOneToOne: false
+            referencedRelation: "investments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       investment_tags: {
         Row: {
           created_at: string
