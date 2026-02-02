@@ -1,9 +1,14 @@
 import { useState, useMemo } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Calendar, TrendingUp, TrendingDown, Trash2, Edit, Filter, Wallet, DollarSign } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Calendar, Trash2, Edit, Filter, ChevronDown, Check } from 'lucide-react';
 import { Transaction, transactionLabels, categoryLabels, categoryColors } from '@/types/investment';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface TransactionHistoryProps {
   transactions: Transaction[];
@@ -37,35 +42,53 @@ function formatTime(date: Date): string {
   }).format(date);
 }
 
-// Agrupa transações por mês/ano
-function groupTransactionsByMonth(transactions: Transaction[]): Record<string, Transaction[]> {
-  const groups: Record<string, Transaction[]> = {};
+// Retorna lista de meses disponíveis nas transações
+function getAvailableMonths(transactions: Transaction[]): { key: string; label: string }[] {
+  const monthsSet = new Map<string, string>();
   
   transactions.forEach(tx => {
     const date = new Date(tx.date);
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     const label = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-    
-    if (!groups[label]) {
-      groups[label] = [];
-    }
-    groups[label].push(tx);
+    monthsSet.set(key, label);
   });
   
-  return groups;
+  return Array.from(monthsSet.entries())
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([key, label]) => ({ key, label }));
 }
 
 export function TransactionHistory({ transactions, onDelete, onEdit }: TransactionHistoryProps) {
   const [filter, setFilter] = useState<FilterType>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [monthPopoverOpen, setMonthPopoverOpen] = useState(false);
+  
+  const availableMonths = useMemo(() => getAvailableMonths(transactions), [transactions]);
   
   const filteredTransactions = useMemo(() => {
-    if (filter === 'all') return transactions;
-    return transactions.filter(tx => tx.type === filter);
-  }, [transactions, filter]);
+    let result = transactions;
+    
+    // Filter by type
+    if (filter !== 'all') {
+      result = result.filter(tx => tx.type === filter);
+    }
+    
+    // Filter by month
+    if (selectedMonth !== 'all') {
+      result = result.filter(tx => {
+        const date = new Date(tx.date);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        return key === selectedMonth;
+      });
+    }
+    
+    return result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions, filter, selectedMonth]);
   
-  const groupedTransactions = useMemo(() => 
-    groupTransactionsByMonth(filteredTransactions),
-  [filteredTransactions]);
+  const selectedMonthLabel = useMemo(() => {
+    if (selectedMonth === 'all') return 'Todos os meses';
+    return availableMonths.find(m => m.key === selectedMonth)?.label || 'Todos os meses';
+  }, [selectedMonth, availableMonths]);
   
   // Estatísticas
   const stats = useMemo(() => {
@@ -142,8 +165,58 @@ export function TransactionHistory({ transactions, onDelete, onEdit }: Transacti
           </div>
         </div>
         
+        {/* Month Selector */}
+        <Popover open={monthPopoverOpen} onOpenChange={setMonthPopoverOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-full justify-between mt-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <span className="capitalize">{selectedMonthLabel}</span>
+              </div>
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-2" align="start">
+            <div className="space-y-1 max-h-64 overflow-y-auto">
+              <button
+                onClick={() => {
+                  setSelectedMonth('all');
+                  setMonthPopoverOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors",
+                  selectedMonth === 'all' 
+                    ? "bg-primary text-primary-foreground" 
+                    : "hover:bg-muted"
+                )}
+              >
+                <span>Todos os meses</span>
+                {selectedMonth === 'all' && <Check className="w-4 h-4" />}
+              </button>
+              {availableMonths.map((month) => (
+                <button
+                  key={month.key}
+                  onClick={() => {
+                    setSelectedMonth(month.key);
+                    setMonthPopoverOpen(false);
+                  }}
+                  className={cn(
+                    "w-full flex items-center justify-between px-3 py-2 rounded-md text-sm transition-colors capitalize",
+                    selectedMonth === month.key 
+                      ? "bg-primary text-primary-foreground" 
+                      : "hover:bg-muted"
+                  )}
+                >
+                  <span>{month.label}</span>
+                  {selectedMonth === month.key && <Check className="w-4 h-4" />}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+        
         {/* Filter Buttons */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-3">
           <Button
             variant={filter === 'all' ? 'default' : 'outline'}
             size="sm"
@@ -174,174 +247,141 @@ export function TransactionHistory({ transactions, onDelete, onEdit }: Transacti
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="relative">
-        {Object.entries(groupedTransactions).map(([monthLabel, monthTransactions], groupIndex) => (
-          <div key={monthLabel} className="mb-6 last:mb-0">
-            {/* Month Header */}
-            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 mb-3">
-              <div className="flex items-center gap-2">
-                <div className="h-px flex-1 bg-gradient-to-r from-border to-transparent" />
-                <Badge variant="secondary" className="font-medium capitalize">
-                  📅 {monthLabel}
-                </Badge>
-                <div className="h-px flex-1 bg-gradient-to-l from-border to-transparent" />
+      {/* Transactions List */}
+      <div className="space-y-3">
+        {filteredTransactions.map((tx, index) => {
+          const isBuy = tx.type === 'buy';
+          const isCrypto = tx.category === 'crypto';
+          const hasProfit = tx.type === 'sell' && tx.profitLoss !== undefined;
+          const isPositive = hasProfit && (tx.profitLoss ?? 0) >= 0;
+          
+          return (
+            <div
+              key={tx.id}
+              className="animate-smooth-appear"
+              style={{ animationDelay: `${index * 30}ms` }}
+            >
+              {/* Transaction Card */}
+              <div className={cn(
+                "investment-card transition-all duration-200",
+                "border-l-4",
+                isBuy ? "border-l-success" : "border-l-destructive"
+              )}>
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge 
+                      variant="outline" 
+                      className={cn(
+                        "font-medium",
+                        isBuy 
+                          ? "border-success/50 text-success bg-success/10" 
+                          : "border-destructive/50 text-destructive bg-destructive/10"
+                      )}
+                    >
+                      {isBuy ? '💰 Compra' : '💸 Venda'}
+                    </Badge>
+                    <div 
+                      className="w-2 h-2 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: categoryColors[tx.category] }}
+                    />
+                    <span className="text-xs text-muted-foreground truncate">
+                      {categoryLabels[tx.category]}
+                    </span>
+                  </div>
+                  <div className="flex gap-0.5 shrink-0">
+                    {onEdit && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onEdit(tx)}
+                        className="hover:text-primary hover:bg-primary/10 h-7 w-7"
+                        title="Editar"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    {onDelete && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onDelete(tx.id)}
+                        className="hover:text-destructive hover:bg-destructive/10 h-7 w-7"
+                        title="Excluir"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Asset Info */}
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <h4 className="font-semibold text-card-foreground truncate">
+                    {tx.investmentName}
+                  </h4>
+                  {tx.ticker && (
+                    <span className="text-primary text-xs sm:text-sm font-mono bg-primary/10 px-1.5 py-0.5 rounded flex-shrink-0">
+                      {tx.ticker}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Details Grid */}
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Quantidade</p>
+                    <p className="font-mono text-card-foreground text-xs sm:text-sm truncate">
+                      {tx.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 6 })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Preço</p>
+                    <p className="font-mono text-card-foreground text-xs sm:text-sm truncate">
+                      {formatCurrency(tx.price, isCrypto)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-0.5">Total</p>
+                    <p className="font-mono font-semibold text-primary text-xs sm:text-sm truncate">
+                      {formatCurrency(tx.total, isCrypto)}
+                    </p>
+                  </div>
+                  {hasProfit && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-0.5">
+                        {isPositive ? 'Lucro' : 'Prejuízo'}
+                      </p>
+                      <p className={cn(
+                        "font-mono font-semibold text-xs sm:text-sm truncate",
+                        isPositive ? "text-success" : "text-destructive"
+                      )}>
+                        {isPositive ? '+' : ''}{formatCurrency(tx.profitLoss ?? 0, isCrypto)}
+                        <span className="text-xs ml-1 opacity-75">
+                          ({isPositive ? '+' : ''}{(tx.profitLossPercent ?? 0).toFixed(1)}%)
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Footer with date */}
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
+                  <Calendar className="w-3 h-3 flex-shrink-0" />
+                  <span>{formatDate(tx.date)}</span>
+                  <span>•</span>
+                  <span>{formatTime(tx.date)}</span>
+                </div>
               </div>
             </div>
-            
-            {/* Timeline Items */}
-            <div className="relative pl-6 sm:pl-8">
-              {/* Vertical Line */}
-              <div className="absolute left-2 sm:left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/50 via-border to-transparent" />
-              
-              {monthTransactions.map((tx, index) => {
-                const isBuy = tx.type === 'buy';
-                const isCrypto = tx.category === 'crypto';
-                const hasProfit = tx.type === 'sell' && tx.profitLoss !== undefined;
-                const isPositive = hasProfit && (tx.profitLoss ?? 0) >= 0;
-                
-                return (
-                  <div
-                    key={tx.id}
-                    className="relative mb-4 last:mb-0 animate-smooth-appear"
-                    style={{ animationDelay: `${(groupIndex * 50) + (index * 30)}ms` }}
-                  >
-                    {/* Timeline Dot */}
-                    <div className={cn(
-                      "absolute -left-4 sm:-left-5 w-4 h-4 rounded-full border-2 border-background shadow-sm",
-                      isBuy ? "bg-success" : "bg-destructive"
-                    )}>
-                      {isBuy ? (
-                        <ArrowDownLeft className="w-2.5 h-2.5 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                      ) : (
-                        <ArrowUpRight className="w-2.5 h-2.5 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                      )}
-                    </div>
-                    
-                    {/* Transaction Card */}
-                    <div className={cn(
-                      "investment-card ml-2 transition-all duration-200 hover:translate-x-1",
-                      "border-l-4",
-                      isBuy ? "border-l-success" : "border-l-destructive"
-                    )}>
-                      {/* Header */}
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge 
-                            variant="outline" 
-                            className={cn(
-                              "font-medium",
-                              isBuy 
-                                ? "border-success/50 text-success bg-success/10" 
-                                : "border-destructive/50 text-destructive bg-destructive/10"
-                            )}
-                          >
-                            {isBuy ? '💰 Compra' : '💸 Venda'}
-                          </Badge>
-                          <div 
-                            className="w-2 h-2 rounded-full" 
-                            style={{ backgroundColor: categoryColors[tx.category] }}
-                          />
-                          <span className="text-xs text-muted-foreground">
-                            {categoryLabels[tx.category]}
-                          </span>
-                        </div>
-                        <div className="flex gap-0.5 shrink-0">
-                          {onEdit && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => onEdit(tx)}
-                              className="hover:text-primary hover:bg-primary/10 h-7 w-7"
-                              title="Editar"
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                          {onDelete && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => onDelete(tx.id)}
-                              className="hover:text-destructive hover:bg-destructive/10 h-7 w-7"
-                              title="Excluir"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Asset Info */}
-                      <div className="flex items-center gap-2 mb-3">
-                        <h4 className="font-semibold text-card-foreground">
-                          {tx.investmentName}
-                        </h4>
-                        {tx.ticker && (
-                          <span className="text-primary text-sm font-mono bg-primary/10 px-1.5 py-0.5 rounded">
-                            {tx.ticker}
-                          </span>
-                        )}
-                      </div>
-                      
-                      {/* Details Grid */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-0.5">Quantidade</p>
-                          <p className="font-mono text-card-foreground">
-                            {tx.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 6 })}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-0.5">Preço</p>
-                          <p className="font-mono text-card-foreground">
-                            {formatCurrency(tx.price, isCrypto)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-0.5">Total</p>
-                          <p className="font-mono font-semibold text-primary">
-                            {formatCurrency(tx.total, isCrypto)}
-                          </p>
-                        </div>
-                        {hasProfit && (
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-0.5">
-                              {isPositive ? 'Lucro' : 'Prejuízo'}
-                            </p>
-                            <p className={cn(
-                              "font-mono font-semibold",
-                              isPositive ? "text-success" : "text-destructive"
-                            )}>
-                              {isPositive ? '+' : ''}{formatCurrency(tx.profitLoss ?? 0, isCrypto)}
-                              <span className="text-xs ml-1 opacity-75">
-                                ({isPositive ? '+' : ''}{(tx.profitLossPercent ?? 0).toFixed(1)}%)
-                              </span>
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Footer with date */}
-                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50 text-xs text-muted-foreground">
-                        <Calendar className="w-3 h-3" />
-                        <span>{formatDate(tx.date)}</span>
-                        <span>•</span>
-                        <span>{formatTime(tx.date)}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       
-      {filteredTransactions.length === 0 && filter !== 'all' && (
-        <div className="text-center py-8">
+      {filteredTransactions.length === 0 && (filter !== 'all' || selectedMonth !== 'all') && (
+        <div className="investment-card text-center py-8">
           <p className="text-muted-foreground">
-            Nenhuma {filter === 'buy' ? 'compra' : 'venda'} encontrada.
+            Nenhuma transação encontrada para os filtros selecionados.
           </p>
         </div>
       )}
