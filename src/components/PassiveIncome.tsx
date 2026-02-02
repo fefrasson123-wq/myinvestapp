@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { Wallet, TrendingUp, Calendar, Plus, Trash2, Filter } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Wallet, TrendingUp, Calendar, Plus, Trash2, Building2, Landmark, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIncomePayments, IncomeType, incomeTypeLabels } from '@/hooks/useIncomePayments';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { useInvestments } from '@/hooks/useInvestments';
 import { cn } from '@/lib/utils';
 import { AddIncomeModal } from '@/components/AddIncomeModal';
+import { Investment, categoryLabels } from '@/types/investment';
 import {
   BarChart,
   Bar,
@@ -16,14 +17,13 @@ import {
   Cell,
 } from 'recharts';
 
-type FilterType = 'all' | IncomeType;
+type FilterType = 'all' | 'dividend' | 'rent' | 'interest';
 
-const filterOptions: { value: FilterType; label: string }[] = [
-  { value: 'all', label: 'Todos' },
-  { value: 'dividend', label: 'Dividendos' },
-  { value: 'rent', label: 'Aluguéis' },
-  { value: 'interest', label: 'Juros' },
-  { value: 'jcp', label: 'JCP' },
+const filterOptions: { value: FilterType; label: string; icon: React.ReactNode }[] = [
+  { value: 'all', label: 'Todos', icon: <Wallet className="w-3 h-3" /> },
+  { value: 'dividend', label: 'Dividendos', icon: <BarChart3 className="w-3 h-3" /> },
+  { value: 'rent', label: 'Aluguéis', icon: <Building2 className="w-3 h-3" /> },
+  { value: 'interest', label: 'Juros', icon: <Landmark className="w-3 h-3" /> },
 ];
 
 const typeColors: Record<IncomeType, string> = {
@@ -33,59 +33,132 @@ const typeColors: Record<IncomeType, string> = {
   jcp: 'hsl(45, 100%, 50%)',
 };
 
+// Categories that pay dividends
+const dividendCategories = ['stocks', 'fii', 'usastocks', 'reits', 'bdr', 'etf'];
+
+// Categories that are real estate (rent)
+const rentCategories = ['realestate'];
+
+// Categories that pay interest (fixed income)
+const interestCategories = ['cdb', 'lci', 'lca', 'treasury', 'debentures', 'cricra', 'fixedincomefund', 'savings'];
+
+interface ProjectedIncome {
+  investmentId: string;
+  investmentName: string;
+  category: string;
+  type: IncomeType;
+  monthlyAmount: number;
+  yearlyAmount: number;
+}
+
 export function PassiveIncome() {
   const { payments, isLoading, stats, deletePayment } = useIncomePayments();
-  const { investments } = useInvestments();
+  const { investments, isLoading: investmentsLoading } = useInvestments();
   const { formatCurrencyValue, showValues } = useValuesVisibility();
   const [filter, setFilter] = useState<FilterType>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+  // Calculate projected income from existing investments
+  const projectedIncome = useMemo(() => {
+    const projections: ProjectedIncome[] = [];
+
+    investments.forEach((inv: Investment) => {
+      // Real Estate with rent
+      if (rentCategories.includes(inv.category) && inv.dividends && inv.dividends > 0) {
+        projections.push({
+          investmentId: inv.id,
+          investmentName: inv.name,
+          category: inv.category,
+          type: 'rent',
+          monthlyAmount: inv.dividends,
+          yearlyAmount: inv.dividends * 12,
+        });
+      }
+
+      // Fixed Income - calculate monthly interest
+      if (interestCategories.includes(inv.category) && inv.interestRate && inv.interestRate > 0) {
+        // Annual rate to monthly income
+        const annualRate = inv.interestRate / 100;
+        const yearlyInterest = inv.currentValue * annualRate;
+        const monthlyInterest = yearlyInterest / 12;
+        
+        projections.push({
+          investmentId: inv.id,
+          investmentName: inv.name,
+          category: inv.category,
+          type: 'interest',
+          monthlyAmount: monthlyInterest,
+          yearlyAmount: yearlyInterest,
+        });
+      }
+
+      // Stocks/FIIs/REITs - These need manual entries since dividend amounts vary
+      // We'll show them as eligible for adding dividend payments
+    });
+
+    return projections;
+  }, [investments]);
+
+  // Calculate totals by type
+  const totals = useMemo(() => {
+    const result = {
+      dividend: { monthly: 0, yearly: 0 },
+      rent: { monthly: 0, yearly: 0 },
+      interest: { monthly: 0, yearly: 0 },
+      jcp: { monthly: 0, yearly: 0 },
+    };
+
+    // From projections (rent and interest)
+    projectedIncome.forEach(p => {
+      result[p.type].monthly += p.monthlyAmount;
+      result[p.type].yearly += p.yearlyAmount;
+    });
+
+    // From historical payments (dividends and JCP - last 12 months)
+    const now = new Date();
+    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    
+    payments
+      .filter(p => p.paymentDate >= oneYearAgo)
+      .forEach(p => {
+        result[p.type].yearly += p.amount;
+      });
+
+    // Calculate monthly average from yearly for dividends/JCP
+    result.dividend.monthly = result.dividend.yearly / 12;
+    result.jcp.monthly = result.jcp.yearly / 12;
+
+    return result;
+  }, [projectedIncome, payments]);
+
+  // Total income
+  const totalMonthly = totals.dividend.monthly + totals.rent.monthly + totals.interest.monthly + totals.jcp.monthly;
+  const totalYearly = totals.dividend.yearly + totals.rent.yearly + totals.interest.yearly + totals.jcp.yearly;
+
+  // Filtered totals
+  const filteredMonthly = filter === 'all' ? totalMonthly : totals[filter as IncomeType]?.monthly || 0;
+  const filteredYearly = filter === 'all' ? totalYearly : totals[filter as IncomeType]?.yearly || 0;
+
+  // Filter projections by type
+  const filteredProjections = filter === 'all' 
+    ? projectedIncome 
+    : projectedIncome.filter(p => p.type === filter);
+
+  // Filter payments by type
   const filteredPayments = filter === 'all' 
     ? payments 
     : payments.filter(p => p.type === filter);
 
-  const filteredStats = filter === 'all'
-    ? stats
-    : {
-        ...stats,
-        totalReceived: payments
-          .filter(p => p.type === filter)
-          .filter(p => {
-            const now = new Date();
-            const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-            return p.paymentDate >= oneYearAgo;
-          })
-          .reduce((sum, p) => sum + p.amount, 0),
-        monthlyAverage: payments
-          .filter(p => p.type === filter)
-          .filter(p => {
-            const now = new Date();
-            const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-            return p.paymentDate >= oneYearAgo;
-          })
-          .reduce((sum, p) => sum + p.amount, 0) / 12,
-      };
-
-  const chartData = stats.last12Months.map(item => {
-    if (filter === 'all') {
-      return item;
-    }
-    // Calculate filtered amount for this month
-    const monthPayments = payments.filter(p => {
-      const monthName = p.paymentDate.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
-      return monthName === item.month && p.type === filter;
-    });
-    return {
-      month: item.month,
-      amount: monthPayments.reduce((sum, p) => sum + p.amount, 0),
-    };
-  });
+  // Get dividend-paying investments that don't have projections
+  const dividendInvestments = investments.filter(inv => 
+    dividendCategories.includes(inv.category)
+  );
 
   const handleDeletePayment = async (id: string) => {
     await deletePayment(id);
   };
 
-  if (isLoading) {
+  if (isLoading || investmentsLoading) {
     return (
       <div className="bg-card border border-border rounded-xl shadow-lg p-6 animate-pulse">
         <div className="h-6 bg-muted rounded w-1/3 mb-4" />
@@ -96,7 +169,7 @@ export function PassiveIncome() {
   }
 
   return (
-    <div className="bg-card border border-border rounded-xl shadow-lg p-6 space-y-6">
+    <div className="bg-card border border-border rounded-xl shadow-lg p-6 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-card-foreground flex items-center gap-2">
@@ -105,7 +178,7 @@ export function PassiveIncome() {
         </h3>
         <Button size="sm" onClick={() => setIsAddModalOpen(true)} className="gap-1">
           <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Adicionar</span>
+          <span className="hidden sm:inline">Dividendo</span>
         </Button>
       </div>
 
@@ -117,8 +190,9 @@ export function PassiveIncome() {
             variant={filter === option.value ? 'default' : 'outline'}
             size="sm"
             onClick={() => setFilter(option.value)}
-            className="text-xs"
+            className="text-xs gap-1"
           >
+            {option.icon}
             {option.label}
           </Button>
         ))}
@@ -129,10 +203,10 @@ export function PassiveIncome() {
         <div className="bg-background/50 rounded-lg p-4">
           <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
             <Calendar className="w-3 h-3" />
-            Média Mensal
+            Projeção Mensal
           </p>
           <p className="text-xl font-bold text-primary">
-            {showValues ? formatCurrencyValue(filteredStats.monthlyAverage) : '•••••'}
+            {showValues ? formatCurrencyValue(filteredMonthly) : '•••••'}
           </p>
         </div>
         <div className="bg-background/50 rounded-lg p-4">
@@ -141,20 +215,20 @@ export function PassiveIncome() {
             Projeção Anual
           </p>
           <p className="text-xl font-bold text-success">
-            {showValues ? formatCurrencyValue(filteredStats.monthlyAverage * 12) : '•••••'}
+            {showValues ? formatCurrencyValue(filteredYearly) : '•••••'}
           </p>
         </div>
       </div>
 
       {/* Distribution by Type (only when filter is 'all') */}
-      {filter === 'all' && stats.totalReceived > 0 && (
+      {filter === 'all' && totalYearly > 0 && (
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">Distribuição por tipo</p>
           <div className="grid grid-cols-2 gap-2">
-            {(Object.entries(stats.byType) as [IncomeType, number][])
-              .filter(([_, amount]) => amount > 0)
-              .sort(([, a], [, b]) => b - a)
-              .map(([type, amount]) => (
+            {([['dividend', 'Dividendos'], ['rent', 'Aluguéis'], ['interest', 'Juros'], ['jcp', 'JCP']] as [IncomeType, string][])
+              .filter(([type]) => totals[type].yearly > 0)
+              .sort(([a], [b]) => totals[b].yearly - totals[a].yearly)
+              .map(([type, label]) => (
                 <div
                   key={type}
                   className="flex items-center justify-between bg-background/30 rounded-lg p-2"
@@ -164,10 +238,10 @@ export function PassiveIncome() {
                       className="w-2 h-6 rounded-full"
                       style={{ backgroundColor: typeColors[type] }}
                     />
-                    <span className="text-xs font-medium">{incomeTypeLabels[type]}</span>
+                    <span className="text-xs font-medium">{label}</span>
                   </div>
                   <span className="text-xs font-mono text-muted-foreground">
-                    {showValues ? formatCurrencyValue(amount) : '•••'}
+                    {showValues ? formatCurrencyValue(totals[type].monthly) : '•••'}/mês
                   </span>
                 </div>
               ))}
@@ -175,51 +249,93 @@ export function PassiveIncome() {
         </div>
       )}
 
-      {/* Chart */}
-      {chartData.some(d => d.amount > 0) && (
-        <div className="h-40">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <XAxis
-                dataKey="month"
-                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis hide />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="bg-popover border border-border rounded-lg p-2 shadow-lg">
-                        <p className="text-xs font-medium">
-                          {showValues ? formatCurrencyValue(payload[0].value as number) : '•••••'}
-                        </p>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Bar dataKey="amount" radius={[4, 4, 0, 0]}>
-                {chartData.map((_, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={filter === 'all' ? 'hsl(var(--primary))' : typeColors[filter as IncomeType]}
+      {/* Projected Income from Investments */}
+      {filteredProjections.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            {filter === 'rent' ? 'Aluguéis de Imóveis' : filter === 'interest' ? 'Rendimentos de Renda Fixa' : 'Renda Projetada'}
+          </p>
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {filteredProjections.map(projection => (
+              <div
+                key={projection.investmentId}
+                className="flex items-center justify-between bg-background/30 rounded-lg p-2"
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div
+                    className="w-1.5 h-6 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: typeColors[projection.type] }}
                   />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{projection.investmentName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {categoryLabels[projection.category as keyof typeof categoryLabels]} • {incomeTypeLabels[projection.type]}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <span className="text-sm font-mono text-success">
+                    {showValues ? `+${formatCurrencyValue(projection.monthlyAmount)}` : '•••••'}
+                  </span>
+                  <p className="text-xs text-muted-foreground">/mês</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Recent Payments List */}
-      {filteredPayments.length > 0 ? (
+      {/* Dividend-paying investments (need manual entries) */}
+      {(filter === 'all' || filter === 'dividend') && dividendInvestments.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">Últimos recebimentos</p>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {filteredPayments.slice(0, 10).map(payment => (
+          <p className="text-sm text-muted-foreground">Ativos que pagam dividendos</p>
+          <div className="space-y-1 max-h-32 overflow-y-auto">
+            {dividendInvestments.map(inv => {
+              // Check if there are recent payments for this investment
+              const recentPayment = payments.find(p => p.investmentId === inv.id);
+              
+              return (
+                <div
+                  key={inv.id}
+                  className="flex items-center justify-between bg-background/20 rounded-lg p-2"
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div
+                      className="w-1.5 h-4 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: typeColors.dividend }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium truncate">{inv.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {categoryLabels[inv.category as keyof typeof categoryLabels]}
+                      </p>
+                    </div>
+                  </div>
+                  {recentPayment ? (
+                    <span className="text-xs text-muted-foreground">
+                      Último: {recentPayment.paymentDate.toLocaleDateString('pt-BR')}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground/50">
+                      Sem registro
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground/70">
+            💡 Clique em "Dividendo" para registrar pagamentos recebidos
+          </p>
+        </div>
+      )}
+
+      {/* Recent Dividend Payments */}
+      {filteredPayments.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">Dividendos Recebidos</p>
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {filteredPayments.slice(0, 8).map(payment => (
               <div
                 key={payment.id}
                 className="flex items-center justify-between bg-background/30 rounded-lg p-2 group"
@@ -253,21 +369,29 @@ export function PassiveIncome() {
             ))}
           </div>
         </div>
-      ) : (
+      )}
+
+      {/* Empty state */}
+      {totalYearly === 0 && filteredPayments.length === 0 && (
         <div className="text-center py-6 text-muted-foreground">
           <Wallet className="w-10 h-10 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Nenhum recebimento registrado</p>
-          <p className="text-xs">Clique em "Adicionar" para registrar sua renda passiva</p>
+          <p className="text-sm">Nenhuma renda passiva encontrada</p>
+          <p className="text-xs">Adicione imóveis com aluguel, renda fixa ou registre dividendos</p>
         </div>
       )}
 
-      {/* Total Last 12 Months */}
-      <div className="border-t border-border pt-4">
+      {/* Total Summary */}
+      <div className="border-t border-border pt-4 space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Total últimos 12 meses</p>
-          <p className="text-lg font-bold text-primary">
-            {showValues ? formatCurrencyValue(filteredStats.totalReceived) : '•••••'}
-          </p>
+          <p className="text-sm font-medium text-card-foreground">Total Projetado</p>
+          <div className="text-right">
+            <p className="text-lg font-bold text-primary">
+              {showValues ? formatCurrencyValue(filteredMonthly) : '•••••'}<span className="text-sm font-normal text-muted-foreground">/mês</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {showValues ? formatCurrencyValue(filteredYearly) : '•••••'}/ano
+            </p>
+          </div>
         </div>
       </div>
 
