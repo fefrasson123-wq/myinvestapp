@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type IncomeType = 'dividend' | 'rent' | 'interest' | 'jcp';
+export type IncomeType = 'dividend' | 'rent' | 'interest';
 
 export interface IncomePayment {
   id: string;
@@ -31,7 +31,6 @@ export const incomeTypeLabels: Record<IncomeType, string> = {
   dividend: 'Dividendos',
   rent: 'Aluguéis',
   interest: 'Juros',
-  jcp: 'JCP',
 };
 
 export function useIncomePayments() {
@@ -42,7 +41,7 @@ export function useIncomePayments() {
     totalReceived: 0,
     monthlyAverage: 0,
     yearlyProjection: 0,
-    byType: { dividend: 0, rent: 0, interest: 0, jcp: 0 },
+    byType: { dividend: 0, rent: 0, interest: 0 },
     last12Months: [],
   });
 
@@ -106,7 +105,7 @@ export function useIncomePayments() {
     const yearlyProjection = totalReceived;
 
     // By type
-    const byType: Record<IncomeType, number> = { dividend: 0, rent: 0, interest: 0, jcp: 0 };
+    const byType: Record<IncomeType, number> = { dividend: 0, rent: 0, interest: 0 };
     last12MonthsPayments.forEach(p => {
       byType[p.type] += p.amount;
     });
