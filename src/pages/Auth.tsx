@@ -73,7 +73,7 @@ export default function Auth() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isRecoverySession, setIsRecoverySession] = useState(false);
   
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, user, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -115,10 +115,19 @@ export default function Auth() {
 
   // Redirect if already logged in (except in reset-password mode with recovery session)
   useEffect(() => {
-    if (user && mode !== 'reset-password') {
+    if (!isAuthLoading && user && mode !== 'reset-password') {
       navigate('/');
     }
-  }, [user, navigate, mode]);
+  }, [user, navigate, mode, isAuthLoading]);
+
+  // Show loading state while checking auth
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const clearErrors = () => setErrors({});
 
