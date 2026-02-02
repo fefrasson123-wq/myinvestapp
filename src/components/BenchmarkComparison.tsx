@@ -94,6 +94,21 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
   const { rates, isLoading: ratesLoading } = useEconomicRates();
   const { return12m: btcReturn, isLoading: btcLoading } = useBitcoin12MonthReturn();
   
+  // Calcula rentabilidade anualizada
+  const annualizedReturn = (() => {
+    if (!investment.purchaseDate || investment.investedAmount <= 0) return null;
+    
+    const start = new Date(investment.purchaseDate);
+    const now = new Date();
+    const years = (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    
+    if (years <= 0) return null;
+    
+    // Fórmula de retorno anualizado: ((valor_final / valor_inicial) ^ (1/anos)) - 1
+    const annualized = (Math.pow(investment.currentValue / investment.investedAmount, 1 / years) - 1) * 100;
+    return annualized;
+  })();
+  
   // Detectar se o investimento é do mesmo tipo que o benchmark
   const isBitcoinInvestment = investment.category === 'crypto' && 
     (investment.ticker?.toUpperCase() === 'BTC' ||
@@ -194,7 +209,7 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
                 </p>
               </div>
               <div>
-                <span className="text-muted-foreground">Rentabilidade</span>
+                <span className="text-muted-foreground">Rentabilidade Total</span>
                 <p className={cn(
                   "font-mono font-medium",
                   investment.profitLossPercent >= 0 ? "text-success" : "text-destructive"
@@ -203,6 +218,19 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
                   {formatPercent(investment.profitLossPercent)}
                 </p>
               </div>
+              {annualizedReturn !== null && (
+                <>
+                  <div className="col-span-2 border-t border-border/30 pt-3 mt-1">
+                    <span className="text-muted-foreground">Rentabilidade Anual</span>
+                    <p className={cn(
+                      "font-mono font-medium text-lg",
+                      annualizedReturn >= 0 ? "text-success" : "text-destructive"
+                    )}>
+                      {annualizedReturn >= 0 ? '+' : ''}{annualizedReturn.toFixed(2)}% a.a.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
           
