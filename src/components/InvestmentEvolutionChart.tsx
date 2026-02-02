@@ -439,14 +439,30 @@ export function InvestmentEvolutionChart({
   const { chartData, isLoading, hasMarketData } = useHistoricalChartData(investment, isOpen);
   const { displayCurrency, formatCurrencyValue, usdBrlRate } = useValuesVisibility();
   
-  const totalProfit = investment.currentValue - investment.investedAmount;
-  const totalProfitPercent = investment.investedAmount > 0 ? (totalProfit / investment.investedAmount) * 100 : 0;
+  // Verifica se o ativo é cotado em USD
+  const isUsdAsset = investment.category === 'crypto' || 
+                     investment.category === 'usastocks' || 
+                     investment.category === 'reits';
+  
+  // Converte valores de USD para BRL se necessário antes de usar o formatador global
+  const convertToBrl = useCallback((value: number) => {
+    if (isUsdAsset && usdBrlRate > 0) {
+      return value * usdBrlRate;
+    }
+    return value;
+  }, [isUsdAsset, usdBrlRate]);
+  
+  // Valores convertidos para BRL (para usar com o formatador global)
+  const investedAmountBrl = convertToBrl(investment.investedAmount);
+  const currentValueBrl = convertToBrl(investment.currentValue);
+  
+  const totalProfit = currentValueBrl - investedAmountBrl;
+  const totalProfitPercent = investedAmountBrl > 0 ? (totalProfit / investedAmountBrl) * 100 : 0;
   const isPositive = totalProfit >= 0;
 
   // Formata moeda respeitando a preferência global
+  // Os valores já estão convertidos para BRL, o formatador global cuida do resto
   const formatCurrency = useCallback((value: number) => {
-    // Os valores já estão em BRL (convertidos no histórico)
-    // Usa o formatador global que respeita a preferência do usuário
     return formatCurrencyValue(value);
   }, [formatCurrencyValue]);
 
@@ -557,13 +573,13 @@ export function InvestmentEvolutionChart({
             <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
               <span className="text-xs text-muted-foreground block mb-1">Valor Investido</span>
               <span className="font-mono text-sm text-card-foreground font-medium">
-                {formatCurrency(investment.investedAmount)}
+                {formatCurrency(investedAmountBrl)}
               </span>
             </div>
             <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
               <span className="text-xs text-muted-foreground block mb-1">Acumulado Total</span>
               <span className="font-mono text-sm text-primary font-semibold">
-                {formatCurrency(investment.currentValue)}
+                {formatCurrency(currentValueBrl)}
               </span>
             </div>
             <div className={cn(
