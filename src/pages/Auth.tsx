@@ -81,20 +81,35 @@ export default function Auth() {
       // Check if we have hash params from the recovery link
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
       const type = hashParams.get('type');
       
       if (accessToken && type === 'recovery') {
-        setMode('reset-password');
-        setIsRecoverySession(true);
+        // Set the session manually using the tokens from the URL
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        });
         
-        // The session should be set automatically by Supabase
-        // Clear the hash from URL for cleaner appearance
-        window.history.replaceState(null, '', window.location.pathname + '?mode=reset');
+        if (error) {
+          console.error('Error setting recovery session:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Erro na recuperação',
+            description: 'Link de recuperação inválido ou expirado. Solicite um novo.',
+          });
+          setMode('forgot-password');
+        } else {
+          setMode('reset-password');
+          setIsRecoverySession(true);
+          // Clear the hash from URL for cleaner appearance after session is set
+          window.history.replaceState(null, '', window.location.pathname + '?mode=reset');
+        }
       }
     };
 
     handleRecoverySession();
-  }, []);
+  }, [toast]);
 
   // Redirect if already logged in (except in reset-password mode with recovery session)
   useEffect(() => {
