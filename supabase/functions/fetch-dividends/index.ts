@@ -11,15 +11,6 @@ interface YahooDividend {
   date: number; // Unix timestamp
 }
 
-// Map dividend type based on amount and label
-function mapDividendType(label?: string): 'dividend' | 'jcp' {
-  const text = label?.toLowerCase() || '';
-  if (text.includes('jcp') || text.includes('juros sobre capital')) {
-    return 'jcp';
-  }
-  return 'dividend';
-}
-
 // Normalize Brazilian ticker to Yahoo format
 function normalizeToYahooSymbol(symbol: string): string {
   let normalized = symbol.toUpperCase().replace('.SA', '');
@@ -98,7 +89,7 @@ serve(async (req) => {
 
     const body = await req.json();
     const { tickers, investmentMap } = body;
-    // investmentMap: Record<ticker, { id: string; name: string; category: string }>
+    // investmentMap: Record<ticker, { id: string; name: string; category: string; quantity: number }>
 
     if (!tickers || !Array.isArray(tickers) || tickers.length === 0) {
       return new Response(
@@ -131,7 +122,7 @@ serve(async (req) => {
       investment_id: string | null;
       investment_name: string;
       category: string;
-      type: 'dividend' | 'jcp';
+      type: 'dividend';
       amount: number;
       payment_date: string;
       ex_date: string | null;
@@ -188,6 +179,7 @@ serve(async (req) => {
         const investmentId = investment?.id || null;
         const investmentName = investment?.name || ticker;
         const category = investment?.category || 'stocks';
+        const quantity = investment?.quantity || 1;
 
         const tickerDividends: typeof allDividends = [];
 
@@ -195,11 +187,13 @@ serve(async (req) => {
           const dividendData = div as YahooDividend;
           const paymentDate = new Date(dividendData.date * 1000);
           const paymentDateStr = paymentDate.toISOString().split('T')[0];
-          const divType = mapDividendType();
-          const amount = Math.round(dividendData.amount * 100) / 100;
+          
+          // Calculate total amount: dividend per share × quantity
+          const amountPerShare = dividendData.amount;
+          const totalAmount = Math.round(amountPerShare * quantity * 100) / 100;
           
           // Check for duplicates
-          const key = `${investmentName}-${paymentDateStr}-${amount}-${divType}`;
+          const key = `${investmentName}-${paymentDateStr}-${totalAmount}-dividend`;
           if (existingKeys.has(key)) {
             console.log(`Skipping duplicate: ${key}`);
             continue;
@@ -210,11 +204,11 @@ serve(async (req) => {
             investment_id: investmentId,
             investment_name: investmentName,
             category: category,
-            type: divType,
-            amount: amount,
+            type: 'dividend',
+            amount: totalAmount,
             payment_date: paymentDateStr,
             ex_date: null,
-            notes: `Sincronizado automaticamente via Yahoo Finance`,
+            notes: `Sincronizado via Yahoo Finance (${amountPerShare.toFixed(4)}/ação × ${quantity} ações)`,
           });
 
           // Add to existing keys to prevent duplicates within this batch
