@@ -4,7 +4,7 @@ import { TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Investment, categoryLabels } from '@/types/investment';
 import { supabase } from '@/integrations/supabase/client';
-import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
+import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import {
   Dialog,
   DialogContent,
@@ -251,7 +251,7 @@ function convertHistoryToChartData(
 function useHistoricalChartData(investment: Investment, isOpen: boolean) {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { rate: usdToBrl } = useUsdBrlRate();
+  const { usdBrlRate, displayCurrency } = useValuesVisibility();
   
   const isCompoundGrowth = COMPOUND_GROWTH_CATEGORIES.includes(investment.category);
   const hasMarketData = MARKET_DATA_CATEGORIES.includes(investment.category);
@@ -286,10 +286,10 @@ function useHistoricalChartData(investment: Investment, isOpen: boolean) {
             const isCrypto = investment.category === 'crypto';
             const isUSA = investment.category === 'usastocks' || investment.category === 'reits';
             const isGold = investment.category === 'gold';
-            const multiplier = (isCrypto || isUSA) ? usdToBrl : 1;
+            const multiplier = (isCrypto || isUSA) ? usdBrlRate : 1;
             
             // Para ouro, converte de onça para grama
-            const goldMultiplier = isGold ? (usdToBrl / 31.1035) : 1;
+            const goldMultiplier = isGold ? (usdBrlRate / 31.1035) : 1;
             const finalMultiplier = isGold ? goldMultiplier : multiplier;
             
             const data = convertHistoryToChartData(
@@ -354,7 +354,7 @@ function useHistoricalChartData(investment: Investment, isOpen: boolean) {
       );
       setChartData(data);
     }
-  }, [isOpen, investment, isCompoundGrowth, hasMarketData, usdToBrl]);
+  }, [isOpen, investment, isCompoundGrowth, hasMarketData, usdBrlRate]);
   
   return { chartData, isLoading, hasMarketData };
 }
@@ -437,20 +437,18 @@ export function InvestmentEvolutionChart({
   onClose
 }: InvestmentEvolutionChartProps) {
   const { chartData, isLoading, hasMarketData } = useHistoricalChartData(investment, isOpen);
+  const { displayCurrency, formatCurrencyValue, usdBrlRate } = useValuesVisibility();
   
   const totalProfit = investment.currentValue - investment.investedAmount;
   const totalProfitPercent = investment.investedAmount > 0 ? (totalProfit / investment.investedAmount) * 100 : 0;
   const isPositive = totalProfit >= 0;
-  const isCrypto = investment.category === 'crypto';
-  const isUSA = investment.category === 'usastocks' || investment.category === 'reits';
-  const currency = (isCrypto || isUSA) ? 'USD' : 'BRL';
 
+  // Formata moeda respeitando a preferência global
   const formatCurrency = useCallback((value: number) => {
-    if (currency === 'USD') {
-      return `$ ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  }, [currency]);
+    // Os valores já estão em BRL (convertidos no histórico)
+    // Usa o formatador global que respeita a preferência do usuário
+    return formatCurrencyValue(value);
+  }, [formatCurrencyValue]);
 
   const formatPercent = useCallback((value: number) => 
     `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`, []);
