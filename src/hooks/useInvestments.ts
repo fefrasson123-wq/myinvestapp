@@ -3,6 +3,7 @@ import { Investment, InvestmentCategory } from '@/types/investment';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
+import { investmentIdentityKey, normalizeText, normalizeTicker } from '@/hooks/investments/normalize';
 
 const STORAGE_KEY = 'investments-portfolio';
 
@@ -30,7 +31,7 @@ export function useInvestments() {
         if (error) {
           console.error('Error loading investments:', error);
         } else if (data) {
-          setInvestments(data.map(inv => ({
+          const mapped = data.map(inv => ({
             id: inv.id,
             name: inv.name,
             category: inv.category as InvestmentCategory,
@@ -50,7 +51,17 @@ export function useInvestments() {
             areaM2: inv.area_m2 ? Number(inv.area_m2) : undefined,
             createdAt: new Date(inv.created_at),
             updatedAt: new Date(inv.updated_at),
-          })));
+          }));
+
+          // Client-side merge to prevent duplicates showing in UI.
+          // Then (best-effort) persist the merge in the database.
+          const merged = mergeDuplicateInvestments(mapped);
+          setInvestments(merged);
+
+          // Best-effort DB dedupe only once per session.
+          if (mapped.length !== merged.length) {
+            void dedupeInvestmentsInDb(mapped, merged);
+          }
         }
       } else {
         const stored = localStorage.getItem(STORAGE_KEY);
@@ -72,6 +83,146 @@ export function useInvestments() {
 
     loadInvestments();
   }, [user]);
+
+  // Avoid running DB dedupe multiple times.
+  const hasRunDbDedupeRef = useRef(false);
+
+  function mergeDuplicateInvestments(items: Investment[]): Investment[] {
+    // Group by identity (category+ticker or category+name)
+    const groups = new Map<string, Investment[]>();
+    for (const inv of items) {
+      const key = investmentIdentityKey({
+        category: inv.category,
+        name: inv.name,
+        ticker: inv.ticker,
+      });
+      const arr = groups.get(key);
+      if (arr) arr.push(inv);
+      else groups.set(key, [inv]);
+    }
+
+    const result: Investment[] = [];
+    for (const group of groups.values()) {
+      if (group.length === 1) {
+        result.push(group[0]);
+        continue;
+      }
+
+      // Use the newest updatedAt as the “base” record.
+      const base = [...group].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0];
+
+      const totalQty = group.reduce((sum, g) => sum + Number(g.quantity || 0), 0);
+      const weightedAvg = totalQty > 0
+        ? group.reduce((sum, g) => sum + Number(g.quantity || 0) * Number(g.averagePrice || 0), 0) / totalQty
+        : base.averagePrice;
+
+      const investedAmount = totalQty * weightedAvg;
+      const currentValue = totalQty * base.currentPrice;
+      const profitLoss = currentValue - investedAmount;
+      const profitLossPercent = investedAmount > 0 ? (profitLoss / investedAmount) * 100 : 0;
+
+      result.push({
+        ...base,
+        // Normalize minor differences
+        name: base.name.trim(),
+        ticker: base.ticker ? base.ticker.trim().toUpperCase() : undefined,
+        quantity: totalQty,
+        averagePrice: weightedAvg,
+        investedAmount,
+        currentValue,
+        profitLoss,
+        profitLossPercent,
+      });
+    }
+
+    // Keep “newest first” like the query order.
+    return result.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async function dedupeInvestmentsInDb(before: Investment[], after: Investment[]) {
+    if (!user) return;
+    if (hasRunDbDedupeRef.current) return;
+    hasRunDbDedupeRef.current = true;
+
+    // Build groups from BEFORE to know duplicates ids.
+    const byKey = new Map<string, Investment[]>();
+    for (const inv of before) {
+      const key = investmentIdentityKey({ category: inv.category, name: inv.name, ticker: inv.ticker });
+      const arr = byKey.get(key);
+      if (arr) arr.push(inv);
+      else byKey.set(key, [inv]);
+    }
+
+    for (const [key, group] of byKey.entries()) {
+      if (group.length <= 1) continue;
+
+      // Find the merged record corresponding to this key.
+      const merged = after.find((x) => investmentIdentityKey({ category: x.category, name: x.name, ticker: x.ticker }) === key);
+      if (!merged) continue;
+
+      // Choose the newest updated investment as the survivor.
+      const survivor = [...group].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0];
+      const duplicates = group.filter((g) => g.id !== survivor.id);
+      if (duplicates.length === 0) continue;
+
+      // 1) Update survivor fields to merged values
+      await supabase
+        .from('investments')
+        .update({
+          name: merged.name,
+          ticker: merged.ticker ?? null,
+          quantity: merged.quantity,
+          average_price: merged.averagePrice,
+          invested_amount: merged.investedAmount,
+          current_price: merged.currentPrice,
+          current_value: merged.currentValue,
+          profit_loss: merged.profitLoss,
+          profit_loss_percent: merged.profitLossPercent,
+        })
+        .eq('id', survivor.id);
+
+      // 2) Repoint transactions + tags
+      for (const dup of duplicates) {
+        await supabase
+          .from('transactions')
+          .update({ investment_id: survivor.id })
+          .eq('investment_id', dup.id);
+
+        // investment_tags doesn't allow UPDATE (by policy), so we copy+delete.
+        const { data: dupTags, error: dupTagsError } = await supabase
+          .from('investment_tags')
+          .select('tag')
+          .eq('investment_id', dup.id);
+
+        if (dupTagsError) {
+          console.error('Error loading tags for duplicate investment:', dupTagsError);
+        } else if (dupTags && dupTags.length > 0) {
+          // Insert tags for survivor (best-effort; duplicates are acceptable for now)
+          await supabase
+            .from('investment_tags')
+            .insert(
+              dupTags.map(t => ({
+                user_id: user.id,
+                investment_id: survivor.id,
+                tag: t.tag,
+              }))
+            );
+        }
+
+        // Remove tags for duplicate investment
+        await supabase
+          .from('investment_tags')
+          .delete()
+          .eq('investment_id', dup.id);
+
+        // 3) Delete the duplicate investment
+        await supabase
+          .from('investments')
+          .delete()
+          .eq('id', dup.id);
+      }
+    }
+  }
 
   const saveToStorage = useCallback((data: Investment[]) => {
     if (!user) {
@@ -143,14 +294,16 @@ export function useInvestments() {
     const currentInvestments = investmentsRef.current;
     // Para ativos com ticker, busca pelo ticker
     if (data.ticker) {
+      const wanted = normalizeTicker(data.ticker);
       return currentInvestments.find(inv => 
-        inv.ticker?.toLowerCase() === data.ticker?.toLowerCase() && 
+        normalizeTicker(inv.ticker) === wanted && 
         inv.category === data.category
       );
     }
     // Para outros ativos, busca pelo nome exato e categoria
+    const wantedName = normalizeText(data.name);
     return currentInvestments.find(inv => 
-      inv.name.toLowerCase() === data.name.toLowerCase() && 
+      normalizeText(inv.name) === wantedName && 
       inv.category === data.category
     );
   }, []);
@@ -362,26 +515,15 @@ export function useInvestments() {
     setInvestments(prev => prev.filter(inv => inv.id !== id));
     
     if (user) {
-      // First, find and delete only the most recent transaction for this investment
-      const { data: recentTransaction } = await supabase
+      // IMPORTANT: delete ALL linked transactions first.
+      // Otherwise the investment delete can fail due to FK constraint and it will “not disappear”.
+      const { error: transactionsError } = await supabase
         .from('transactions')
-        .select('id')
-        .eq('investment_id', id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .delete()
+        .eq('investment_id', id);
 
-      if (recentTransaction) {
-        const { error: transactionError } = await supabase
-          .from('transactions')
-          .delete()
-          .eq('id', recentTransaction.id);
-
-        if (transactionError) {
-          console.error('Error deleting recent transaction:', transactionError);
-        } else {
-          console.log('Most recent transaction deleted for investment:', id);
-        }
+      if (transactionsError) {
+        console.error('Error deleting transactions for investment:', transactionsError);
       }
 
       // Then delete the investment - tags will be cascaded automatically via ON DELETE CASCADE
