@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   XAxis,
   YAxis,
@@ -11,6 +11,7 @@ import {
 import { Investment, PriceHistory } from '@/types/investment';
 import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 interface PerformanceChartProps {
   investments: Investment[];
@@ -560,16 +561,29 @@ function useHistoricalData(investments: Investment[], period: string) {
 export function PerformanceChart({ investments, period }: PerformanceChartProps) {
   const { data, isLoading } = useHistoricalData(investments, period);
   const { rate: usdToBrl } = useUsdBrlRate();
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const prevPeriodRef = useRef(period);
+  
+  // Detecta mudança de período para transição suave
+  useEffect(() => {
+    if (prevPeriodRef.current !== period) {
+      setIsTransitioning(true);
+      const timeout = setTimeout(() => setIsTransitioning(false), 150);
+      prevPeriodRef.current = period;
+      return () => clearTimeout(timeout);
+    }
+  }, [period]);
   
   // Calcula o total investido (para comparar lucro/prejuízo real)
-  const totalInvested = investments.reduce((sum, inv) => {
+  const totalInvested = useMemo(() => investments.reduce((sum, inv) => {
     const isCrypto = inv.category === 'crypto';
     const isUSA = inv.category === 'usastocks' || inv.category === 'reits';
     const value = (isCrypto || isUSA) ? inv.investedAmount * usdToBrl : inv.investedAmount;
     return sum + value;
-  }, 0);
+  }, 0), [investments, usdToBrl]);
   
-  if (isLoading) {
+  // Mostra loading apenas no carregamento inicial (sem dados)
+  if (isLoading && data.length === 0) {
     return (
       <div className="h-[300px] flex items-center justify-center text-muted-foreground">
         <div className="flex flex-col items-center gap-2">
@@ -647,41 +661,45 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
   const yDomain: [number, number] = [0, maxValue + paddingTop];
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={lineColor} stopOpacity={0.3}/>
-            <stop offset="95%" stopColor={lineColor} stopOpacity={0}/>
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-        <XAxis 
-          dataKey="date" 
-          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-          tickLine={false}
-          axisLine={false}
-        />
-        <YAxis 
-          tickFormatter={formatCurrency}
-          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-          tickLine={false}
-          axisLine={false}
-          width={65}
-          domain={yDomain}
-        />
-        <Tooltip content={<CustomTooltip />} />
-        <Area 
-          type="monotone" 
-          dataKey="value" 
-          stroke={lineColor} 
-          strokeWidth={2}
-          fillOpacity={1} 
-          fill="url(#colorValue)"
-          animationDuration={2000}
-          animationEasing="ease-out"
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+    <div className={cn(
+      "transition-opacity duration-150",
+      isTransitioning || isLoading ? "opacity-60" : "opacity-100"
+    )}>
+      <ResponsiveContainer width="100%" height={300}>
+        <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={lineColor} stopOpacity={0.3}/>
+              <stop offset="95%" stopColor={lineColor} stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+          <XAxis 
+            dataKey="date" 
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis 
+            tickFormatter={formatCurrency}
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            tickLine={false}
+            axisLine={false}
+            width={65}
+            domain={yDomain}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Area 
+            type="monotone" 
+            dataKey="value" 
+            stroke={lineColor} 
+            strokeWidth={2}
+            fillOpacity={1} 
+            fill="url(#colorValue)"
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
