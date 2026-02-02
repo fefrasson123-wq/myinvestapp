@@ -58,16 +58,21 @@ export function useEurBrlRate(): EurBrlRateState {
 
     try {
       const data = await exchangeRateLimiter.execute(async () => {
-        const response = await fetch('https://economia.awesomeapi.com.br/json/last/EUR-BRL');
+        // Chama edge function com query param para EUR-BRL
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/exchange-rate?pair=EUR-BRL`,
+          {
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+          }
+        );
         
-        if (!response.ok) {
-          throw new Error(`HTTP error: ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         return response.json();
       }, 2);
 
-      const newRate = parseFloat(data.EURBRL?.bid);
+      const newRate = data?.bid;
 
       if (isNaN(newRate) || newRate <= 0) {
         throw new Error('Invalid rate received');

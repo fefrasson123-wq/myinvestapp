@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { getPriceCache } from "@/lib/priceCache";
 import { exchangeRateLimiter } from "@/lib/rateLimiter";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UsdBrlRateState {
   rate: number;
@@ -23,7 +24,7 @@ const DEFAULT_RATE = 5.0;
 
 /**
  * Cotação USD/BRL (atualiza e cacheia). Usado para converter cripto (USD) em BRL no app.
- * Fonte: AwesomeAPI (endpoint público, sem chave).
+ * Usa edge function para evitar CORS.
  */
 export function useUsdBrlRate(): UsdBrlRateState {
   const [rate, setRate] = useState<number>(DEFAULT_RATE);
@@ -64,18 +65,18 @@ export function useUsdBrlRate(): UsdBrlRateState {
     setError(null);
 
     try {
-      // USD/BRL (bid) com rate limiting
+      // USD/BRL via edge function para evitar CORS
       const data = await exchangeRateLimiter.execute(async () => {
-        const resp = await fetch("https://economia.awesomeapi.com.br/json/last/USD-BRL", {
-          headers: { Accept: "application/json" },
+        const { data, error } = await supabase.functions.invoke('exchange-rate', {
+          body: null,
         });
-
-        if (!resp.ok) throw new Error(`Falha ao buscar USD/BRL: ${resp.status}`);
-        return resp.json();
+        
+        if (error) throw new Error(`Falha ao buscar USD/BRL: ${error.message}`);
+        return data;
       }, 2);
 
-      const bidRaw = data?.USDBRL?.bid;
-      const bid = typeof bidRaw === "string" ? Number(bidRaw) : Number(bidRaw);
+      // A edge function retorna { bid, ask, ... } diretamente
+      const bid = data?.bid;
 
       if (!Number.isFinite(bid) || bid <= 0) {
         throw new Error("Cotação USD/BRL inválida");
