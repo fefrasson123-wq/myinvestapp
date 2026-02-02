@@ -376,11 +376,13 @@ function calculateValueAtTime(
   const multiplier = (isCrypto || isUSA) ? usdToBrl : 1;
   return investment.currentValue * multiplier;
 }
+// Cache de dados por período para transição instantânea
+const periodDataCache = new Map<string, PriceHistory[]>();
 
 function useHistoricalData(investments: Investment[], period: string) {
   const { rate: usdToBrl } = useUsdBrlRate();
-  const [data, setData] = useState<PriceHistory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [displayData, setDisplayData] = useState<PriceHistory[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const isFetchingRef = useRef(false);
   const lastFetchKeyRef = useRef('');
   
@@ -392,6 +394,16 @@ function useHistoricalData(investments: Investment[], period: string) {
   
   const fetchKey = `${investmentsKey}_${period}_${usdToBrl.toFixed(2)}`;
   
+  // Verifica se já temos dados em cache para este período
+  useEffect(() => {
+    const cachedData = periodDataCache.get(fetchKey);
+    if (cachedData && cachedData.length > 0) {
+      // Usa dados do cache imediatamente
+      setDisplayData(cachedData);
+      setIsInitialLoading(false);
+    }
+  }, [fetchKey]);
+  
   useEffect(() => {
     // Skip if already fetching or same key
     if (isFetchingRef.current || lastFetchKeyRef.current === fetchKey) {
@@ -399,8 +411,8 @@ function useHistoricalData(investments: Investment[], period: string) {
     }
     
     if (investments.length === 0) {
-      setData([]);
-      setIsLoading(false);
+      setDisplayData([]);
+      setIsInitialLoading(false);
       return;
     }
     
@@ -408,9 +420,10 @@ function useHistoricalData(investments: Investment[], period: string) {
       isFetchingRef.current = true;
       lastFetchKeyRef.current = fetchKey;
       
-      // Only show loading on first load
-      if (data.length === 0) {
-        setIsLoading(true);
+      // Não mostra loading se já temos dados (do período anterior ou cache)
+      // Loading só aparece na primeira vez absoluta
+      if (displayData.length === 0 && !periodDataCache.has(fetchKey)) {
+        setIsInitialLoading(true);
       }
       
       // Find oldest purchase date among all investments
@@ -547,32 +560,22 @@ function useHistoricalData(investments: Investment[], period: string) {
         } as any;
       }
       
-      setData(chartData);
-      setIsLoading(false);
+      // Salva no cache e atualiza display
+      periodDataCache.set(fetchKey, chartData);
+      setDisplayData(chartData);
+      setIsInitialLoading(false);
       isFetchingRef.current = false;
     };
     
     loadData();
-  }, [fetchKey, investments, period, usdToBrl, data.length]);
+  }, [fetchKey, investments, period, usdToBrl, displayData.length]);
   
-  return { data, isLoading };
+  return { data: displayData, isLoading: isInitialLoading };
 }
 
 export function PerformanceChart({ investments, period }: PerformanceChartProps) {
   const { data, isLoading } = useHistoricalData(investments, period);
   const { rate: usdToBrl } = useUsdBrlRate();
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const prevPeriodRef = useRef(period);
-  
-  // Detecta mudança de período para transição suave
-  useEffect(() => {
-    if (prevPeriodRef.current !== period) {
-      setIsTransitioning(true);
-      const timeout = setTimeout(() => setIsTransitioning(false), 150);
-      prevPeriodRef.current = period;
-      return () => clearTimeout(timeout);
-    }
-  }, [period]);
   
   // Calcula o total investido (para comparar lucro/prejuízo real)
   const totalInvested = useMemo(() => investments.reduce((sum, inv) => {
@@ -582,7 +585,7 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
     return sum + value;
   }, 0), [investments, usdToBrl]);
   
-  // Mostra loading apenas no carregamento inicial (sem dados)
+  // Mostra loading apenas no carregamento inicial absoluto (sem nenhum dado)
   if (isLoading && data.length === 0) {
     return (
       <div className="h-[300px] flex items-center justify-center text-muted-foreground">
@@ -661,45 +664,40 @@ export function PerformanceChart({ investments, period }: PerformanceChartProps)
   const yDomain: [number, number] = [0, maxValue + paddingTop];
 
   return (
-    <div className={cn(
-      "transition-opacity duration-150",
-      isTransitioning || isLoading ? "opacity-60" : "opacity-100"
-    )}>
-      <ResponsiveContainer width="100%" height={300}>
-        <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={lineColor} stopOpacity={0.3}/>
-              <stop offset="95%" stopColor={lineColor} stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-          <XAxis 
-            dataKey="date" 
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis 
-            tickFormatter={formatCurrency}
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-            tickLine={false}
-            axisLine={false}
-            width={65}
-            domain={yDomain}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Area 
-            type="monotone" 
-            dataKey="value" 
-            stroke={lineColor} 
-            strokeWidth={2}
-            fillOpacity={1} 
-            fill="url(#colorValue)"
-            isAnimationActive={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
+    <ResponsiveContainer width="100%" height={300}>
+      <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor={lineColor} stopOpacity={0.3}/>
+            <stop offset="95%" stopColor={lineColor} stopOpacity={0}/>
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+        <XAxis 
+          dataKey="date" 
+          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <YAxis 
+          tickFormatter={formatCurrency}
+          tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+          tickLine={false}
+          axisLine={false}
+          width={65}
+          domain={yDomain}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Area 
+          type="monotone" 
+          dataKey="value" 
+          stroke={lineColor} 
+          strokeWidth={2}
+          fillOpacity={1} 
+          fill="url(#colorValue)"
+          isAnimationActive={false}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }
