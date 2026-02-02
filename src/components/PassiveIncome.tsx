@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
-import { Wallet, TrendingUp, Calendar, Plus, Trash2, Building2, Landmark, BarChart3 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Wallet, TrendingUp, Calendar, Plus, Trash2, Building2, Landmark, BarChart3, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIncomePayments, IncomeType, incomeTypeLabels } from '@/hooks/useIncomePayments';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { useInvestments } from '@/hooks/useInvestments';
+import { useDividendSync } from '@/hooks/useDividendSync';
 import { cn } from '@/lib/utils';
 import { AddIncomeModal } from '@/components/AddIncomeModal';
 import { Investment, categoryLabels } from '@/types/investment';
@@ -52,11 +53,19 @@ interface ProjectedIncome {
 }
 
 export function PassiveIncome() {
-  const { payments, isLoading, stats, deletePayment } = useIncomePayments();
+  const { payments, isLoading, stats, deletePayment, refetch } = useIncomePayments();
   const { investments, isLoading: investmentsLoading } = useInvestments();
   const { formatCurrencyValue, showValues } = useValuesVisibility();
+  const { isSyncing, syncDividends, lastSync } = useDividendSync(investments);
   const [filter, setFilter] = useState<FilterType>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Refetch payments after sync completes
+  useEffect(() => {
+    if (!isSyncing && lastSync) {
+      refetch();
+    }
+  }, [isSyncing, lastSync, refetch]);
 
   // Calculate projected income from existing investments
   const projectedIncome = useMemo(() => {
@@ -175,11 +184,25 @@ export function PassiveIncome() {
         <h3 className="text-lg font-semibold text-card-foreground flex items-center gap-2">
           <Wallet className="w-5 h-5 text-primary" />
           Renda Passiva
+          {isSyncing && (
+            <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />
+          )}
         </h3>
-        <Button size="sm" onClick={() => setIsAddModalOpen(true)} className="gap-1">
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Dividendo</span>
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            size="sm" 
+            variant="ghost"
+            onClick={() => syncDividends(true)} 
+            disabled={isSyncing}
+            title="Sincronizar dividendos"
+          >
+            <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
+          </Button>
+          <Button size="sm" onClick={() => setIsAddModalOpen(true)} className="gap-1">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Dividendo</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filter Tabs */}
