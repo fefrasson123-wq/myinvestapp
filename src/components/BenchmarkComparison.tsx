@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown, BarChart3, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEconomicRates } from '@/hooks/useEconomicRates';
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BenchmarkComparisonProps {
   investment: Investment;
@@ -93,21 +94,56 @@ function calculateBenchmarkReturn(
 export function BenchmarkComparison({ investment, onClose }: BenchmarkComparisonProps) {
   const { rates, isLoading: ratesLoading } = useEconomicRates();
   const { return12m: btcReturn, isLoading: btcLoading } = useBitcoin12MonthReturn();
+  const [asset12mReturn, setAsset12mReturn] = useState<number | null>(null);
+  const [assetReturnLoading, setAssetReturnLoading] = useState(false);
   
-  // Calcula rentabilidade anualizada
-  const annualizedReturn = (() => {
-    if (!investment.purchaseDate || investment.investedAmount <= 0) return null;
+  // Busca retorno de 12 meses do ativo
+  useEffect(() => {
+    async function fetchAsset12mReturn() {
+      if (!investment.ticker) {
+        // Para ativos sem ticker (renda fixa), usa a taxa de juros informada
+        if (investment.interestRate) {
+          setAsset12mReturn(investment.interestRate);
+        }
+        return;
+      }
+      
+      setAssetReturnLoading(true);
+      try {
+        // Determina o mercado
+        let market: 'br' | 'usa' | 'crypto' = 'br';
+        if (investment.category === 'crypto') market = 'crypto';
+        else if (investment.category === 'usastocks' || investment.category === 'reits') market = 'usa';
+        
+        const { data, error } = await supabase.functions.invoke('stock-quotes', {
+          body: { 
+            symbols: [investment.ticker], 
+            market, 
+            action: 'historical',
+            range: '1y'
+          }
+        });
+        
+        if (!error && data?.history) {
+          const symbol = investment.ticker.toUpperCase().replace('.SA', '').replace('-USD', '');
+          const history = data.history[symbol] as Array<{ date: string; price: number }>;
+          
+          if (history && history.length >= 2) {
+            const priceNow = history[history.length - 1].price;
+            const price12MonthsAgo = history[0].price;
+            const returnPercent = ((priceNow - price12MonthsAgo) / price12MonthsAgo) * 100;
+            setAsset12mReturn(returnPercent);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching asset 12m return:', error);
+      } finally {
+        setAssetReturnLoading(false);
+      }
+    }
     
-    const start = new Date(investment.purchaseDate);
-    const now = new Date();
-    const years = (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-    
-    if (years <= 0) return null;
-    
-    // Fórmula de retorno anualizado: ((valor_final / valor_inicial) ^ (1/anos)) - 1
-    const annualized = (Math.pow(investment.currentValue / investment.investedAmount, 1 / years) - 1) * 100;
-    return annualized;
-  })();
+    fetchAsset12mReturn();
+  }, [investment.ticker, investment.category, investment.interestRate]);
   
   // Detectar se o investimento é do mesmo tipo que o benchmark
   const isBitcoinInvestment = investment.category === 'crypto' && 
@@ -218,18 +254,21 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
                   {formatPercent(investment.profitLossPercent)}
                 </p>
               </div>
-              {annualizedReturn !== null && (
-                <>
-                  <div className="col-span-2 border-t border-border/30 pt-3 mt-1">
-                    <span className="text-muted-foreground">Rentabilidade Anual</span>
+              {(asset12mReturn !== null || assetReturnLoading) && (
+                <div className="col-span-2 border-t border-border/30 pt-3 mt-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Retorno do Ativo (12 meses)</span>
+                    {assetReturnLoading && <RefreshCw className="w-3 h-3 animate-spin text-muted-foreground" />}
+                  </div>
+                  {asset12mReturn !== null && (
                     <p className={cn(
                       "font-mono font-medium text-lg",
-                      annualizedReturn >= 0 ? "text-success" : "text-destructive"
+                      asset12mReturn >= 0 ? "text-success" : "text-destructive"
                     )}>
-                      {annualizedReturn >= 0 ? '+' : ''}{annualizedReturn.toFixed(2)}% a.a.
+                      {asset12mReturn >= 0 ? '+' : ''}{asset12mReturn.toFixed(2)}%
                     </p>
-                  </div>
-                </>
+                  )}
+                </div>
               )}
             </div>
           </div>

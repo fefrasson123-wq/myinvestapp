@@ -460,20 +460,21 @@ export function InvestmentEvolutionChart({
   const totalProfitPercent = investedAmountBrl > 0 ? (totalProfit / investedAmountBrl) * 100 : 0;
   const isPositive = totalProfit >= 0;
 
-  // Calcula rentabilidade anualizada
-  const annualizedReturn = useMemo(() => {
-    if (!investment.purchaseDate || investedAmountBrl <= 0) return null;
+  // Calcula rentabilidade do ativo nos últimos 12 meses (baseado no histórico de preços)
+  const annual12mReturn = useMemo(() => {
+    if (chartData.length < 2) return null;
     
-    const start = new Date(investment.purchaseDate);
-    const now = new Date();
-    const years = (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+    // Pega o primeiro e último ponto do gráfico para calcular a variação
+    // Se o histórico for maior que 12 meses, precisamos pegar aproximadamente 12 meses atrás
+    const firstPoint = chartData[0];
+    const lastPoint = chartData[chartData.length - 1];
     
-    if (years <= 0) return null;
+    if (firstPoint.price <= 0 || lastPoint.price <= 0) return null;
     
-    // Fórmula de retorno anualizado: ((valor_final / valor_inicial) ^ (1/anos)) - 1
-    const annualized = (Math.pow(currentValueBrl / investedAmountBrl, 1 / years) - 1) * 100;
-    return annualized;
-  }, [investment.purchaseDate, investedAmountBrl, currentValueBrl]);
+    // Retorno percentual do período do gráfico
+    const returnPercent = ((lastPoint.price - firstPoint.price) / firstPoint.price) * 100;
+    return returnPercent;
+  }, [chartData]);
 
   // Formata moeda respeitando a preferência global
   // Os valores já estão convertidos para BRL, o formatador global cuida do resto
@@ -646,20 +647,20 @@ export function InvestmentEvolutionChart({
             </div>
           </div>
           
-          {/* Rentabilidade Anualizada */}
-          {annualizedReturn !== null && (
+          {/* Rentabilidade do Ativo no Período */}
+          {annual12mReturn !== null && (
             <div className={cn(
               "p-3 rounded-lg border text-center",
-              annualizedReturn >= 0 
+              annual12mReturn >= 0 
                 ? "bg-success/10 border-success/30" 
                 : "bg-destructive/10 border-destructive/30"
             )}>
-              <span className="text-xs text-muted-foreground block mb-1">Rentabilidade Anual</span>
+              <span className="text-xs text-muted-foreground block mb-1">Variação do Ativo no Período</span>
               <span className={cn(
                 "font-mono text-lg font-semibold",
-                annualizedReturn >= 0 ? "text-success" : "text-destructive"
+                annual12mReturn >= 0 ? "text-success" : "text-destructive"
               )}>
-                {annualizedReturn >= 0 ? '+' : ''}{annualizedReturn.toFixed(2)}% a.a.
+                {annual12mReturn >= 0 ? '+' : ''}{annual12mReturn.toFixed(2)}%
               </span>
             </div>
           )}
