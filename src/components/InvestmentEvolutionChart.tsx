@@ -1,8 +1,10 @@
-import { useMemo, memo, useCallback } from 'react';
+import { useMemo, memo, useCallback, useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Investment, categoryLabels } from '@/types/investment';
+import { supabase } from '@/integrations/supabase/client';
+import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
 import {
   Dialog,
   DialogContent,
@@ -20,11 +22,12 @@ interface InvestmentEvolutionChartProps {
 interface ChartDataPoint {
   date: string;
   value: number;
+  price: number;
   profit: number;
   profitPercent: number;
 }
 
-// Categorias que usam valorização composta (sem volatilidade)
+// Categorias que usam valorização composta (sem dados de mercado)
 const COMPOUND_GROWTH_CATEGORIES = [
   'realestate', 
   'cdb', 
@@ -35,13 +38,80 @@ const COMPOUND_GROWTH_CATEGORIES = [
   'savings', 
   'debentures', 
   'cricra', 
-  'fixedincomefund'
+  'fixedincomefund',
+  'cash'
 ];
+
+// Categorias com dados de mercado disponíveis
+const MARKET_DATA_CATEGORIES = [
+  'crypto',
+  'stocks',
+  'fii',
+  'usastocks',
+  'reits',
+  'bdr',
+  'etf',
+  'gold'
+];
+
+// Busca histórico via edge function
+async function fetchHistoricalPrices(
+  ticker: string,
+  market: 'br' | 'usa' | 'crypto',
+  range: string = '1mo'
+): Promise<Array<{ date: string; price: number }>> {
+  try {
+    const { data, error } = await supabase.functions.invoke('stock-quotes', {
+      body: { 
+        symbols: [ticker], 
+        market, 
+        action: 'historical',
+        range
+      }
+    });
+    
+    if (error) {
+      console.error('Error fetching historical:', error);
+      return [];
+    }
+    
+    const symbol = ticker.toUpperCase().replace('.SA', '').replace('-USD', '');
+    return data?.history?.[symbol] || [];
+  } catch (e) {
+    console.error('Error fetching historical:', e);
+    return [];
+  }
+}
+
+// Determina o mercado baseado na categoria
+function getMarketFromCategory(category: string): 'br' | 'usa' | 'crypto' {
+  if (category === 'crypto') return 'crypto';
+  if (category === 'usastocks' || category === 'reits' || category === 'gold') return 'usa';
+  return 'br';
+}
+
+// Determina o range baseado na data de compra
+function getRangeFromPurchaseDate(purchaseDate?: string): string {
+  if (!purchaseDate) return '1y';
+  
+  const purchase = new Date(purchaseDate);
+  const now = new Date();
+  const days = Math.ceil((now.getTime() - purchase.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (days <= 7) return '5d';
+  if (days <= 30) return '1mo';
+  if (days <= 90) return '3mo';
+  if (days <= 180) return '6mo';
+  if (days <= 365) return '1y';
+  if (days <= 730) return '2y';
+  return '5y';
+}
 
 // Gera dados de evolução com valorização composta (para imóveis e renda fixa)
 function generateCompoundEvolutionData(
   investedAmount: number, 
   currentValue: number, 
+  quantity: number,
   purchaseDate?: string,
   annualRate?: number
 ): ChartDataPoint[] {
@@ -82,6 +152,7 @@ function generateCompoundEvolutionData(
     const value = investedAmount * Math.pow(1 + effectiveRate / 100, yearsElapsed);
     const profit = value - investedAmount;
     const profitPercent = investedAmount > 0 ? (profit / investedAmount) * 100 : 0;
+    const price = quantity > 0 ? value / quantity : value;
     
     const pointDate = new Date(startDate.getTime() + (totalDays * progress * 24 * 60 * 60 * 1000));
     
@@ -95,6 +166,7 @@ function generateCompoundEvolutionData(
     data.push({
       date: label,
       value: Math.round(value * 100) / 100,
+      price: Math.round(price * 100) / 100,
       profit: Math.round(profit * 100) / 100,
       profitPercent: parseFloat(profitPercent.toFixed(2)),
     });
@@ -117,95 +189,177 @@ function generateCompoundEvolutionData(
   return data;
 }
 
-// Gera dados de evolução do investimento ao longo do tempo (para outros ativos)
-function generateEvolutionData(
-  investedAmount: number, 
-  currentValue: number, 
+// Converte histórico de preços para dados do gráfico
+function convertHistoryToChartData(
+  history: Array<{ date: string; price: number }>,
+  quantity: number,
+  investedAmount: number,
   purchaseDate?: string,
-  seed?: number
+  multiplier: number = 1
 ): ChartDataPoint[] {
-  const data: ChartDataPoint[] = [];
+  if (!history || history.length === 0) return [];
   
-  const startDate = purchaseDate ? new Date(purchaseDate) : new Date();
-  if (!purchaseDate) {
-    startDate.setMonth(startDate.getMonth() - 6);
-  }
+  const purchaseTs = purchaseDate ? new Date(purchaseDate).getTime() : 0;
   
-  const endDate = new Date();
-  const totalDays = Math.max(7, Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+  // Filtra pontos após a data de compra
+  const filteredHistory = purchaseTs > 0 
+    ? history.filter(h => new Date(h.date).getTime() >= purchaseTs)
+    : history;
   
-  let points: number;
-  if (totalDays <= 30) {
-    points = Math.min(totalDays, 15);
-  } else if (totalDays <= 90) {
-    points = 18;
-  } else if (totalDays <= 365) {
-    points = 24;
-  } else if (totalDays <= 365 * 2) {
-    points = 30;
-  } else {
-    points = 36;
-  }
+  if (filteredHistory.length === 0) return [];
   
-  const totalProfit = currentValue - investedAmount;
+  // Reduz pontos se tiver muitos (máximo ~50 para performance)
+  const step = Math.max(1, Math.floor(filteredHistory.length / 50));
+  const sampledHistory = filteredHistory.filter((_, i) => i % step === 0 || i === filteredHistory.length - 1);
   
-  // Usa seed determinística para evitar re-render com valores aleatórios diferentes
-  const seededRandom = (n: number) => {
-    const x = Math.sin(n * 12.9898 + (seed || 0) * 78.233) * 43758.5453;
-    return x - Math.floor(x);
-  };
-  
-  for (let i = 0; i <= points; i++) {
-    const progress = i / points;
-    
-    const baseGrowth = Math.pow(progress, 0.85);
-    
-    const volatilityFactor = Math.sin(progress * Math.PI) * 0.15;
-    const randomNoise = (seededRandom(i) - 0.5) * volatilityFactor * (1 - Math.pow(progress - 0.5, 2) * 4);
-    
-    const adjustedProgress = Math.max(0, Math.min(1, baseGrowth + randomNoise * 0.3));
-    
-    const value = investedAmount + (totalProfit * adjustedProgress);
+  return sampledHistory.map((point, index) => {
+    const price = point.price * multiplier;
+    const value = quantity * price;
     const profit = value - investedAmount;
     const profitPercent = investedAmount > 0 ? (profit / investedAmount) * 100 : 0;
     
-    const pointDate = new Date(startDate.getTime() + (totalDays * progress * 24 * 60 * 60 * 1000));
+    const pointDate = new Date(point.date);
+    const totalDays = (new Date().getTime() - new Date(sampledHistory[0].date).getTime()) / (1000 * 60 * 60 * 24);
     
     let label: string;
-    if (totalDays <= 30) {
-      label = pointDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+    if (totalDays <= 7) {
+      label = pointDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' });
+    } else if (totalDays <= 30) {
+      label = pointDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
     } else if (totalDays <= 365) {
       label = pointDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
     } else {
       label = pointDate.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
     }
     
-    data.push({
+    // Último ponto sempre mostra "Agora"
+    if (index === sampledHistory.length - 1) {
+      label = 'Agora';
+    }
+    
+    return {
       date: label,
       value: Math.round(value * 100) / 100,
+      price: Math.round(price * 100) / 100,
       profit: Math.round(profit * 100) / 100,
       profitPercent: parseFloat(profitPercent.toFixed(2)),
-    });
-  }
-  
-  if (data.length > 0) {
-    data[0].value = investedAmount;
-    data[0].profit = 0;
-    data[0].profitPercent = 0;
-  }
-  
-  if (data.length > 1) {
-    data[data.length - 1].value = currentValue;
-    data[data.length - 1].profit = currentValue - investedAmount;
-    data[data.length - 1].profitPercent = investedAmount > 0 
-      ? parseFloat(((currentValue - investedAmount) / investedAmount * 100).toFixed(2))
-      : 0;
-  }
-  
-  return data;
+    };
+  });
 }
 
-// Componente do gráfico memoizado para evitar re-renders desnecessários
+// Hook para buscar dados históricos
+function useHistoricalChartData(investment: Investment, isOpen: boolean) {
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { rate: usdToBrl } = useUsdBrlRate();
+  
+  const isCompoundGrowth = COMPOUND_GROWTH_CATEGORIES.includes(investment.category);
+  const hasMarketData = MARKET_DATA_CATEGORIES.includes(investment.category);
+  
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    // Para categorias sem dados de mercado, gera dados compostos
+    if (isCompoundGrowth) {
+      const data = generateCompoundEvolutionData(
+        investment.investedAmount,
+        investment.currentValue,
+        investment.quantity,
+        investment.purchaseDate,
+        investment.interestRate
+      );
+      setChartData(data);
+      return;
+    }
+    
+    // Para categorias com dados de mercado, busca histórico real
+    if (hasMarketData && investment.ticker) {
+      setIsLoading(true);
+      
+      const market = getMarketFromCategory(investment.category);
+      const range = getRangeFromPurchaseDate(investment.purchaseDate);
+      const ticker = investment.category === 'gold' ? 'GC=F' : investment.ticker;
+      
+      fetchHistoricalPrices(ticker, market, range)
+        .then(history => {
+          if (history.length > 0) {
+            const isCrypto = investment.category === 'crypto';
+            const isUSA = investment.category === 'usastocks' || investment.category === 'reits';
+            const isGold = investment.category === 'gold';
+            const multiplier = (isCrypto || isUSA) ? usdToBrl : 1;
+            
+            // Para ouro, converte de onça para grama
+            const goldMultiplier = isGold ? (usdToBrl / 31.1035) : 1;
+            const finalMultiplier = isGold ? goldMultiplier : multiplier;
+            
+            const data = convertHistoryToChartData(
+              history,
+              investment.quantity,
+              investment.investedAmount,
+              investment.purchaseDate,
+              finalMultiplier
+            );
+            
+            if (data.length > 0) {
+              // Ajusta último ponto para valor atual real
+              data[data.length - 1] = {
+                ...data[data.length - 1],
+                date: 'Agora',
+                value: investment.currentValue,
+                price: investment.currentPrice,
+                profit: investment.profitLoss,
+                profitPercent: investment.profitLossPercent
+              };
+              setChartData(data);
+            } else {
+              // Fallback para dados compostos se não houver histórico filtrado
+              const fallbackData = generateCompoundEvolutionData(
+                investment.investedAmount,
+                investment.currentValue,
+                investment.quantity,
+                investment.purchaseDate
+              );
+              setChartData(fallbackData);
+            }
+          } else {
+            // Fallback para dados compostos se não houver histórico
+            const fallbackData = generateCompoundEvolutionData(
+              investment.investedAmount,
+              investment.currentValue,
+              investment.quantity,
+              investment.purchaseDate
+            );
+            setChartData(fallbackData);
+          }
+        })
+        .catch(err => {
+          console.error('Error loading historical data:', err);
+          // Fallback
+          const fallbackData = generateCompoundEvolutionData(
+            investment.investedAmount,
+            investment.currentValue,
+            investment.quantity,
+            investment.purchaseDate
+          );
+          setChartData(fallbackData);
+        })
+        .finally(() => setIsLoading(false));
+    } else {
+      // Sem ticker, usa dados compostos
+      const data = generateCompoundEvolutionData(
+        investment.investedAmount,
+        investment.currentValue,
+        investment.quantity,
+        investment.purchaseDate
+      );
+      setChartData(data);
+    }
+  }, [isOpen, investment, isCompoundGrowth, hasMarketData, usdToBrl]);
+  
+  return { chartData, isLoading, hasMarketData };
+}
+
+// Componente do gráfico memoizado
 const EvolutionAreaChart = memo(function EvolutionAreaChart({
   chartData,
   isPositive,
@@ -256,8 +410,9 @@ const EvolutionAreaChart = memo(function EvolutionAreaChart({
           }}
           formatter={(value: number, name: string) => {
             if (name === 'value') return [formatCurrency(value), 'Valor'];
+            if (name === 'price') return [formatCurrency(value), 'Preço'];
             if (name === 'profit') return [formatCurrency(value), 'Lucro/Prejuízo'];
-            if (name === 'profitPercent') return [`${value}%`, 'Rentabilidade'];
+            if (name === 'profitPercent') return [`${value >= 0 ? '+' : ''}${value}%`, 'Rentabilidade'];
             return [value, name];
           }}
           labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
@@ -281,41 +436,14 @@ export function InvestmentEvolutionChart({
   isOpen,
   onClose
 }: InvestmentEvolutionChartProps) {
-  const isCompoundGrowth = COMPOUND_GROWTH_CATEGORIES.includes(investment.category);
+  const { chartData, isLoading, hasMarketData } = useHistoricalChartData(investment, isOpen);
   
-  // Seed determinística baseada no ID do investimento para consistência
-  const seed = useMemo(() => {
-    let hash = 0;
-    const str = investment.id;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash |= 0;
-    }
-    return hash;
-  }, [investment.id]);
-  
-  const chartData = useMemo(() => {
-    if (isCompoundGrowth) {
-      return generateCompoundEvolutionData(
-        investment.investedAmount, 
-        investment.currentValue, 
-        investment.purchaseDate,
-        investment.interestRate
-      );
-    }
-    return generateEvolutionData(
-      investment.investedAmount, 
-      investment.currentValue, 
-      investment.purchaseDate,
-      seed
-    );
-  }, [investment.investedAmount, investment.currentValue, investment.purchaseDate, investment.interestRate, isCompoundGrowth, seed]);
-
   const totalProfit = investment.currentValue - investment.investedAmount;
   const totalProfitPercent = investment.investedAmount > 0 ? (totalProfit / investment.investedAmount) * 100 : 0;
   const isPositive = totalProfit >= 0;
   const isCrypto = investment.category === 'crypto';
-  const currency = isCrypto ? 'USD' : 'BRL';
+  const isUSA = investment.category === 'usastocks' || investment.category === 'reits';
+  const currency = (isCrypto || isUSA) ? 'USD' : 'BRL';
 
   const formatCurrency = useCallback((value: number) => {
     if (currency === 'USD') {
@@ -347,16 +475,17 @@ export function InvestmentEvolutionChart({
   }, [investment.purchaseDate]);
 
   const yDomain = useMemo((): [number, number] => {
+    if (chartData.length === 0) return [0, 100];
+    
     const minValue = Math.min(...chartData.map(d => d.value));
     const maxValue = Math.max(...chartData.map(d => d.value));
     const valueRange = maxValue - minValue;
     
-    const yMin = isCompoundGrowth 
-      ? Math.max(0, minValue * 0.7)
-      : Math.floor(minValue - valueRange * 0.1);
+    // Escala absoluta para não exagerar variações pequenas
+    const yMin = Math.max(0, minValue - valueRange * 0.1);
     
     return [yMin, Math.ceil(maxValue + valueRange * 0.05)];
-  }, [chartData, isCompoundGrowth]);
+  }, [chartData]);
 
   if (!isOpen) return null;
 
@@ -383,6 +512,9 @@ export function InvestmentEvolutionChart({
                 <h4 className="font-semibold text-card-foreground">{investment.name}</h4>
                 <span className="text-xs text-muted-foreground">
                   {categoryLabels[investment.category]} • {getPeriodText()}
+                  {hasMarketData && investment.ticker && (
+                    <span className="ml-1 text-primary">• Dados reais</span>
+                  )}
                 </span>
               </div>
             </div>
@@ -403,12 +535,23 @@ export function InvestmentEvolutionChart({
 
           {/* Gráfico de Evolução */}
           <div className="w-full h-64">
-            <EvolutionAreaChart 
-              chartData={chartData}
-              isPositive={isPositive}
-              yDomain={yDomain}
-              formatCurrency={formatCurrency}
-            />
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-muted-foreground">Carregando histórico...</span>
+              </div>
+            ) : chartData.length > 0 ? (
+              <EvolutionAreaChart 
+                chartData={chartData}
+                isPositive={isPositive}
+                yDomain={yDomain}
+                formatCurrency={formatCurrency}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                Sem dados disponíveis
+              </div>
+            )}
           </div>
 
           {/* Info Cards */}
