@@ -5,3 +5,29 @@ verify_jwt = false
 
 [functions.send-email]
 verify_jwt = false
+
+[auth]
+site_url = "https://myinvestapp.lovable.app"
+
+[auth.email]
+enable_confirmations = true
+
+[auth.email.template.recovery]
+subject = "Redefinir Senha - My Invest 🔐"
+content_path = "./templates/recovery.html"
+
+[auth.email.template.confirmation]
+subject = "Confirme seu Email - My Invest ✉️"
+content_path = "./templates/confirmation.html"
+
+[auth.email.template.invite]
+subject = "Você foi convidado - My Invest 💰"
+content_path = "./templates/invite.html"
+
+[auth.email.template.magic_link]
+subject = "Seu link de acesso - My Invest 🔑"
+content_path = "./templates/magic_link.html"
+
+[auth.email.template.email_change]
+subject = "Confirme a alteração de email - My Invest ✉️"
+content_path = "./templates/email_change.html"
