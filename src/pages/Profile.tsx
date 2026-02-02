@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useValuesVisibility, DisplayCurrency } from '@/contexts/ValuesVisibilityContext';
+import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
+import { PortfolioAllocationSettings } from '@/components/PortfolioAllocationSettings';
+import { useInvestments } from '@/hooks/useInvestments';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +53,9 @@ export default function Profile() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [realizedProfitLoss, setRealizedProfitLoss] = useState<RealizedProfitLoss>({ total: 0, percent: 0 });
+  
+  // Load investments for allocation settings
+  const { investments } = useInvestments();
 
   // Redirect if not logged in
   useEffect(() => {
@@ -382,8 +387,13 @@ export default function Profile() {
                 </p>
               </div>
 
-              {/* Logout Button */}
+              {/* Portfolio Allocation Settings */}
               <div className="animate-smooth-appear" style={{ animationDelay: '150ms' }}>
+                <PortfolioAllocationSettings investments={investments} />
+              </div>
+
+              {/* Logout Button */}
+              <div className="animate-smooth-appear" style={{ animationDelay: '200ms' }}>
                 <Button
                   variant="outline"
                   className="w-full"
@@ -395,7 +405,7 @@ export default function Profile() {
               </div>
 
               {/* Delete Account Button */}
-              <div className="animate-smooth-appear" style={{ animationDelay: '200ms' }}>
+              <div className="animate-smooth-appear" style={{ animationDelay: '250ms' }}>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button

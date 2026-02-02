@@ -196,6 +196,33 @@ export type Database = {
         }
         Relationships: []
       }
+      portfolio_allocations: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          target_percent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          target_percent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          target_percent?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
