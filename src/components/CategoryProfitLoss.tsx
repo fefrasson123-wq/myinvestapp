@@ -83,44 +83,44 @@ export function CategoryProfitLoss({ investments }: CategoryProfitLossProps) {
           return (
             <div 
               key={data.category} 
-              className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 transition-all duration-300 hover:bg-secondary/50 hover:translate-x-1 animate-smooth-appear"
+              className="flex items-center justify-between gap-2 p-2 sm:p-3 rounded-lg bg-secondary/30 transition-all duration-300 hover:bg-secondary/50 animate-smooth-appear overflow-hidden"
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <div 
-                  className="w-2 h-8 rounded-full transition-all duration-300"
+                  className="w-1.5 sm:w-2 h-6 sm:h-8 rounded-full transition-all duration-300 flex-shrink-0"
                   style={{ backgroundColor: categoryColors[data.category] }}
                 />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-card-foreground">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                    <p className="font-medium text-card-foreground text-sm sm:text-base truncate">
                       {categoryLabels[data.category]}
                     </p>
-                    <span className="text-xs font-mono text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] sm:text-xs font-mono text-muted-foreground bg-secondary/50 px-1 sm:px-1.5 py-0.5 rounded flex-shrink-0">
                       {data.portfolioPercent.toFixed(1)}%
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground truncate">
                     Investido: {formatCurrencyValue(data.invested)}
                   </p>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-right flex-shrink-0">
                 <div className="flex items-center gap-1 justify-end">
                   {isPositive ? (
-                    <TrendingUp className="w-3 h-3 text-success" />
+                    <TrendingUp className="w-3 h-3 text-success flex-shrink-0" />
                   ) : (
-                    <TrendingDown className="w-3 h-3 text-destructive" />
+                    <TrendingDown className="w-3 h-3 text-destructive flex-shrink-0" />
                   )}
                   <p className={cn(
-                    "font-mono font-medium transition-colors duration-300",
+                    "font-mono font-medium transition-colors duration-300 text-xs sm:text-sm",
                     isPositive ? "text-success" : "text-destructive"
                   )}>
                     {isPositive ? '+' : ''}{formatCurrencyValue(data.profitLoss)}
                   </p>
                 </div>
                 <p className={cn(
-                  "text-sm font-mono transition-colors duration-300",
+                  "text-xs font-mono transition-colors duration-300",
                   isPositive ? "text-success/70" : "text-destructive/70"
                 )}>
                   {isPositive ? '+' : ''}{formatPercent(data.profitLossPercent)}
