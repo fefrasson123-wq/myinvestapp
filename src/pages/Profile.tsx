@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { TrendingUp, ArrowLeft, User, TrendingDown, Edit2, Save, X, LogOut, DollarSign, RefreshCw } from 'lucide-react';
+import { TrendingUp, ArrowLeft, User, TrendingDown, Edit2, Save, X, LogOut, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useValuesVisibility, DisplayCurrency } from '@/contexts/ValuesVisibilityContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface Profile {
   username: string | null;
@@ -38,6 +49,7 @@ export default function Profile() {
   const [editUsername, setEditUsername] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [realizedProfitLoss, setRealizedProfitLoss] = useState<RealizedProfitLoss>({ total: 0, percent: 0 });
 
   // Redirect if not logged in
@@ -148,6 +160,40 @@ export default function Profile() {
       description: 'Você saiu da sua conta.',
     });
     navigate('/');
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    
+    setIsDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-account');
+      
+      if (error) throw error;
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Falha ao excluir conta');
+      }
+      
+      // Sign out locally after deletion
+      await signOut();
+      
+      toast({
+        title: 'Conta excluída',
+        description: 'Sua conta e todos os dados foram removidos permanentemente.',
+      });
+      
+      navigate('/');
+    } catch (err: any) {
+      console.error('Error deleting account:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao excluir conta',
+        description: err.message || 'Não foi possível excluir sua conta. Tente novamente.',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (authLoading || isLoading) {
@@ -339,13 +385,55 @@ export default function Profile() {
               {/* Logout Button */}
               <div className="animate-smooth-appear" style={{ animationDelay: '150ms' }}>
                 <Button
-                  variant="destructive"
+                  variant="outline"
                   className="w-full"
                   onClick={handleSignOut}
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Sair da conta
                 </Button>
+              </div>
+
+              {/* Delete Account Button */}
+              <div className="animate-smooth-appear" style={{ animationDelay: '200ms' }}>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      {isDeleting ? 'Excluindo...' : 'Excluir minha conta'}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir conta permanentemente?</AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-2">
+                        <p>Esta ação é <strong>irreversível</strong>. Ao confirmar:</p>
+                        <ul className="list-disc list-inside text-sm space-y-1 mt-2">
+                          <li>Todos os seus investimentos serão deletados</li>
+                          <li>Todo o histórico de transações será removido</li>
+                          <li>Suas metas pessoais serão apagadas</li>
+                          <li>Seu perfil será excluído permanentemente</li>
+                        </ul>
+                        <p className="mt-3 text-sm">
+                          Você poderá criar uma nova conta no futuro com o mesmo email.
+                        </p>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteAccount}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Sim, excluir minha conta
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           </div>
