@@ -563,7 +563,7 @@ export function InvestmentEvolutionChart({
               </span>
             </div>
             <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <span className="text-xs text-muted-foreground block mb-1">Valor Atual</span>
+              <span className="text-xs text-muted-foreground block mb-1">Acumulado Total</span>
               <span className="font-mono text-sm text-primary font-semibold">
                 {formatCurrency(investment.currentValue)}
               </span>
