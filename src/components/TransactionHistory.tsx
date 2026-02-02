@@ -90,24 +90,32 @@ export function TransactionHistory({ transactions, onDelete, onEdit }: Transacti
     return availableMonths.find(m => m.key === selectedMonth)?.label || 'Todos os meses';
   }, [selectedMonth, availableMonths]);
   
-  // Estatísticas
+  // Estatísticas baseadas no mês selecionado
   const stats = useMemo(() => {
-    const buys = transactions.filter(tx => tx.type === 'buy');
-    const sells = transactions.filter(tx => tx.type === 'sell');
+    // Filtra apenas por mês, não por tipo
+    let monthFiltered = transactions;
+    if (selectedMonth !== 'all') {
+      monthFiltered = transactions.filter(tx => {
+        const date = new Date(tx.date);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        return key === selectedMonth;
+      });
+    }
+    
+    const buys = monthFiltered.filter(tx => tx.type === 'buy');
+    const sells = monthFiltered.filter(tx => tx.type === 'sell');
     
     const totalInvested = buys.reduce((sum, tx) => sum + tx.total, 0);
     const totalSold = sells.reduce((sum, tx) => sum + tx.total, 0);
-    const totalProfit = sells.reduce((sum, tx) => sum + (tx.profitLoss || 0), 0);
     
     return {
-      totalTransactions: transactions.length,
+      totalTransactions: monthFiltered.length,
       totalBuys: buys.length,
       totalSells: sells.length,
       totalInvested,
       totalSold,
-      totalProfit,
     };
-  }, [transactions]);
+  }, [transactions, selectedMonth]);
 
   if (transactions.length === 0) {
     return (
