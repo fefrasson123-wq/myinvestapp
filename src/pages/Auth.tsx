@@ -30,7 +30,15 @@ const resetPasswordSchema = z.object({
   email: z.string().email('E-mail inválido'),
 });
 
-type AuthMode = 'login' | 'signup' | 'forgot-password';
+const newPasswordSchema = z.object({
+  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'As senhas não coincidem',
+  path: ['confirmPassword'],
+});
+
+type AuthMode = 'login' | 'signup' | 'forgot-password' | 'reset-password';
 
 // Format phone number with mask: (11) 99999-9999
 const formatPhoneDisplay = (value: string): string => {
@@ -43,9 +51,16 @@ const formatPhoneDisplay = (value: string): string => {
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
-  const defaultMode = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
   
-  const [mode, setMode] = useState<AuthMode>(defaultMode);
+  // Determine initial mode based on URL params
+  const getInitialMode = (): AuthMode => {
+    const modeParam = searchParams.get('mode');
+    if (modeParam === 'signup') return 'signup';
+    if (modeParam === 'reset') return 'reset-password';
+    return 'login';
+  };
+  
+  const [mode, setMode] = useState<AuthMode>(getInitialMode());
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -54,17 +69,39 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isRecoverySession, setIsRecoverySession] = useState(false);
   
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Redirect if already logged in
+  // Check for password recovery session (user clicked email link)
   useEffect(() => {
-    if (user) {
+    const handleRecoverySession = async () => {
+      // Check if we have hash params from the recovery link
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const type = hashParams.get('type');
+      
+      if (accessToken && type === 'recovery') {
+        setMode('reset-password');
+        setIsRecoverySession(true);
+        
+        // The session should be set automatically by Supabase
+        // Clear the hash from URL for cleaner appearance
+        window.history.replaceState(null, '', window.location.pathname + '?mode=reset');
+      }
+    };
+
+    handleRecoverySession();
+  }, []);
+
+  // Redirect if already logged in (except in reset-password mode with recovery session)
+  useEffect(() => {
+    if (user && mode !== 'reset-password') {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [user, navigate, mode]);
 
   const clearErrors = () => setErrors({});
 
@@ -86,6 +123,7 @@ export default function Auth() {
         return;
       }
 
+      // Use the Supabase built-in password reset which handles the token
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth?mode=reset`,
       });
@@ -97,7 +135,7 @@ export default function Auth() {
           description: error.message,
         });
       } else {
-        // Send custom password reset email
+        // Send custom styled password reset email
         try {
           await supabase.functions.invoke('send-email', {
             body: {
@@ -120,6 +158,45 @@ export default function Auth() {
         });
         setMode('login');
         setEmail('');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearErrors();
+    setIsSubmitting(true);
+
+    try {
+      const result = newPasswordSchema.safeParse({ password, confirmPassword });
+      if (!result.success) {
+        const fieldErrors: Record<string, string> = {};
+        result.error.errors.forEach((err) => {
+          if (err.path[0]) {
+            fieldErrors[err.path[0] as string] = err.message;
+          }
+        });
+        setErrors(fieldErrors);
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({ password });
+
+      if (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao redefinir senha',
+          description: error.message,
+        });
+      } else {
+        toast({
+          title: 'Senha redefinida!',
+          description: 'Sua senha foi alterada com sucesso. Você já está logado.',
+        });
+        setIsRecoverySession(false);
+        navigate('/');
       }
     } finally {
       setIsSubmitting(false);
@@ -215,6 +292,7 @@ export default function Auth() {
       case 'login': return 'Login';
       case 'signup': return 'Cadastro';
       case 'forgot-password': return 'Recuperar Senha';
+      case 'reset-password': return 'Nova Senha';
       default: return 'Login';
     }
   };
@@ -265,16 +343,98 @@ export default function Auth() {
                   {mode === 'login' && 'Bem-vindo de volta!'}
                   {mode === 'signup' && 'Crie sua conta'}
                   {mode === 'forgot-password' && 'Recuperar senha'}
+                  {mode === 'reset-password' && 'Criar nova senha'}
                 </h2>
                 <p className="text-muted-foreground text-sm">
                   {mode === 'login' && 'Entre com suas credenciais para continuar'}
                   {mode === 'signup' && 'Preencha os dados abaixo para começar'}
                   {mode === 'forgot-password' && 'Informe seu e-mail para receber o link de recuperação'}
+                  {mode === 'reset-password' && 'Digite sua nova senha abaixo'}
                 </p>
               </div>
 
-              {/* Forgot Password Form */}
-              {mode === 'forgot-password' ? (
+              {/* Reset Password Form (new password after clicking email link) */}
+              {mode === 'reset-password' ? (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-muted-foreground" />
+                      Nova senha
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={errors.password ? 'border-destructive pr-10' : 'pr-10'}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-card-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="text-xs text-destructive">{errors.password}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword" className="flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-muted-foreground" />
+                      Confirmar nova senha
+                    </Label>
+                    <Input
+                      id="confirmPassword"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className={errors.confirmPassword ? 'border-destructive' : ''}
+                    />
+                    {errors.confirmPassword && (
+                      <p className="text-xs text-destructive">{errors.confirmPassword}</p>
+                    )}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      'Salvar nova senha'
+                    )}
+                  </Button>
+
+                  {!isRecoverySession && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => {
+                        setMode('login');
+                        clearErrors();
+                        setPassword('');
+                        setConfirmPassword('');
+                      }}
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Voltar ao login
+                    </Button>
+                  )}
+                </form>
+              ) : mode === 'forgot-password' ? (
+                /* Forgot Password Form */
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="flex items-center gap-2">
@@ -465,7 +625,7 @@ export default function Auth() {
                 </form>
               )}
 
-              {mode !== 'forgot-password' && (
+              {(mode === 'login' || mode === 'signup') && (
                 <div className="mt-6 text-center">
                   <p className="text-sm text-muted-foreground">
                     {mode === 'login' ? 'Não tem uma conta?' : 'Já tem uma conta?'}
