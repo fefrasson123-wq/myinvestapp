@@ -1,15 +1,53 @@
 import { supabase } from '@/integrations/supabase/client';
 
-type EmailType = 'welcome' | 'plan-upgrade' | 'password-reset';
+type EmailType = 'welcome' | 'email-confirmation' | 'password-reset' | 'plan-upgrade' | 'suspicious-login' | 'monthly-report';
+
+interface LoginDetails {
+  device: string;
+  location: string;
+  ip: string;
+  time: string;
+}
+
+interface MonthlyReportData {
+  month: string;
+  year: number;
+  totalValue: string;
+  totalInvested: string;
+  profitLoss: string;
+  profitLossPercent: string;
+  isPositive: boolean;
+  topPerformers: { name: string; percent: string }[];
+  worstPerformers: { name: string; percent: string }[];
+  newInvestments: number;
+  totalTransactions: number;
+}
 
 interface EmailData {
   username?: string;
   loginUrl?: string;
+  confirmUrl?: string;
   planName?: string;
   planFeatures?: string[];
   dashboardUrl?: string;
   resetUrl?: string;
+  secureAccountUrl?: string;
   expiresIn?: string;
+  device?: string;
+  location?: string;
+  ip?: string;
+  time?: string;
+  month?: string;
+  year?: number;
+  totalValue?: string;
+  totalInvested?: string;
+  profitLoss?: string;
+  profitLossPercent?: string;
+  isPositive?: boolean;
+  topPerformers?: { name: string; percent: string }[];
+  worstPerformers?: { name: string; percent: string }[];
+  newInvestments?: number;
+  totalTransactions?: number;
 }
 
 export const useEmail = () => {
@@ -39,6 +77,22 @@ export const useEmail = () => {
     });
   };
 
+  const sendEmailConfirmation = async (email: string, confirmUrl: string, username?: string) => {
+    return sendEmail('email-confirmation', email, {
+      username: username || 'Investidor',
+      confirmUrl,
+      expiresIn: '24 horas'
+    });
+  };
+
+  const sendPasswordResetEmail = async (email: string, resetUrl: string, username?: string) => {
+    return sendEmail('password-reset', email, {
+      username: username || 'Investidor',
+      resetUrl,
+      expiresIn: '1 hora'
+    });
+  };
+
   const sendPlanUpgradeEmail = async (
     email: string, 
     planName: string, 
@@ -58,18 +112,40 @@ export const useEmail = () => {
     });
   };
 
-  const sendPasswordResetEmail = async (email: string, resetUrl: string, username?: string) => {
-    return sendEmail('password-reset', email, {
+  const sendSuspiciousLoginEmail = async (
+    email: string, 
+    loginDetails: LoginDetails,
+    username?: string
+  ) => {
+    return sendEmail('suspicious-login', email, {
       username: username || 'Investidor',
-      resetUrl,
-      expiresIn: '1 hora'
+      device: loginDetails.device,
+      location: loginDetails.location,
+      ip: loginDetails.ip,
+      time: loginDetails.time,
+      secureAccountUrl: `${window.location.origin}/auth`
+    });
+  };
+
+  const sendMonthlyReportEmail = async (
+    email: string, 
+    reportData: MonthlyReportData,
+    username?: string
+  ) => {
+    return sendEmail('monthly-report', email, {
+      username: username || 'Investidor',
+      ...reportData,
+      dashboardUrl: window.location.origin
     });
   };
 
   return {
     sendEmail,
     sendWelcomeEmail,
+    sendEmailConfirmation,
+    sendPasswordResetEmail,
     sendPlanUpgradeEmail,
-    sendPasswordResetEmail
+    sendSuspiciousLoginEmail,
+    sendMonthlyReportEmail
   };
 };
