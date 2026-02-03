@@ -183,7 +183,7 @@ export default function Profile() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="border-b border-border/50 bg-card/80 backdrop-blur-md">
-          <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
@@ -206,8 +206,8 @@ export default function Profile() {
         </header>
 
         {/* Main Content - Layout responsivo como o Dashboard */}
-        <main className="w-full max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <main className="w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {/* Coluna da esquerda - Profile Card */}
             <div className="space-y-6">
               {/* Profile Card */}
