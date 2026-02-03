@@ -386,7 +386,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
               </div>
             </div>
           ) : (
-            <span className="text-xs text-muted-foreground">Definir Meta</span>
+            <span className="text-xs text-muted-foreground">🏆 Metas financeiras</span>
           )}
         </button>
       </DialogTrigger>
