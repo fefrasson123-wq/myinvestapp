@@ -501,9 +501,9 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
               <p className="text-xs text-muted-foreground">
                 Para atingir essa renda, você precisará de um patrimônio de aproximadamente{' '}
                 <span className="font-medium text-primary">
-                  {formatCurrency(parsePtBrNumber(targetAmount) * 12 / 0.06)}
+                  {formatCurrency(parsePtBrNumber(targetAmount) * 12 / 0.10)}
                 </span>
-                {' '}(considerando 6% a.a. de rendimentos)
+                {' '}(considerando 10% a.a. de rendimentos)
               </p>
             )}
           </div>
