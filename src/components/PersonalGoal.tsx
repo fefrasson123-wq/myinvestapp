@@ -188,7 +188,11 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
   // Use debounced value for heavy calculations to prevent blocking input
   const projectionData = useMemo(() => {
     const inputTargetAmount = parsePtBrNumber(debouncedTargetAmount);
-    const targetToUse = inputTargetAmount > 0 ? inputTargetAmount : (goal?.target_amount || 0);
+    // For passive income, convert monthly income to required portfolio value
+    const effectiveTarget = goalType === 'passive_income' 
+      ? (inputTargetAmount * 12) / 0.10 
+      : inputTargetAmount;
+    const targetToUse = effectiveTarget > 0 ? effectiveTarget : (goal?.target_amount || 0);
     
     if (targetToUse <= 0 || currentPortfolioValue <= 0) {
       return { monthlyRate: 0, annualReturnRate: 0, monthsToGoal: null, estimatedDate: null };
@@ -271,12 +275,16 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
     const estimatedDate = new Date(now.getTime() + months * 30 * 24 * 60 * 60 * 1000);
     
     return { monthlyRate, annualReturnRate, monthsToGoal: months, estimatedDate };
-  }, [transactions, debouncedTargetAmount, goal, currentPortfolioValue, totalInvestedAmount]);
+  }, [transactions, debouncedTargetAmount, goal, goalType, currentPortfolioValue, totalInvestedAmount]);
 
   // Generate chart data for goal progression with two projection lines
   const chartData = useMemo(() => {
     const inputTargetAmount = parsePtBrNumber(debouncedTargetAmount);
-    const targetToUse = inputTargetAmount > 0 ? inputTargetAmount : (goal?.target_amount || 0);
+    // For passive income, convert monthly income to required portfolio value
+    const effectiveTarget = goalType === 'passive_income' 
+      ? (inputTargetAmount * 12) / 0.10 
+      : inputTargetAmount;
+    const targetToUse = effectiveTarget > 0 ? effectiveTarget : (goal?.target_amount || 0);
     
     if (targetToUse <= 0 || currentPortfolioValue <= 0) return [];
 
@@ -343,7 +351,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
     }
 
     return data;
-  }, [debouncedTargetAmount, goal, currentPortfolioValue, projectionData]);
+  }, [debouncedTargetAmount, goal, goalType, currentPortfolioValue, projectionData]);
 
   if (isLoading) {
     return (
