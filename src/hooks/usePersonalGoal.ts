@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export type GoalType = 'value_goal' | 'buy_car' | 'financial_independence' | 'passive_income';
 
 export const goalTypeLabels: Record<GoalType, string> = {
-  value_goal: 'Meta de Valor',
+  value_goal: 'Meta de Investimentos',
   buy_car: 'Comprar Carro',
   financial_independence: 'Independência Financeira',
   passive_income: 'Renda Passiva Mensal',
