@@ -2,10 +2,27 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+export type GoalType = 'value_goal' | 'buy_car' | 'financial_independence' | 'passive_income';
+
+export const goalTypeLabels: Record<GoalType, string> = {
+  value_goal: 'Meta de Valor',
+  buy_car: 'Comprar Carro',
+  financial_independence: 'Independência Financeira',
+  passive_income: 'Renda Passiva Mensal',
+};
+
+export const goalTypeIcons: Record<GoalType, string> = {
+  value_goal: '💰',
+  buy_car: '🚗',
+  financial_independence: '🏖️',
+  passive_income: '📈',
+};
+
 export interface PersonalGoal {
   id: string;
   user_id: string;
   name: string;
+  goal_type: GoalType;
   target_amount: number;
   deadline: string | null;
   created_at: string;
@@ -40,6 +57,7 @@ export function usePersonalGoal() {
           id: data.id,
           user_id: data.user_id,
           name: data.name,
+          goal_type: (data.goal_type as GoalType) || 'value_goal',
           target_amount: Number(data.target_amount),
           deadline: data.deadline,
           created_at: data.created_at,
@@ -61,6 +79,7 @@ export function usePersonalGoal() {
 
   const saveGoal = useCallback(async (data: { 
     name?: string; 
+    goal_type?: GoalType;
     target_amount: number; 
     deadline?: string | null 
   }) => {
@@ -73,6 +92,7 @@ export function usePersonalGoal() {
           .from('personal_goals')
           .update({
             name: data.name || goal.name,
+            goal_type: data.goal_type || goal.goal_type,
             target_amount: data.target_amount,
             deadline: data.deadline,
           })
@@ -86,6 +106,7 @@ export function usePersonalGoal() {
           id: updated.id,
           user_id: updated.user_id,
           name: updated.name,
+          goal_type: (updated.goal_type as GoalType) || 'value_goal',
           target_amount: Number(updated.target_amount),
           deadline: updated.deadline,
           created_at: updated.created_at,
@@ -100,6 +121,7 @@ export function usePersonalGoal() {
           .insert({
             user_id: user.id,
             name: data.name || 'Meta Principal',
+            goal_type: data.goal_type || 'value_goal',
             target_amount: data.target_amount,
             current_amount: 0,
             deadline: data.deadline,
@@ -113,6 +135,7 @@ export function usePersonalGoal() {
           id: created.id,
           user_id: created.user_id,
           name: created.name,
+          goal_type: (created.goal_type as GoalType) || 'value_goal',
           target_amount: Number(created.target_amount),
           deadline: created.deadline,
           created_at: created.created_at,

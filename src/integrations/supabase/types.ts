@@ -232,6 +232,7 @@ export type Database = {
           created_at: string
           current_amount: number
           deadline: string | null
+          goal_type: string
           id: string
           name: string
           target_amount: number
@@ -242,6 +243,7 @@ export type Database = {
           created_at?: string
           current_amount?: number
           deadline?: string | null
+          goal_type?: string
           id?: string
           name?: string
           target_amount: number
@@ -252,6 +254,7 @@ export type Database = {
           created_at?: string
           current_amount?: number
           deadline?: string | null
+          goal_type?: string
           id?: string
           name?: string
           target_amount?: number
