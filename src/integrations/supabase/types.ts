@@ -180,6 +180,53 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          amount: number | null
+          created_at: string
+          id: string
+          investment_id: string | null
+          investment_name: string | null
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          investment_id?: string | null
+          investment_name?: string | null
+          is_read?: boolean
+          message: string
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          id?: string
+          investment_id?: string | null
+          investment_name?: string | null
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_investment_id_fkey"
+            columns: ["investment_id"]
+            isOneToOne: false
+            referencedRelation: "investments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       personal_goals: {
         Row: {
           created_at: string
