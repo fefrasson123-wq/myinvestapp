@@ -119,16 +119,25 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
       return;
     }
 
+    // For passive income goals, calculate the required portfolio value
+    // based on 10% annual yield: portfolioNeeded = (monthlyIncome * 12) / 0.10
+    const targetPortfolioValue = goalType === 'passive_income' 
+      ? (amount * 12) / 0.10 
+      : amount;
+
     const result = await saveGoal({
       name: goalName || goalTypeLabels[goalType],
       goal_type: goalType,
-      target_amount: amount,
+      target_amount: targetPortfolioValue,
     });
 
     if (result) {
+      const displayMessage = goalType === 'passive_income'
+        ? `Sua meta de ${formatCurrency(amount)}/mês (patrimônio de ${formatCurrency(targetPortfolioValue)}) foi salva.`
+        : `Sua meta de ${formatCurrency(amount)} foi salva.`;
       toast({
         title: goal ? 'Meta atualizada' : 'Meta criada',
-        description: `Sua meta de ${formatCurrency(amount)} foi salva.`,
+        description: displayMessage,
       });
       setIsDialogOpen(false);
     }
@@ -157,8 +166,12 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
     if (goal) {
       setGoalName(goal.name);
       setGoalType(goal.goal_type);
+      // For passive income goals, convert stored portfolio value back to monthly income
+      const displayAmount = goal.goal_type === 'passive_income'
+        ? (goal.target_amount * 0.10) / 12
+        : goal.target_amount;
       setTargetAmount(
-        goal.target_amount.toLocaleString('pt-BR', {
+        displayAmount.toLocaleString('pt-BR', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })
@@ -349,7 +362,11 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
 
   // Calculate values for the preview
   const inputTargetAmount = parsePtBrNumber(targetAmount);
-  const targetToUse = inputTargetAmount > 0 ? inputTargetAmount : (goal?.target_amount || 0);
+  // For passive income, convert monthly income to required portfolio value
+  const effectiveTarget = goalType === 'passive_income' 
+    ? (inputTargetAmount * 12) / 0.10 
+    : inputTargetAmount;
+  const targetToUse = effectiveTarget > 0 ? effectiveTarget : (goal?.target_amount || 0);
   const previewProgress = targetToUse > 0
     ? Math.min((currentPortfolioValue / targetToUse) * 100, 100)
     : 0;
@@ -497,11 +514,11 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                 className="pl-10 bg-secondary/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 font-mono text-lg"
               />
             </div>
-            {goalType === 'passive_income' && (
+            {goalType === 'passive_income' && inputTargetAmount > 0 && (
               <p className="text-xs text-muted-foreground">
-                Para atingir essa renda, você precisará de um patrimônio de aproximadamente{' '}
+                Patrimônio necessário:{' '}
                 <span className="font-medium text-primary">
-                  {formatCurrency(parsePtBrNumber(targetAmount) * 12 / 0.10)}
+                  {formatCurrency((inputTargetAmount * 12) / 0.10)}
                 </span>
                 {' '}(considerando 10% a.a. de rendimentos)
               </p>
