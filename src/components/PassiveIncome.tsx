@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Wallet, TrendingUp, Calendar, Trash2, Building2, Landmark, BarChart3, RefreshCw } from 'lucide-react';
+import { Wallet, TrendingUp, Calendar, Building2, Landmark, BarChart3, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIncomePayments, IncomeType, incomeTypeLabels } from '@/hooks/useIncomePayments';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
@@ -158,9 +158,6 @@ export function PassiveIncome() {
     dividendCategories.includes(inv.category)
   );
 
-  const handleDeletePayment = async (id: string) => {
-    await deletePayment(id);
-  };
 
   if (isLoading || investmentsLoading) {
     return (
@@ -336,9 +333,6 @@ export function PassiveIncome() {
               );
             })}
           </div>
-          <p className="text-xs text-muted-foreground/70">
-            💡 Clique em "Dividendo" para registrar pagamentos recebidos
-          </p>
         </div>
       )}
 
@@ -350,7 +344,7 @@ export function PassiveIncome() {
             {filteredPayments.slice(0, 8).map(payment => (
               <div
                 key={payment.id}
-                className="flex items-center justify-between bg-background/30 rounded-lg p-2 group"
+                className="flex items-center justify-between bg-background/30 rounded-lg p-2"
               >
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <div
@@ -364,19 +358,9 @@ export function PassiveIncome() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-mono text-success">
-                    {showValues ? `+${formatCurrencyValue(payment.amount)}` : '•••••'}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleDeletePayment(payment.id)}
-                  >
-                    <Trash2 className="w-3 h-3 text-destructive" />
-                  </Button>
-                </div>
+                <span className="text-sm font-mono text-success">
+                  {showValues ? `+${formatCurrencyValue(payment.amount)}` : '•••••'}
+                </span>
               </div>
             ))}
           </div>
