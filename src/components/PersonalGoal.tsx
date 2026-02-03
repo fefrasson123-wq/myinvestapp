@@ -567,8 +567,8 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPatrimonio" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--profit))" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="hsl(var(--profit))" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="hsl(142, 76%, 50%)" stopOpacity={0.6}/>
+                        <stop offset="95%" stopColor="hsl(142, 76%, 50%)" stopOpacity={0.1}/>
                       </linearGradient>
                     </defs>
                     <XAxis 
@@ -617,11 +617,11 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                     <Area
                       type="monotone"
                       dataKey="patrimonio"
-                      stroke="hsl(var(--profit))"
+                      stroke="hsl(142, 76%, 45%)"
                       fill="url(#colorPatrimonio)"
-                      strokeWidth={2.5}
-                      dot={{ r: 4, fill: 'hsl(var(--profit))', strokeWidth: 0 }}
-                      activeDot={{ r: 6, fill: 'hsl(var(--profit))', strokeWidth: 2, stroke: 'hsl(var(--card))' }}
+                      strokeWidth={3}
+                      dot={{ r: 5, fill: 'hsl(142, 76%, 50%)', strokeWidth: 2, stroke: 'hsl(var(--card))' }}
+                      activeDot={{ r: 7, fill: 'hsl(142, 76%, 55%)', strokeWidth: 2, stroke: 'hsl(var(--card))' }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
