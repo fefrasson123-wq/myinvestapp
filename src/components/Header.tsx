@@ -32,12 +32,12 @@ export function Header({ onAddClick, currentPortfolioValue = 0, totalInvestedAmo
             onClick={handleLogoClick}
             className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity cursor-pointer"
           >
-            <div className="p-1.5 sm:p-2 rounded-lg bg-primary/20 glow-primary text-xl sm:text-2xl">
-              🏆
+            <div className="p-1.5 sm:p-2 rounded-lg bg-primary/20 glow-primary">
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
             <div className="text-left">
               <h1 className="text-lg sm:text-xl font-bold text-primary text-glow tracking-tight">
-                Metas financeiras
+                My Invest
               </h1>
               <p className="text-xs text-muted-foreground hidden sm:block">Gerencie seus investimentos</p>
             </div>
