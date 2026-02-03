@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Target, Check, Trash2, TrendingUp, Calendar } from 'lucide-react';
+import { Target, Check, Trash2, TrendingUp, Calendar, Car, Palmtree, ChartLine, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { usePersonalGoal } from '@/hooks/usePersonalGoal';
+import { usePersonalGoal, GoalType, goalTypeLabels } from '@/hooks/usePersonalGoal';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -55,6 +57,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
   const [targetAmount, setTargetAmount] = useState('');
   const [debouncedTargetAmount, setDebouncedTargetAmount] = useState('');
   const [goalName, setGoalName] = useState('');
+  const [goalType, setGoalType] = useState<GoalType>('value_goal');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -117,7 +120,8 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
     }
 
     const result = await saveGoal({
-      name: goalName || 'Meta Principal',
+      name: goalName || goalTypeLabels[goalType],
+      goal_type: goalType,
       target_amount: amount,
     });
 
@@ -152,6 +156,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
     
     if (goal) {
       setGoalName(goal.name);
+      setGoalType(goal.goal_type);
       setTargetAmount(
         goal.target_amount.toLocaleString('pt-BR', {
           minimumFractionDigits: 2,
@@ -160,6 +165,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
       );
     } else {
       setGoalName('');
+      setGoalType('value_goal');
       setTargetAmount('');
     }
     setIsDialogOpen(true);
@@ -401,6 +407,67 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
         </DialogHeader>
 
         <div className="space-y-5 py-2">
+          {/* Goal Type Selection */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Tipo de Meta
+            </label>
+            <RadioGroup
+              value={goalType}
+              onValueChange={(value) => setGoalType(value as GoalType)}
+              className="grid grid-cols-2 gap-3"
+            >
+              <div className={cn(
+                "flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all",
+                goalType === 'value_goal' 
+                  ? "border-primary bg-primary/10" 
+                  : "border-border/50 bg-secondary/30 hover:border-primary/30"
+              )}>
+                <RadioGroupItem value="value_goal" id="value_goal" />
+                <Label htmlFor="value_goal" className="flex items-center gap-2 cursor-pointer flex-1">
+                  <Coins className="w-4 h-4 text-primary" />
+                  <span className="text-sm">Meta de Valor</span>
+                </Label>
+              </div>
+              <div className={cn(
+                "flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all",
+                goalType === 'buy_car' 
+                  ? "border-primary bg-primary/10" 
+                  : "border-border/50 bg-secondary/30 hover:border-primary/30"
+              )}>
+                <RadioGroupItem value="buy_car" id="buy_car" />
+                <Label htmlFor="buy_car" className="flex items-center gap-2 cursor-pointer flex-1">
+                  <Car className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm">Comprar Carro</span>
+                </Label>
+              </div>
+              <div className={cn(
+                "flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all",
+                goalType === 'financial_independence' 
+                  ? "border-primary bg-primary/10" 
+                  : "border-border/50 bg-secondary/30 hover:border-primary/30"
+              )}>
+                <RadioGroupItem value="financial_independence" id="financial_independence" />
+                <Label htmlFor="financial_independence" className="flex items-center gap-2 cursor-pointer flex-1">
+                  <Palmtree className="w-4 h-4 text-success" />
+                  <span className="text-sm">Independência</span>
+                </Label>
+              </div>
+              <div className={cn(
+                "flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all",
+                goalType === 'passive_income' 
+                  ? "border-primary bg-primary/10" 
+                  : "border-border/50 bg-secondary/30 hover:border-primary/30"
+              )}>
+                <RadioGroupItem value="passive_income" id="passive_income" />
+                <Label htmlFor="passive_income" className="flex items-center gap-2 cursor-pointer flex-1">
+                  <ChartLine className="w-4 h-4 text-info" />
+                  <span className="text-sm">Renda Passiva</span>
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
           {/* Goal Name */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
@@ -409,7 +476,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
             <Input
               value={goalName}
               onChange={(e) => setGoalName(e.target.value)}
-              placeholder="Ex: Aposentadoria, Reserva de Emergência..."
+              placeholder={`Ex: ${goalTypeLabels[goalType]}`}
               className="bg-secondary/50 border-border/50 focus:border-primary/50 focus:ring-primary/20"
             />
           </div>
@@ -417,7 +484,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
           {/* Target Amount */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              Valor da Meta
+              {goalType === 'passive_income' ? 'Renda Mensal Desejada' : 'Valor da Meta'}
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-primary font-medium">
@@ -426,10 +493,19 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
               <Input
                 value={targetAmount}
                 onChange={handleInputChange}
-                placeholder="0,00"
+                placeholder={goalType === 'passive_income' ? '5.000,00' : '0,00'}
                 className="pl-10 bg-secondary/50 border-border/50 focus:border-primary/50 focus:ring-primary/20 font-mono text-lg"
               />
             </div>
+            {goalType === 'passive_income' && (
+              <p className="text-xs text-muted-foreground">
+                Para atingir essa renda, você precisará de um patrimônio de aproximadamente{' '}
+                <span className="font-medium text-primary">
+                  {formatCurrency(parsePtBrNumber(targetAmount) * 12 / 0.06)}
+                </span>
+                {' '}(considerando 6% a.a. de rendimentos)
+              </p>
+            )}
           </div>
 
           {/* Current Progress Preview */}
