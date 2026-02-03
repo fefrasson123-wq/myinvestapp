@@ -426,7 +426,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                 <RadioGroupItem value="value_goal" id="value_goal" />
                 <Label htmlFor="value_goal" className="flex items-center gap-2 cursor-pointer flex-1">
                   <Coins className="w-4 h-4 text-primary" />
-                  <span className="text-sm">Meta de Valor</span>
+                  <span className="text-sm">Meta de Investimentos</span>
                 </Label>
               </div>
               <div className={cn(
