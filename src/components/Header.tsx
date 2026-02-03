@@ -1,10 +1,12 @@
 import { TrendingUp, Plus, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/UserMenu';
+import { NotificationBell } from '@/components/NotificationBell';
 import { useNavigate } from 'react-router-dom';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { PersonalGoal } from '@/components/PersonalGoal';
 import { Transaction } from '@/types/investment';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderProps {
   onAddClick: () => void;
@@ -16,6 +18,7 @@ interface HeaderProps {
 export function Header({ onAddClick, currentPortfolioValue = 0, totalInvestedAmount = 0, transactions = [] }: HeaderProps) {
   const navigate = useNavigate();
   const { showValues, toggleValuesVisibility } = useValuesVisibility();
+  const { user } = useAuth();
 
   const handleLogoClick = () => {
     navigate('/');
@@ -59,6 +62,7 @@ export function Header({ onAddClick, currentPortfolioValue = 0, totalInvestedAmo
                 <EyeOff className="w-5 h-5 text-primary" />
               )}
             </Button>
+            {user && <NotificationBell />}
             <Button onClick={onAddClick} size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Adicionar Investimento</span>

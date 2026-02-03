@@ -1,4 +1,7 @@
 project_id = "illckjvvbcqavladafsc"
+[functions.check-dividend-notifications]
+verify_jwt = false
+
 
 [functions.stock-quotes]
 verify_jwt = false
