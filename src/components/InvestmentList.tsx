@@ -239,7 +239,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                         )}
                         <span
                           className={cn(
-                            'font-mono font-medium text-sm sm:text-base',
+                            'font-mono font-medium text-sm sm:text-base whitespace-nowrap',
                             isPositive ? 'text-success' : 'text-destructive'
                           )}
                         >
@@ -248,7 +248,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                       </div>
                       <span
                         className={cn(
-                          'text-xs sm:text-sm font-mono',
+                          'text-xs sm:text-sm font-mono whitespace-nowrap',
                           isPositive ? 'text-success/70' : 'text-destructive/70'
                         )}
                       >

@@ -118,14 +118,14 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
                         <TrendingDown className="w-3 h-3 text-destructive flex-shrink-0" />
                       )}
                       <p className={cn(
-                        "font-mono font-medium transition-colors duration-300 text-xs sm:text-sm",
+                        "font-mono font-medium transition-colors duration-300 text-xs sm:text-sm whitespace-nowrap",
                         invIsPositive ? "text-success" : "text-destructive"
                       )}>
                         {invIsPositive ? '+' : ''}{formatCurrencyValue(displayProfitLoss)}
                       </p>
                     </div>
                     <p className={cn(
-                      "text-xs font-mono transition-colors duration-300",
+                      "text-xs font-mono transition-colors duration-300 whitespace-nowrap",
                       invIsPositive ? "text-success/70" : "text-destructive/70"
                     )}>
                       {formatPercent(inv.profitLossPercent)}
