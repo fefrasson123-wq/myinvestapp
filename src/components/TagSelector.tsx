@@ -22,11 +22,11 @@ export const TagSelector = memo(function TagSelector({ currentTag, onTagChange }
         <Button
           variant="ghost"
           size="icon"
-          className="hover:text-primary hover:bg-primary/10 btn-interactive"
+          className="hover:text-primary hover:bg-primary/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
           title="Definir Tag"
         >
           <Tag 
-            className="w-4 h-4" 
+            className="w-3.5 h-3.5 sm:w-4 sm:h-4" 
             style={currentTag ? { color: tagColors[currentTag] } : undefined}
           />
         </Button>
