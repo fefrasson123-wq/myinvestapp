@@ -82,15 +82,15 @@ export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: P
             </div>
             <span className="stat-label text-xs sm:text-sm">Lucro / Prejuízo</span>
           </div>
-          <div className="flex items-baseline gap-2 flex-wrap">
+          <div className="flex items-baseline gap-2">
             <p className={cn(
-              "text-lg sm:text-2xl font-bold font-mono truncate",
+              "text-lg sm:text-2xl font-bold font-mono whitespace-nowrap",
               isPositive ? "text-success number-glow" : "text-destructive"
             )}>
               {formatCurrencyValue(totalProfitLoss)}
             </p>
             <span className={cn(
-              "text-xs sm:text-sm font-mono transition-opacity flex-shrink-0",
+              "text-xs sm:text-sm font-mono transition-opacity whitespace-nowrap",
               isPositive ? "text-success/70" : "text-destructive/70"
             )}>
               ({formatPercent(profitLossPercent)})
