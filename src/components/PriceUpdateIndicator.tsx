@@ -68,10 +68,7 @@ export function PriceUpdateIndicator({ lastUpdate, isLoading, onRefresh }: Price
           "w-2 h-2 rounded-full transition-all duration-300",
           statusColor.dot
         )} />
-        <Wifi className={cn(
-          "w-4 h-4 transition-all duration-300",
-          statusColor.icon
-        )} />
+        <Wifi className="w-4 h-4 text-primary transition-all duration-300" />
       </div>
       
       {/* Last update info */}
