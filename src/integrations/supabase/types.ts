@@ -110,6 +110,7 @@ export type Database = {
           currency: string | null
           current_price: number
           current_value: number
+          dividends: number | null
           gold_purity: string | null
           gold_type: string | null
           id: string
@@ -136,6 +137,7 @@ export type Database = {
           currency?: string | null
           current_price?: number
           current_value?: number
+          dividends?: number | null
           gold_purity?: string | null
           gold_type?: string | null
           id?: string
@@ -162,6 +164,7 @@ export type Database = {
           currency?: string | null
           current_price?: number
           current_value?: number
+          dividends?: number | null
           gold_purity?: string | null
           gold_type?: string | null
           id?: string
