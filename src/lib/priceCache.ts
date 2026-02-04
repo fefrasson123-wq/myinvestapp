@@ -54,9 +54,9 @@ export const CACHE_CONFIGS: Record<string, CacheConfig> = {
     version: 3,
   },
   usd: {
-    maxAgeMs: 30 * 60 * 1000,       // 30 minutos
-    staleThresholdMs: 2 * 60 * 60 * 1000, // 2 horas
-    version: 3,
+    maxAgeMs: 5 * 60 * 1000,        // 5 minutos (sincronizado com edge function)
+    staleThresholdMs: 15 * 60 * 1000, // 15 minutos
+    version: 4, // Incrementar para invalidar cache antigo
   },
   eur: {
     maxAgeMs: 30 * 60 * 1000,       // 30 minutos
