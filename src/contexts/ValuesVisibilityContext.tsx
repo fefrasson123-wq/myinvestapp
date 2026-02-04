@@ -77,12 +77,14 @@ export function ValuesVisibilityProvider({ children }: { children: ReactNode }) 
       }).format(valueInUsd);
     }
 
-    return new Intl.NumberFormat('pt-BR', {
+    const formatted = new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(valueInBrl);
+    // Adiciona espaço entre R$ e o valor
+    return formatted.replace('R$', 'R$ ');
   };
 
   return (
