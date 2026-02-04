@@ -256,8 +256,21 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Currency Preference Card */}
-              <div className="bg-card border border-border rounded-xl shadow-lg p-6 animate-smooth-appear" style={{ animationDelay: '50ms' }}>
+              {/* Passive Income Component */}
+              <div className="animate-smooth-appear" style={{ animationDelay: '50ms' }}>
+                <PassiveIncome />
+              </div>
+            </div>
+
+            {/* Coluna da direita no desktop */}
+            <div className="space-y-6">
+              {/* Portfolio Allocation Settings */}
+              <div className="animate-smooth-appear" style={{ animationDelay: '100ms' }}>
+                <PortfolioAllocationSettings investments={investments} />
+              </div>
+
+              {/* Currency Preference Card - Moved below Portfolio Allocation */}
+              <div className="bg-card border border-border rounded-xl shadow-lg p-6 animate-smooth-appear" style={{ animationDelay: '150ms' }}>
                 <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
                   <DollarSign className="w-5 h-5 text-primary" />
                   Moeda de Exibição
@@ -310,19 +323,6 @@ export default function Profile() {
                     )}
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Coluna da direita no desktop */}
-            <div className="space-y-6">
-              {/* Passive Income Component */}
-              <div className="animate-smooth-appear" style={{ animationDelay: '100ms' }}>
-                <PassiveIncome />
-              </div>
-
-              {/* Portfolio Allocation Settings */}
-              <div className="animate-smooth-appear" style={{ animationDelay: '150ms' }}>
-                <PortfolioAllocationSettings investments={investments} />
               </div>
 
               {/* Logout Button */}
