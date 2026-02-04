@@ -31,7 +31,7 @@ export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: P
         <span className="hidden sm:inline">USD/BRL:</span>
         <span className="sm:hidden">USD:</span>
         <span className="font-mono font-medium text-primary">
-          {usdBrlRate.toFixed(4)}!
+          {usdBrlRate.toFixed(4)}
         </span>
         {isRateLoading ? (
           <RefreshCw className="w-3 h-3 animate-spin flex-shrink-0" />
