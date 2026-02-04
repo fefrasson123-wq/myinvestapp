@@ -249,7 +249,7 @@ export function PassiveIncome() {
                     />
                     <span className="text-xs font-medium">{label}</span>
                   </div>
-                  <span className="text-xs font-mono text-muted-foreground">
+                  <span className="text-xs font-mono text-muted-foreground ml-2">
                     {showValues ? formatCurrencyValue(totals[type].monthly) : '•••'}/mês
                   </span>
                 </div>
