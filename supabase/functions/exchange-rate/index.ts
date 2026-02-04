@@ -8,7 +8,7 @@ const corsHeaders = {
 
 // Simple in-memory cache with TTL
 const cache = new Map<string, { data: unknown; timestamp: number }>();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes - faster updates
 
 // Fallback rates (updated manually as conservative defaults)
 const FALLBACK_RATES: Record<string, number> = {
