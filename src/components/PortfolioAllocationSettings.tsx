@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Save, RotateCcw, TrendingUp, TrendingDown, AlertCircle, CheckCircle2, PieChart } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Loader2, Save, RotateCcw, TrendingUp, TrendingDown, AlertCircle, CheckCircle2, PieChart, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InvestmentCategory, categoryLabels, categoryColors } from '@/types/investment';
 import { usePortfolioAllocations } from '@/hooks/usePortfolioAllocations';
@@ -45,6 +46,7 @@ export function PortfolioAllocationSettings({ investments }: PortfolioAllocation
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeviationOpen, setIsDeviationOpen] = useState(false);
   const [localAllocations, setLocalAllocations] = useState<Record<InvestmentCategory, number>>({} as Record<InvestmentCategory, number>);
 
   // Initialize local state from saved allocations
@@ -230,138 +232,152 @@ export function PortfolioAllocationSettings({ investments }: PortfolioAllocation
         )}
       </Card>
 
-      {/* Card de Desvios e Rebalanceamento */}
+      {/* Card de Desvios e Rebalanceamento - Collapsible */}
       {hasAllocations && !isEditing && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Desvio da Alocação Ideal</CardTitle>
-            <CardDescription>
-              Veja quanto sua carteira está desalinhada da meta
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {allocationsWithDeviation.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Configure sua alocação ideal acima
-              </p>
-            ) : (
-              <>
-                {/* Lista de desvios */}
-                <div className="space-y-3">
-                  {allocationsWithDeviation
-                    .sort((a, b) => Math.abs(b.deviation) - Math.abs(a.deviation))
-                    .map(allocation => {
-                      const isOverweight = allocation.deviation > 0;
-                      const isUnderweight = allocation.deviation < 0;
-                      const isBalanced = Math.abs(allocation.deviation) <= 1;
-                      
-                      return (
-                        <div 
-                          key={allocation.category}
-                          className="flex items-center justify-between p-3 rounded-lg bg-secondary/30"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div 
-                              className="w-2 h-8 rounded-full"
-                              style={{ backgroundColor: categoryColors[allocation.category] }}
-                            />
-                            <div>
-                              <p className="font-medium text-sm">
-                                {categoryLabels[allocation.category]}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                Meta: {allocation.target_percent.toFixed(0)}% • Atual: {allocation.currentPercent.toFixed(1)}%
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="flex items-center gap-1 justify-end">
-                              {isBalanced ? (
-                                <CheckCircle2 className="w-4 h-4 text-success" />
-                              ) : isOverweight ? (
-                                <TrendingUp className="w-4 h-4 text-amber-500" />
-                              ) : (
-                                <TrendingDown className="w-4 h-4 text-primary" />
-                              )}
-                              <span className={cn(
-                                "font-mono text-sm font-medium",
-                                isBalanced && "text-success",
-                                isOverweight && "text-amber-500",
-                                isUnderweight && "text-primary"
-                              )}>
-                                {allocation.deviation >= 0 ? '+' : ''}{allocation.deviation.toFixed(1)}%
-                              </span>
-                            </div>
-                            {!isBalanced && (
-                              <p className={cn(
-                                "text-xs font-mono",
-                                allocation.amountToRebalance > 0 ? "text-primary" : "text-amber-500"
-                              )}>
-                                {allocation.amountToRebalance > 0 ? 'Investir: ' : 'Reduzir: '}
-                                {formatCurrencyValue(Math.abs(allocation.amountToRebalance))}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+        <Collapsible open={isDeviationOpen} onOpenChange={setIsDeviationOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="pb-3 cursor-pointer hover:bg-secondary/30 transition-colors rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Desvio da Alocação Ideal</CardTitle>
+                    <CardDescription>
+                      Veja quanto sua carteira está desalinhada da meta
+                    </CardDescription>
+                  </div>
+                  <ChevronDown className={cn(
+                    "w-5 h-5 text-muted-foreground transition-transform duration-200",
+                    isDeviationOpen && "rotate-180"
+                  )} />
                 </div>
-
-                {/* Resumo de rebalanceamento */}
-                {(underweightCategories.length > 0 || overweightCategories.length > 0) && (
-                  <div className="pt-3 border-t border-border/50">
-                    <h4 className="text-sm font-medium mb-2">Para rebalancear:</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {underweightCategories.length > 0 && (
-                        <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                          <p className="text-xs text-muted-foreground mb-1">Investir em</p>
-                          <div className="space-y-1">
-                            {underweightCategories.slice(0, 3).map(cat => (
-                              <div key={cat.category} className="flex justify-between text-sm">
-                                <span>{categoryLabels[cat.category]}</span>
-                                <span className="font-mono text-primary">
-                                  {formatCurrencyValue(cat.amountToRebalance)}
-                                </span>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                {allocationsWithDeviation.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Configure sua alocação ideal acima
+                  </p>
+                ) : (
+                  <>
+                    {/* Lista de desvios */}
+                    <div className="space-y-3">
+                      {allocationsWithDeviation
+                        .sort((a, b) => Math.abs(b.deviation) - Math.abs(a.deviation))
+                        .map(allocation => {
+                          const isOverweight = allocation.deviation > 0;
+                          const isUnderweight = allocation.deviation < 0;
+                          const isBalanced = Math.abs(allocation.deviation) <= 1;
+                          
+                          return (
+                            <div 
+                              key={allocation.category}
+                              className="flex items-center justify-between p-3 rounded-lg bg-secondary/30"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div 
+                                  className="w-2 h-8 rounded-full"
+                                  style={{ backgroundColor: categoryColors[allocation.category] }}
+                                />
+                                <div>
+                                  <p className="font-medium text-sm">
+                                    {categoryLabels[allocation.category]}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Meta: {allocation.target_percent.toFixed(0)}% • Atual: {allocation.currentPercent.toFixed(1)}%
+                                  </p>
+                                </div>
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {overweightCategories.length > 0 && (
-                        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                          <p className="text-xs text-muted-foreground mb-1">Acima do ideal</p>
-                          <div className="space-y-1">
-                            {overweightCategories.slice(0, 3).map(cat => (
-                              <div key={cat.category} className="flex justify-between text-sm">
-                                <span>{categoryLabels[cat.category]}</span>
-                                <span className="font-mono text-amber-500">
-                                  +{formatCurrencyValue(Math.abs(cat.amountToRebalance))}
-                                </span>
+                              <div className="text-right">
+                                <div className="flex items-center gap-1 justify-end">
+                                  {isBalanced ? (
+                                    <CheckCircle2 className="w-4 h-4 text-success" />
+                                  ) : isOverweight ? (
+                                    <TrendingUp className="w-4 h-4 text-amber-500" />
+                                  ) : (
+                                    <TrendingDown className="w-4 h-4 text-primary" />
+                                  )}
+                                  <span className={cn(
+                                    "font-mono text-sm font-medium",
+                                    isBalanced && "text-success",
+                                    isOverweight && "text-amber-500",
+                                    isUnderweight && "text-primary"
+                                  )}>
+                                    {allocation.deviation >= 0 ? '+' : ''}{allocation.deviation.toFixed(1)}%
+                                  </span>
+                                </div>
+                                {!isBalanced && (
+                                  <p className={cn(
+                                    "text-xs font-mono",
+                                    allocation.amountToRebalance > 0 ? "text-primary" : "text-amber-500"
+                                  )}>
+                                    {allocation.amountToRebalance > 0 ? 'Investir: ' : 'Reduzir: '}
+                                    {formatCurrencyValue(Math.abs(allocation.amountToRebalance))}
+                                  </p>
+                                )}
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                            </div>
+                          );
+                        })}
                     </div>
-                  </div>
-                )}
 
-                {/* Total para investir */}
-                {totalToInvest > 0 && (
-                  <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 text-center">
-                    <p className="text-sm text-muted-foreground mb-1">Para atingir a alocação ideal, invista</p>
-                    <p className="text-2xl font-mono font-bold text-primary">
-                      {formatCurrencyValue(totalToInvest)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      nas categorias abaixo do ideal
-                    </p>
-                  </div>
+                    {/* Resumo de rebalanceamento */}
+                    {(underweightCategories.length > 0 || overweightCategories.length > 0) && (
+                      <div className="pt-3 border-t border-border/50">
+                        <h4 className="text-sm font-medium mb-2">Para rebalancear:</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {underweightCategories.length > 0 && (
+                            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                              <p className="text-xs text-muted-foreground mb-1">Investir em</p>
+                              <div className="space-y-1">
+                                {underweightCategories.slice(0, 3).map(cat => (
+                                  <div key={cat.category} className="flex justify-between text-sm">
+                                    <span>{categoryLabels[cat.category]}</span>
+                                    <span className="font-mono text-primary">
+                                      {formatCurrencyValue(cat.amountToRebalance)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {overweightCategories.length > 0 && (
+                            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                              <p className="text-xs text-muted-foreground mb-1">Acima do ideal</p>
+                              <div className="space-y-1">
+                                {overweightCategories.slice(0, 3).map(cat => (
+                                  <div key={cat.category} className="flex justify-between text-sm">
+                                    <span>{categoryLabels[cat.category]}</span>
+                                    <span className="font-mono text-amber-500">
+                                      +{formatCurrencyValue(Math.abs(cat.amountToRebalance))}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Total para investir */}
+                    {totalToInvest > 0 && (
+                      <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 text-center">
+                        <p className="text-sm text-muted-foreground mb-1">Para atingir a alocação ideal, invista</p>
+                        <p className="text-2xl font-mono font-bold text-primary">
+                          {formatCurrencyValue(totalToInvest)}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          nas categorias abaixo do ideal
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       )}
     </div>
   );
