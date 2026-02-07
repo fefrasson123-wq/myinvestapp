@@ -113,13 +113,13 @@ export function PassiveIncome() {
       interest: { monthly: 0, yearly: 0 },
     };
 
-    // From projections (rent and interest)
+    // From projections (rent from investments with dividends field and interest)
     projectedIncome.forEach(p => {
       result[p.type].monthly += p.monthlyAmount;
       result[p.type].yearly += p.yearlyAmount;
     });
 
-    // From historical payments (dividends and JCP - last 12 months)
+    // From historical payments (ALL types - last 12 months)
     const now = new Date();
     const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
     
@@ -129,8 +129,29 @@ export function PassiveIncome() {
         result[p.type].yearly += p.amount;
       });
 
-    // Calculate monthly average from yearly for dividends
+    // Calculate monthly average from yearly for dividends and rent payments
     result.dividend.monthly = result.dividend.yearly / 12;
+    
+    // For rent: add monthly average from payments to projected rent
+    const rentPaymentsYearly = payments
+      .filter(p => p.paymentDate >= oneYearAgo && p.type === 'rent')
+      .reduce((sum, p) => sum + p.amount, 0);
+    
+    // Only add payment-based rent if there's no projection for the same investment
+    const projectedRentInvestmentIds = projectedIncome
+      .filter(p => p.type === 'rent')
+      .map(p => p.investmentId);
+    
+    const manualRentPayments = payments
+      .filter(p => 
+        p.paymentDate >= oneYearAgo && 
+        p.type === 'rent' && 
+        !projectedRentInvestmentIds.includes(p.investmentId || '')
+      )
+      .reduce((sum, p) => sum + p.amount, 0);
+    
+    // Add manual rent payments average to monthly
+    result.rent.monthly += manualRentPayments / 12;
 
     return result;
   }, [projectedIncome, payments]);
