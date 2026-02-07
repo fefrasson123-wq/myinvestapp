@@ -39,7 +39,7 @@ const dividendCategories = ['stocks', 'fii', 'usastocks', 'reits', 'bdr', 'etf']
 const rentCategories = ['realestate'];
 
 // Categories that pay interest (fixed income)
-const interestCategories = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'debentures', 'cricra', 'fixedincomefund', 'savings'];
+const interestCategories = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'debentures', 'cricra', 'fixedincomefund', 'savings', 'cash'];
 
 interface ProjectedIncome {
   investmentId: string;
