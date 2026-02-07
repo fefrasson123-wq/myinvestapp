@@ -483,6 +483,24 @@ export function InvestmentEvolutionChart({
     return formatCurrencyValue(value);
   }, [formatCurrencyValue]);
 
+  // Formata preços de ativos cotados em USD (sempre em dólar)
+  const formatUsdPrice = useCallback((value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6,
+    }).format(value);
+  }, []);
+
+  // Formata preço do ativo - USD para cripto/ações americanas, senão usa formatador global
+  const formatAssetPrice = useCallback((value: number) => {
+    if (isUsdAsset) {
+      return formatUsdPrice(value);
+    }
+    return formatCurrencyValue(value);
+  }, [isUsdAsset, formatUsdPrice, formatCurrencyValue]);
+
   const formatPercent = useCallback((value: number) => 
     `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`, []);
 
@@ -628,13 +646,13 @@ export function InvestmentEvolutionChart({
             <div className="p-2 rounded-lg bg-secondary/20">
               <span className="text-xs text-muted-foreground block">Preço Médio</span>
               <span className="font-mono text-sm text-card-foreground">
-                {formatCurrency(investment.averagePrice)}
+                {formatAssetPrice(investment.averagePrice)}
               </span>
             </div>
             <div className="p-2 rounded-lg bg-secondary/20">
               <span className="text-xs text-muted-foreground block">Preço Atual</span>
               <span className="font-mono text-sm text-card-foreground">
-                {formatCurrency(investment.currentPrice)}
+                {formatAssetPrice(investment.currentPrice)}
               </span>
             </div>
             <div className="p-2 rounded-lg bg-secondary/20">
