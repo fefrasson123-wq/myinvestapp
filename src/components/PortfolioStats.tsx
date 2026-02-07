@@ -53,7 +53,7 @@ export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: P
             </div>
             <span className="stat-label text-xs sm:text-sm">Patrimônio Total</span>
           </div>
-          <p className="stat-value number-glow text-lg sm:text-2xl truncate">{formatCurrencyValue(totalValue)}</p>
+          <p className="text-lg sm:text-2xl font-bold font-mono text-card-foreground truncate">{formatCurrencyValue(totalValue)}</p>
         </div>
 
         {/* Total Investido */}
