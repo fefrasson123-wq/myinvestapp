@@ -5,6 +5,7 @@ import { useIncomePayments, IncomeType, incomeTypeLabels } from '@/hooks/useInco
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { useInvestments } from '@/hooks/useInvestments';
 import { useDividendSync } from '@/hooks/useDividendSync';
+import { useEconomicRates } from '@/hooks/useEconomicRates';
 import { cn } from '@/lib/utils';
 import { Investment, categoryLabels } from '@/types/investment';
 import {
@@ -38,8 +39,11 @@ const dividendCategories = ['stocks', 'fii', 'usastocks', 'reits', 'bdr', 'etf']
 // Categories that are real estate (rent)
 const rentCategories = ['realestate'];
 
-// Categories that pay interest (fixed income)
-const interestCategories = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'debentures', 'cricra', 'fixedincomefund', 'savings', 'cash'];
+// Categories that pay interest (fixed income) - rate is actual percentage
+const interestCategories = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'debentures', 'cricra', 'fixedincomefund'];
+
+// Categories where the rate is stored as % of CDI (needs conversion)
+const cdiPercentageCategories = ['cash', 'savings'];
 
 interface ProjectedIncome {
   investmentId: string;
@@ -55,6 +59,7 @@ export function PassiveIncome() {
   const { investments, isLoading: investmentsLoading } = useInvestments();
   const { formatCurrencyValue, showValues } = useValuesVisibility();
   const { isSyncing, syncDividends, lastSync } = useDividendSync(investments);
+  const { rates: economicRates } = useEconomicRates();
   const [filter, setFilter] = useState<FilterType>('all');
 
   // Refetch payments after sync completes
@@ -81,10 +86,28 @@ export function PassiveIncome() {
         });
       }
 
-      // Fixed Income - calculate monthly interest
+      // Fixed Income with direct rate (CDB, LCI, etc.) - rate is actual annual percentage
       if (interestCategories.includes(inv.category) && inv.interestRate && inv.interestRate > 0) {
-        // Annual rate to monthly income
         const annualRate = inv.interestRate / 100;
+        const yearlyInterest = inv.currentValue * annualRate;
+        const monthlyInterest = yearlyInterest / 12;
+        
+        projections.push({
+          investmentId: inv.id,
+          investmentName: inv.name,
+          category: inv.category,
+          type: 'interest',
+          monthlyAmount: monthlyInterest,
+          yearlyAmount: yearlyInterest,
+        });
+      }
+
+      // Cash/Savings where rate is stored as % of CDI (e.g., 100 = 100% CDI)
+      if (cdiPercentageCategories.includes(inv.category) && inv.interestRate && inv.interestRate > 0) {
+        // Convert % of CDI to actual annual rate
+        // e.g., 100% CDI with CDI at 12.25% = 12.25% annual rate
+        const effectiveAnnualRate = (inv.interestRate / 100) * economicRates.cdi;
+        const annualRate = effectiveAnnualRate / 100;
         const yearlyInterest = inv.currentValue * annualRate;
         const monthlyInterest = yearlyInterest / 12;
         
@@ -103,7 +126,7 @@ export function PassiveIncome() {
     });
 
     return projections;
-  }, [investments]);
+  }, [investments, economicRates.cdi]);
 
   // Calculate totals by type
   const totals = useMemo(() => {
