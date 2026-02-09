@@ -3,13 +3,21 @@ import { Investment, InvestmentCategory } from '@/types/investment';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUsdBrlRate } from '@/hooks/useUsdBrlRate';
+import { useEconomicRates } from '@/hooks/useEconomicRates';
 import { investmentIdentityKey, normalizeText, normalizeTicker } from '@/hooks/investments/normalize';
 
 const STORAGE_KEY = 'investments-portfolio';
 
+// Categorias com cálculo de renda fixa (juros compostos)
+const FIXED_INCOME_CATEGORIES = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund', 'cash'];
+
+// Categorias que usam % do CDI como taxa
+const CDI_PERCENTAGE_CATEGORIES = ['cash', 'savings'];
+
 export function useInvestments() {
   const { user } = useAuth();
   const { rate: usdToBrl } = useUsdBrlRate();
+  const { rates: economicRates } = useEconomicRates();
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -236,9 +244,7 @@ export function useInvestments() {
   }, [user]);
 
   const calculateFixedIncomeValue = useCallback((investment: Investment) => {
-    const isFixedIncome = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(investment.category);
-    
-    if (!isFixedIncome || !investment.interestRate || !investment.purchaseDate) {
+    if (!FIXED_INCOME_CATEGORIES.includes(investment.category) || !investment.interestRate || !investment.purchaseDate) {
       return investment.quantity * investment.currentPrice;
     }
 
@@ -250,21 +256,27 @@ export function useInvestments() {
       return investment.investedAmount;
     }
 
-    return investment.investedAmount * Math.pow(1 + investment.interestRate / 100, yearsElapsed);
-  }, []);
+    // Para cash/savings, converte % do CDI para taxa efetiva
+    let effectiveRate = investment.interestRate;
+    if (CDI_PERCENTAGE_CATEGORIES.includes(investment.category)) {
+      effectiveRate = (investment.interestRate / 100) * economicRates.cdi;
+    }
+
+    return investment.investedAmount * Math.pow(1 + effectiveRate / 100, yearsElapsed);
+  }, [economicRates.cdi]);
 
   // Recalculate fixed income values
   useEffect(() => {
     if (investments.length > 0 && !isLoading) {
       const needsUpdate = investments.some(inv => 
-        ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(inv.category) &&
+        FIXED_INCOME_CATEGORIES.includes(inv.category) &&
         inv.interestRate && 
         inv.purchaseDate
       );
 
       if (needsUpdate) {
         const updated = investments.map(inv => {
-          if (!['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(inv.category)) return inv;
+          if (!FIXED_INCOME_CATEGORIES.includes(inv.category)) return inv;
           
           const currentValue = calculateFixedIncomeValue(inv);
           const profitLoss = currentValue - inv.investedAmount;
@@ -368,15 +380,21 @@ export function useInvestments() {
       updatedInv.investedAmount = data.investedAmount;
     }
     
-    const isFixedIncome = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(updatedInv.category);
+    const isFixedIncome = FIXED_INCOME_CATEGORIES.includes(updatedInv.category);
     
     if (isFixedIncome && updatedInv.interestRate && updatedInv.purchaseDate) {
       const purchaseDate = new Date(updatedInv.purchaseDate);
       const now = new Date();
       const yearsElapsed = (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
       
+      // Para cash/savings, converte % do CDI para taxa efetiva
+      let effectiveRate = updatedInv.interestRate;
+      if (CDI_PERCENTAGE_CATEGORIES.includes(updatedInv.category)) {
+        effectiveRate = (updatedInv.interestRate / 100) * economicRates.cdi;
+      }
+      
       if (yearsElapsed > 0) {
-        updatedInv.currentValue = updatedInv.investedAmount * Math.pow(1 + updatedInv.interestRate / 100, yearsElapsed);
+        updatedInv.currentValue = updatedInv.investedAmount * Math.pow(1 + effectiveRate / 100, yearsElapsed);
         updatedInv.currentPrice = updatedInv.currentValue / updatedInv.quantity;
       } else {
         updatedInv.currentValue = updatedInv.investedAmount;
@@ -430,7 +448,7 @@ export function useInvestments() {
   }, [user, saveToStorage]);
 
   const addInvestment = useCallback(async (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => {
-    const isFixedIncome = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'savings', 'debentures', 'cricra', 'fixedincomefund'].includes(data.category);
+    const isFixedIncome = FIXED_INCOME_CATEGORIES.includes(data.category);
     
     // Verifica se já existe um investimento com esse ticker/nome
     const existingInvestment = findExistingInvestment(data);
@@ -465,8 +483,15 @@ export function useInvestments() {
       const purchaseDate = new Date(data.purchaseDate);
       const now = new Date();
       const yearsElapsed = (now.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+      
+      // Para cash/savings, converte % do CDI para taxa efetiva
+      let effectiveRate = data.interestRate;
+      if (CDI_PERCENTAGE_CATEGORIES.includes(data.category)) {
+        effectiveRate = (data.interestRate / 100) * economicRates.cdi;
+      }
+      
       currentValue = yearsElapsed > 0 
-        ? data.investedAmount * Math.pow(1 + data.interestRate / 100, yearsElapsed)
+        ? data.investedAmount * Math.pow(1 + effectiveRate / 100, yearsElapsed)
         : data.investedAmount;
     } else {
       currentValue = data.quantity * data.currentPrice;

@@ -6,6 +6,9 @@ import { useEconomicRates } from '@/hooks/useEconomicRates';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Categorias que usam % do CDI como taxa (ex: 100 = 100% do CDI)
+const cdiPercentageCategories = ['cash', 'savings'];
+
 interface BenchmarkComparisonProps {
   investment: Investment;
   onClose: () => void;
@@ -101,9 +104,15 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
   useEffect(() => {
     async function fetchAsset12mReturn() {
       if (!investment.ticker) {
-        // Para ativos sem ticker (renda fixa), usa a taxa de juros informada
+        // Para ativos sem ticker (renda fixa/cash), usa a taxa de juros informada
         if (investment.interestRate) {
-          setAsset12mReturn(investment.interestRate);
+          // Para cash/savings, converte % do CDI para taxa efetiva
+          if (cdiPercentageCategories.includes(investment.category)) {
+            const effectiveRate = (investment.interestRate / 100) * rates.cdi;
+            setAsset12mReturn(effectiveRate);
+          } else {
+            setAsset12mReturn(investment.interestRate);
+          }
         }
         return;
       }
@@ -143,7 +152,7 @@ export function BenchmarkComparison({ investment, onClose }: BenchmarkComparison
     }
     
     fetchAsset12mReturn();
-  }, [investment.ticker, investment.category, investment.interestRate]);
+  }, [investment.ticker, investment.category, investment.interestRate, rates.cdi]);
   
   // Detectar se o investimento é do mesmo tipo que o benchmark
   const isBitcoinInvestment = investment.category === 'crypto' && 
