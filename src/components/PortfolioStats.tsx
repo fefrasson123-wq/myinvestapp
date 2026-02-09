@@ -48,12 +48,19 @@ export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: P
         {/* Total Patrimônio */}
         <div className="investment-card animate-slide-up stagger-1 group">
           <div className="flex items-center gap-3 mb-2 sm:mb-3">
-            <div className="p-2 rounded-lg bg-primary/20 transition-transform duration-300 group-hover:scale-110 flex-shrink-0">
-              <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <div className="p-2 rounded-lg bg-success/20 transition-transform duration-300 group-hover:scale-110 flex-shrink-0">
+              <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-success" />
             </div>
             <span className="stat-label text-xs sm:text-sm">Patrimônio Total</span>
           </div>
-          <p className="text-lg sm:text-2xl font-bold font-mono text-success number-glow truncate">{formatCurrencyValue(totalValue)}</p>
+          <div className="flex items-baseline gap-2">
+            <p className={cn(
+              "text-lg sm:text-2xl font-bold font-mono whitespace-nowrap",
+              "text-success number-glow"
+            )}>
+              {formatCurrencyValue(totalValue)}
+            </p>
+          </div>
         </div>
 
         {/* Total Investido */}
