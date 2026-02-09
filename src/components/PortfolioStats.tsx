@@ -48,7 +48,7 @@ export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: P
         {/* Total Patrimônio */}
         <div className="investment-card animate-slide-up stagger-1 group">
           <div className="flex items-center gap-3 mb-2 sm:mb-3">
-            <div className="p-2 rounded-lg bg-primary/20 transition-transform duration-300 group-hover:scale-110 flex-shrink-0">
+            <div className="p-2 rounded-lg bg-primary/10 transition-transform duration-300 group-hover:scale-110 flex-shrink-0 shadow-[0_0_12px_hsl(var(--primary)/0.3)]">
               <Wallet className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
             <span className="stat-label text-xs sm:text-sm">Patrimônio Total</span>
