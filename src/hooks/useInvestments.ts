@@ -522,6 +522,8 @@ export function useInvestments() {
           dividends: data.dividends || null,
           address: data.address || null,
           area_m2: data.areaM2 || null,
+          currency: data.currency || null,
+          bank: data.bank || null,
         })
         .select()
         .single();
