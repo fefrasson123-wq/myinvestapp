@@ -83,19 +83,8 @@ export function useInvestments() {
           }
         }
       } else {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            setInvestments(parsed.map((inv: Investment) => ({
-              ...inv,
-              createdAt: new Date(inv.createdAt),
-              updatedAt: new Date(inv.updatedAt),
-            })));
-          } catch (e) {
-            console.error('Error loading investments:', e);
-          }
-        }
+        // Limpa investimentos ao deslogar
+        setInvestments([]);
       }
       setIsLoading(false);
     };
