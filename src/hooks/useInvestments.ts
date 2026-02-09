@@ -310,7 +310,8 @@ export function useInvestments() {
         }
       }
     }
-  }, [investments.length, isLoading, calculateFixedIncomeValue, saveToStorage, investments]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [investments.length, isLoading, calculateFixedIncomeValue, saveToStorage]);
 
   // Encontra investimento existente pelo ticker ou nome
   const findExistingInvestment = useCallback((data: { ticker?: string; name: string; category: InvestmentCategory }) => {
