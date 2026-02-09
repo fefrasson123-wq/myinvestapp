@@ -39,19 +39,8 @@ export function useTransactions() {
           })));
         }
       } else {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            setTransactions(parsed.map((tx: Transaction) => ({
-              ...tx,
-              date: new Date(tx.date),
-              createdAt: new Date(tx.createdAt),
-            })));
-          } catch (e) {
-            console.error('Error loading transactions:', e);
-          }
-        }
+        // Limpa transações ao deslogar
+        setTransactions([]);
       }
       setIsLoading(false);
     };
