@@ -14,6 +14,12 @@ const FIXED_INCOME_CATEGORIES = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'sav
 // Categorias que usam % do CDI como taxa
 const CDI_PERCENTAGE_CATEGORIES = ['cash', 'savings'];
 
+// Categorias denominadas em USD (precisam conversão para BRL nos totais)
+const USD_CATEGORIES: InvestmentCategory[] = ['crypto', 'usastocks', 'reits'];
+
+// Categorias sem preço de mercado (currentPrice = averagePrice em merge)
+const NO_MARKET_PRICE_CATEGORIES: InvestmentCategory[] = ['cash', 'realestate', 'gold'];
+
 export function useInvestments() {
   const { user } = useAuth();
   const { rate: usdToBrl } = useUsdBrlRate();
@@ -465,11 +471,16 @@ export function useInvestments() {
       const newInvestedAmount = totalQuantity * weightedAveragePrice;
       
       // Atualiza o investimento existente
+      // Para ativos sem preço de mercado (cash, imóveis, ouro), currentPrice deve ser o preço médio
+      const mergedCurrentPrice = NO_MARKET_PRICE_CATEGORIES.includes(data.category)
+        ? weightedAveragePrice
+        : (data.currentPrice || existingInvestment.currentPrice);
+
       await updateInvestment(existingInvestment.id, {
         quantity: totalQuantity,
         averagePrice: weightedAveragePrice,
         investedAmount: newInvestedAmount,
-        currentPrice: data.currentPrice || existingInvestment.currentPrice,
+        currentPrice: mergedCurrentPrice,
       });
       
       // Retorna o investimento atualizado
@@ -695,21 +706,21 @@ export function useInvestments() {
   const getTotalValue = useCallback(() => {
     return investments.reduce((sum, inv) => {
       const value = inv.currentValue;
-      return sum + (inv.category === 'crypto' ? value * usdToBrl : value);
+      return sum + (USD_CATEGORIES.includes(inv.category) ? value * usdToBrl : value);
     }, 0);
   }, [investments, usdToBrl]);
 
   const getTotalInvested = useCallback(() => {
     return investments.reduce((sum, inv) => {
       const value = inv.investedAmount;
-      return sum + (inv.category === 'crypto' ? value * usdToBrl : value);
+      return sum + (USD_CATEGORIES.includes(inv.category) ? value * usdToBrl : value);
     }, 0);
   }, [investments, usdToBrl]);
 
   const getTotalProfitLoss = useCallback(() => {
     return investments.reduce((sum, inv) => {
       const value = inv.profitLoss;
-      return sum + (inv.category === 'crypto' ? value * usdToBrl : value);
+      return sum + (USD_CATEGORIES.includes(inv.category) ? value * usdToBrl : value);
     }, 0);
   }, [investments, usdToBrl]);
 
@@ -742,7 +753,7 @@ export function useInvestments() {
     };
 
     investments.forEach(inv => {
-      const value = inv.category === 'crypto' ? inv.currentValue * usdToBrl : inv.currentValue;
+      const value = USD_CATEGORIES.includes(inv.category) ? inv.currentValue * usdToBrl : inv.currentValue;
       totals[inv.category] += value;
     });
 

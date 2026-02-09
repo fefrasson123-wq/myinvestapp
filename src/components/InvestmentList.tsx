@@ -12,6 +12,9 @@ import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { useFIIPrices } from '@/hooks/useFIIPrices';
 import { useStockPrices } from '@/hooks/useStockPrices';
+import { useUSAStockPrices } from '@/hooks/useUSAStockPrices';
+import { useETFPrices } from '@/hooks/useETFPrices';
+import { useGoldPrice } from '@/hooks/useGoldPrice';
 
 interface InvestmentListProps {
   investments: Investment[];
@@ -32,6 +35,9 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
   const stock = useStockPrices();
   const fii = useFIIPrices();
   const crypto = useCryptoPrices();
+  const usaStock = useUSAStockPrices();
+  const etf = useETFPrices();
+  const gold = useGoldPrice();
 
   const formatCurrency = (value: number, currency: 'BRL' | 'USD' = 'BRL') => {
     if (!showValues) return currency === 'BRL' ? 'R$ •••••' : '$ •••••';
@@ -50,6 +56,8 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
     const stocksTickers = new Set<string>();
     const fiiTickers = new Set<string>();
     const cryptoTickers = new Set<string>();
+    const usaStockTickers = new Set<string>();
+    const etfTickers = new Set<string>();
 
     investments.forEach((inv) => {
       const ticker = inv.ticker?.trim();
@@ -58,38 +66,44 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
       if (inv.category === 'stocks' || inv.category === 'bdr') stocksTickers.add(ticker.toUpperCase());
       if (inv.category === 'fii') fiiTickers.add(ticker.toUpperCase());
       if (inv.category === 'crypto') cryptoTickers.add(ticker.toUpperCase());
+      if (inv.category === 'usastocks' || inv.category === 'reits') usaStockTickers.add(ticker.toUpperCase());
+      if (inv.category === 'etf') etfTickers.add(ticker.toUpperCase());
     });
 
     return {
       stocks: Array.from(stocksTickers),
       fii: Array.from(fiiTickers),
       crypto: Array.from(cryptoTickers),
+      usaStocks: Array.from(usaStockTickers),
+      etf: Array.from(etfTickers),
     };
   }, [investments]);
 
   // Fetch prices only once on mount and then refresh periodically
   // Avoid triggering on every tickersByType change to prevent rate limiter overflow
   useEffect(() => {
-    // Use a debounced/throttled approach - only fetch if we have tickers
     const hasStocks = tickersByType.stocks.length > 0;
     const hasFII = tickersByType.fii.length > 0;
     const hasCrypto = tickersByType.crypto.length > 0;
+    const hasUSAStocks = tickersByType.usaStocks.length > 0;
+    const hasETF = tickersByType.etf.length > 0;
     
-    // Skip if no tickers to fetch
-    if (!hasStocks && !hasFII && !hasCrypto) return;
+    if (!hasStocks && !hasFII && !hasCrypto && !hasUSAStocks && !hasETF) return;
 
-    // Initial fetch with slight delay to avoid race conditions with other components
     const initialTimeout = setTimeout(() => {
       if (hasStocks) stock.fetchPrices(tickersByType.stocks);
       if (hasFII) fii.fetchPrices(tickersByType.fii);
       if (hasCrypto) crypto.fetchPrices(tickersByType.crypto);
+      if (hasUSAStocks) usaStock.fetchPrices(tickersByType.usaStocks);
+      if (hasETF) etf.fetchPrices(tickersByType.etf);
     }, 500);
 
-    // Periodic refresh every 2 minutes (reduced frequency to avoid rate limiting)
     const interval = window.setInterval(() => {
       if (hasStocks) stock.fetchPrices(tickersByType.stocks);
       if (hasFII) fii.fetchPrices(tickersByType.fii);
       if (hasCrypto) crypto.fetchPrices(tickersByType.crypto);
+      if (hasUSAStocks) usaStock.fetchPrices(tickersByType.usaStocks);
+      if (hasETF) etf.fetchPrices(tickersByType.etf);
     }, 120_000);
 
     return () => {
@@ -101,16 +115,27 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
 
   const getLivePrice = (inv: Investment): number | null => {
     const ticker = inv.ticker?.trim();
-    if (!ticker) return null;
 
-    if (inv.category === 'stocks' || inv.category === 'bdr') return stock.getPrice(ticker);
-    if (inv.category === 'fii') return fii.getPrice(ticker);
-    if (inv.category === 'crypto') return crypto.getPrice(ticker);
+    if (inv.category === 'stocks' || inv.category === 'bdr') return ticker ? stock.getPrice(ticker) : null;
+    if (inv.category === 'fii') return ticker ? fii.getPrice(ticker) : null;
+    if (inv.category === 'crypto') return ticker ? crypto.getPrice(ticker) : null;
+    if (inv.category === 'usastocks' || inv.category === 'reits') return ticker ? usaStock.getPrice(ticker) : null;
+    if (inv.category === 'etf') return ticker ? etf.getPrice(ticker) : null;
+    if (inv.category === 'gold' && inv.goldType === 'digital' && ticker) {
+      // PAXG digital gold uses crypto prices
+      return crypto.getPrice(ticker);
+    }
+    if (inv.category === 'gold' && inv.goldType === 'physical' && gold.pricePerGram) {
+      // Physical gold: apply purity multiplier
+      const purityStr = inv.goldPurity?.replace('K', '') || '24';
+      const purityMultiplier = parseInt(purityStr) / 24;
+      return gold.pricePerGram * purityMultiplier;
+    }
 
     return null;
   };
 
-  const hasLivePriceSupport = (inv: Investment) => ['stocks', 'fii', 'crypto', 'bdr'].includes(inv.category);
+  const hasLivePriceSupport = (inv: Investment) => ['stocks', 'fii', 'crypto', 'bdr', 'usastocks', 'reits', 'etf', 'gold'].includes(inv.category);
 
   if (investments.length === 0) {
     return (
@@ -135,9 +160,9 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
             : 0;
 
           const isPositive = effectiveProfitLoss >= 0;
-          const isCrypto = investment.category === 'crypto';
+          const isUsdDenominated = ['crypto', 'usastocks', 'reits'].includes(investment.category);
           const isRealEstate = investment.category === 'realestate';
-          const currency = isCrypto ? 'USD' : 'BRL';
+          const currency = isUsdDenominated ? 'USD' : 'BRL';
           const currentTag = investmentTags[investment.id];
 
           const isUsingFallback = hasLivePriceSupport(investment) && !!investment.ticker && livePrice == null;
@@ -188,7 +213,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                               : 'Especulação'}
                         </span>
                       )}
-                      {isCrypto && (
+                      {isUsdDenominated && (
                         <span className="text-xs text-muted-foreground font-mono">USD</span>
                       )}
                       {isUsingFallback && (
@@ -214,7 +239,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                       <div className="min-w-0">
                         <span className="text-muted-foreground block text-xs">Acumulado Total</span>
                         <p className="font-mono text-primary font-medium text-xs sm:text-sm truncate">
-                          {isCrypto 
+                          {isUsdDenominated 
                             ? formatCurrency(
                                 displayCurrency === 'BRL' 
                                   ? effectiveCurrentValue * usdBrlRate 
@@ -243,7 +268,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                             isPositive ? 'text-success' : 'text-destructive'
                           )}
                         >
-                          {formatCurrencyValue(isCrypto ? effectiveProfitLoss * usdBrlRate : effectiveProfitLoss)}
+                          {formatCurrencyValue(isUsdDenominated ? effectiveProfitLoss * usdBrlRate : effectiveProfitLoss)}
                         </span>
                       </div>
                       <span
