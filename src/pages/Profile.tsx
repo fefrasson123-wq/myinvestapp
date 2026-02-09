@@ -206,10 +206,10 @@ export default function Profile() {
         </header>
 
         {/* Main Content - Layout responsivo como o Dashboard */}
-        <main className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <main className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 overflow-x-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full max-w-7xl mx-auto">
             {/* Coluna da esquerda - Profile Card */}
-            <div className="space-y-6">
+            <div className="space-y-6 min-w-0 overflow-hidden">
               {/* Profile Card */}
               <div className="bg-card border border-border rounded-xl shadow-lg p-6 animate-smooth-appear">
                 <div className="flex items-center gap-4 mb-6">
@@ -263,7 +263,7 @@ export default function Profile() {
             </div>
 
             {/* Coluna da direita no desktop */}
-            <div className="space-y-6">
+            <div className="space-y-6 min-w-0 overflow-hidden">
               {/* Portfolio Allocation Settings */}
               <div className="animate-smooth-appear" style={{ animationDelay: '100ms' }}>
                 <PortfolioAllocationSettings investments={investments} />
