@@ -253,21 +253,21 @@ export function PassiveIncome() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-background/50 rounded-lg p-3 sm:p-4 min-w-0 overflow-hidden">
+        <div className="bg-background/50 rounded-lg p-3 sm:p-4 min-w-0">
           <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
             <Calendar className="w-3 h-3" />
             Projeção Mensal
           </p>
-          <p className="text-base sm:text-xl font-bold text-primary whitespace-nowrap truncate">
+          <p className="text-sm sm:text-xl font-bold text-primary whitespace-nowrap">
             {showValues ? formatCurrencyValue(filteredMonthly) : '•••••'}
           </p>
         </div>
-        <div className="bg-background/50 rounded-lg p-3 sm:p-4 min-w-0 overflow-hidden">
+        <div className="bg-background/50 rounded-lg p-3 sm:p-4 min-w-0">
           <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
             <TrendingUp className="w-3 h-3" />
             Projeção Anual
           </p>
-          <p className="text-base sm:text-xl font-bold text-success whitespace-nowrap truncate">
+          <p className="text-sm sm:text-xl font-bold text-success whitespace-nowrap">
             {showValues ? formatCurrencyValue(filteredYearly) : '•••••'}
           </p>
         </div>
