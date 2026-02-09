@@ -69,9 +69,9 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
           </div>
           <div className="space-y-3">
             {sortedInvestments.map((inv, index) => {
-              const isCrypto = inv.category === 'crypto';
-              // Converte lucro/prejuízo de crypto de USD para BRL
-              const displayProfitLoss = isCrypto ? inv.profitLoss * usdBrlRate : inv.profitLoss;
+          const isUsdDenominated = ['crypto', 'usastocks', 'reits'].includes(inv.category);
+              // Converte lucro/prejuízo de ativos USD para BRL
+              const displayProfitLoss = isUsdDenominated ? inv.profitLoss * usdBrlRate : inv.profitLoss;
               const invIsPositive = displayProfitLoss >= 0;
               const portfolioPercent = totalPortfolioValue > 0 ? (inv.currentValue / totalPortfolioValue) * 100 : 0;
               
@@ -102,7 +102,7 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
                         <p className="text-xs sm:text-sm text-muted-foreground truncate">
                           {categoryLabels[inv.category]}
                         </p>
-                        {isCrypto && (
+                        {isUsdDenominated && (
                           <span className="text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono flex-shrink-0">
                             USD
                           </span>
