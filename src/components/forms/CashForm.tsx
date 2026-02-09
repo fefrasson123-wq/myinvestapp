@@ -76,6 +76,7 @@ export function CashForm({ onSubmit, onBack }: CashFormProps) {
       currentPrice: amountInBrl,
       investedAmount: amountInBrl,
       currency: currency || 'BRL',
+      purchaseDate: new Date().toISOString(),
       interestRate: cashType === 'banco' && formData.isYielding ? parseFloat(formData.cdiPercent) || 0 : undefined,
       notes: formData.notes.trim() || undefined,
       bank: cashType === 'banco' ? 'sim' : undefined,
