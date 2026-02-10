@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Transaction, InvestmentCategory, TransactionType } from '@/types/investment';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,8 +9,17 @@ export function useTransactions() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const prevUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const currentUserId = user?.id ?? null;
+    
+    // Skip reload if same user (token refresh on tab switch)
+    if (currentUserId && currentUserId === prevUserIdRef.current && transactions.length > 0) {
+      return;
+    }
+    prevUserIdRef.current = currentUserId;
+
     const loadTransactions = async () => {
       setIsLoading(true);
       
@@ -39,14 +48,14 @@ export function useTransactions() {
           })));
         }
       } else {
-        // Limpa transações ao deslogar
         setTransactions([]);
       }
       setIsLoading(false);
     };
 
     loadTransactions();
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const saveToStorage = useCallback((data: Transaction[]) => {
     if (!user) {
