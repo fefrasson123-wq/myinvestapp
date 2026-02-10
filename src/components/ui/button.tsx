@@ -16,6 +16,8 @@ const buttonVariants = cva(
         ghost: "text-card-foreground hover:bg-secondary hover:text-secondary-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         glow: "bg-primary text-primary-foreground hover:bg-primary/90 glow-strong animate-glow-pulse hover:shadow-xl hover:shadow-primary/30",
+        hero: "bg-primary text-primary-foreground hover:bg-primary/90 glow-strong hover:shadow-xl hover:shadow-primary/30 px-8 py-6 text-lg font-semibold",
+        "hero-outline": "border-2 border-primary/50 bg-transparent text-primary hover:bg-primary/10 hover:border-primary px-8 py-6 text-lg font-semibold",
       },
       size: {
         default: "h-10 px-4 py-2",
