@@ -31,8 +31,19 @@ export function useInvestments() {
   const investmentsRef = useRef<Investment[]>(investments);
   investmentsRef.current = investments;
 
+  // Track user ID to avoid re-fetching when auth token refreshes (same user)
+  const prevUserIdRef = useRef<string | null>(null);
+
   // Load from Supabase or localStorage
   useEffect(() => {
+    const currentUserId = user?.id ?? null;
+    
+    // Skip reload if it's the same user (token refresh on tab switch)
+    if (currentUserId && currentUserId === prevUserIdRef.current && investments.length > 0) {
+      return;
+    }
+    prevUserIdRef.current = currentUserId;
+
     const loadInvestments = async () => {
       setIsLoading(true);
       
@@ -90,7 +101,8 @@ export function useInvestments() {
     };
 
     loadInvestments();
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Avoid running DB dedupe multiple times.
   const hasRunDbDedupeRef = useRef(false);
