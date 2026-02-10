@@ -19,12 +19,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Safety timeout - never stay loading forever
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000);
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
+        clearTimeout(timeout);
       }
     );
 
@@ -33,9 +39,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
+      clearTimeout(timeout);
+    }).catch(() => {
+      setIsLoading(false);
+      clearTimeout(timeout);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const signUp = async (email: string, password: string, username?: string, whatsapp?: string) => {
