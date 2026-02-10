@@ -21,7 +21,7 @@ export function Header({ onAddClick, currentPortfolioValue = 0, totalInvestedAmo
   const { user } = useAuth();
 
   const handleLogoClick = () => {
-    navigate('/app');
+    navigate('/');
   };
 
   return (

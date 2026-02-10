@@ -9,7 +9,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ValuesVisibilityProvider } from "@/contexts/ValuesVisibilityContext";
 
 // Lazy load all pages for faster initial load
-const Landing = lazy(() => import("./pages/Landing"));
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Profile = lazy(() => import("./pages/Profile"));
@@ -49,8 +48,7 @@ const App = () => (
             <BrowserRouter>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/app" element={<Index />} />
+                  <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/admin" element={<Admin />} />

@@ -116,7 +116,7 @@ export default function Auth() {
   // Redirect if already logged in (except in reset-password mode with recovery session)
   useEffect(() => {
     if (!isAuthLoading && user && mode !== 'reset-password') {
-      navigate('/app');
+      navigate('/');
     }
   }, [user, navigate, mode, isAuthLoading]);
 
@@ -231,7 +231,7 @@ export default function Auth() {
           description: 'Sua senha foi alterada com sucesso. Você já está logado.',
         });
         setIsRecoverySession(false);
-        navigate('/app');
+        navigate('/');
       }
     } finally {
       setIsSubmitting(false);
@@ -278,7 +278,7 @@ export default function Auth() {
             title: 'Login realizado!',
             description: 'Bem-vindo de volta!',
           });
-          navigate('/app');
+          navigate('/');
         }
       } else if (mode === 'signup') {
         const result = signupSchema.safeParse({ username, email, whatsapp, password, confirmPassword });
@@ -314,7 +314,7 @@ export default function Auth() {
             title: 'Conta criada!',
             description: 'Seu cadastro foi realizado com sucesso.',
           });
-          navigate('/app');
+          navigate('/');
         }
       }
     } finally {

@@ -124,7 +124,7 @@ export default function Profile() {
       title: 'Logout realizado',
       description: 'Você saiu da sua conta.',
     });
-    navigate('/app');
+    navigate('/');
   };
 
   const handleDeleteAccount = async () => {
@@ -148,7 +148,7 @@ export default function Profile() {
         description: 'Sua conta e todos os dados foram removidos permanentemente.',
       });
       
-      navigate('/app');
+      navigate('/');
     } catch (err: any) {
       console.error('Error deleting account:', err);
       toast({
@@ -188,7 +188,7 @@ export default function Profile() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate('/app')}
+                onClick={() => navigate('/')}
                 className="mr-2"
               >
                 <ArrowLeft className="w-5 h-5" />
