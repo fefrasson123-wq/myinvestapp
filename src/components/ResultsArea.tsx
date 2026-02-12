@@ -146,11 +146,11 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
         hasFeature('category_profit_loss') ? (
           <CategoryProfitLoss investments={investments} />
         ) : (
-          <div className="relative overflow-hidden rounded-xl">
+          <div className="relative overflow-hidden">
             <div className="blur-sm pointer-events-none max-h-[300px]">
               <CategoryProfitLoss investments={investments} />
             </div>
-            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-background/30">
+            <div className="absolute inset-0 flex items-center justify-center bg-background/30">
               <UpgradePrompt feature="Lucro/Prejuízo por Classe" />
             </div>
           </div>
