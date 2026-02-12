@@ -14,14 +14,12 @@ export function PWAInstallBanner() {
   const [showIOSTip, setShowIOSTip] = useState(false);
 
   useEffect(() => {
-    // Don't show if already installed or dismissed recently
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
     if (isStandalone) return;
 
     const dismissed = localStorage.getItem('pwa-banner-dismissed');
     if (dismissed) {
       const dismissedAt = parseInt(dismissed, 10);
-      // Show again after 7 days
       if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
     }
 
@@ -29,22 +27,21 @@ export function PWAInstallBanner() {
     const ios = /iPad|iPhone|iPod/.test(ua);
     setIsIOS(ios);
 
-    if (ios) {
-      // Show iOS tip after a delay
-      const timer = setTimeout(() => setShowBanner(true), 3000);
-      return () => clearTimeout(timer);
-    }
+    // Always show banner after a short delay
+    const timer = setTimeout(() => setShowBanner(true), 2000);
 
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowBanner(true);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
     window.addEventListener('appinstalled', () => setShowBanner(false));
 
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
   }, []);
 
   const handleInstall = async () => {
@@ -70,7 +67,7 @@ export function PWAInstallBanner() {
   if (!showBanner) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md animate-in slide-in-from-bottom-4 duration-500">
+    <div className="fixed bottom-4 right-4 z-50 w-80 animate-in slide-in-from-right-4 duration-500">
       <div className="relative rounded-xl border border-border/50 bg-card/95 backdrop-blur-md shadow-xl shadow-primary/10 p-4">
         <button
           onClick={handleDismiss}
