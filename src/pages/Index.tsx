@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { LayoutDashboard, PlusCircle, History } from 'lucide-react';
+import { LayoutDashboard, History, Crown } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { PortfolioStats } from '@/components/PortfolioStats';
 import { PriceUpdateIndicator } from '@/components/PriceUpdateIndicator';
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { InvestmentsByTag, InvestmentTag } from '@/components/InvestmentsByTag';
 import { useAuth } from '@/contexts/AuthContext';
 import { InvestmentRegistration } from '@/components/InvestmentRegistration';
+import { PlansContent } from '@/components/PlansContent';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
@@ -30,7 +31,7 @@ import { InvestmentList } from '@/components/InvestmentList';
 import { ResultsArea } from '@/components/ResultsArea';
 import { TransactionHistory } from '@/components/TransactionHistory';
 
-type ActiveTab = 'dashboard' | 'register' | 'history';
+type ActiveTab = 'dashboard' | 'plans' | 'history';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -555,16 +556,16 @@ const Index = () => {
                 <span className="truncate">Dashboard</span>
               </button>
               <button
-                onClick={() => requireAuth(() => setActiveTab('register'))}
+                onClick={() => setActiveTab('plans')}
                 className={cn(
                   "flex-1 sm:flex-initial flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-6 py-3 font-medium transition-all duration-200 border-b-2 -mb-px text-xs sm:text-base min-w-0",
-                  activeTab === 'register'
+                  activeTab === 'plans'
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-card-foreground"
                 )}
               >
-                <PlusCircle className="w-4 h-4 flex-shrink-0" />
-                <span className="truncate">Cadastrar</span>
+                <Crown className="w-4 h-4 flex-shrink-0" />
+                <span className="truncate">Planos</span>
               </button>
               <button
                 onClick={() => requireAuth(() => setActiveTab('history'))}
@@ -605,20 +606,14 @@ const Index = () => {
                 totalProfitLoss={getTotalProfitLoss()}
               />
 
-              {hasFeature('performance_charts') ? (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                  <div className="lg:col-span-1">
-                    <CategoryChart categoryTotals={getCategoryTotals()} investments={investments} />
-                  </div>
-                  <div className="lg:col-span-2">
-                    <ResultsArea investments={investments} />
-                  </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <div className="lg:col-span-1">
+                  <CategoryChart categoryTotals={getCategoryTotals()} investments={investments} />
                 </div>
-              ) : (
-                <div className="mt-6">
-                  <UpgradePrompt feature="Gráficos de evolução, rentabilidade e alocação" />
+                <div className="lg:col-span-2">
+                  <ResultsArea investments={investments} />
                 </div>
-              )}
+              </div>
 
               {/* Investimentos por Tag */}
               {hasFeature('tags') ? (
@@ -654,14 +649,9 @@ const Index = () => {
             </div>
           )}
 
-          {activeTab === 'register' && (
+          {activeTab === 'plans' && (
             <div className="animate-smooth-appear">
-              <InvestmentRegistration
-                onSubmit={handleSubmit}
-                onSell={handleDirectSell}
-                onClose={() => setActiveTab('dashboard')}
-                isModal={false}
-              />
+              <PlansContent />
             </div>
           )}
 
