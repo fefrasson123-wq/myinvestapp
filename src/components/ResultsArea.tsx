@@ -67,7 +67,7 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
         <div className="investment-card">
           <div className="flex items-center gap-2 mb-4 flex-wrap">
             <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
-            <h3 className="text-base sm:text-lg font-semibold text-card-foreground">Lucro/Prejuízo por Ativo</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-card-foreground">Lucro / Prejuízo por Ativo</h3>
             <span className="text-xs text-muted-foreground ml-auto font-mono whitespace-nowrap">Tempo real</span>
           </div>
           <div className="space-y-3">
