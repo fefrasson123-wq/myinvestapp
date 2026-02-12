@@ -397,11 +397,13 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
               <span className="text-sm font-medium text-card-foreground">
                 {!showValues
                   ? '•••'
-                  : progress < 0.1
-                    ? '<0,1%'
-                    : progress < 1
-                      ? `${progress.toFixed(1).replace('.', ',')}%`
-                      : `${progress.toFixed(0)}%`}
+                  : progress === 0
+                    ? '0%'
+                    : progress < 0.1
+                      ? '<0,1%'
+                      : progress < 1
+                        ? `${progress.toFixed(1).replace('.', ',')}%`
+                        : `${progress.toFixed(0)}%`}
               </span>
               <div className="hidden sm:block w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
