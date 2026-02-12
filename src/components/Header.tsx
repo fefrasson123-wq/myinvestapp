@@ -48,7 +48,7 @@ export function Header({ onAddClick, currentPortfolioValue = 0, totalInvestedAmo
             <PersonalGoal currentPortfolioValue={currentPortfolioValue} totalInvestedAmount={totalInvestedAmount} transactions={transactions} />
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 ml-auto">
             <Button 
               variant="ghost" 
               size="icon"
