@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, memo, useCallback } from 'react';
+import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, Edit, TrendingUp, TrendingDown, DollarSign, BarChart3, LineChart, Building2, Tag } from 'lucide-react';
 import { Investment, categoryLabels, categoryColors } from '@/types/investment';
@@ -35,6 +36,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
   const [realEstateChartInvestment, setRealEstateChartInvestment] = useState<Investment | null>(null);
   const { showValues, formatPercent, formatCurrencyValue, usdBrlRate, displayCurrency } = useValuesVisibility();
   const { hasFeature } = useSubscription();
+  const { isAdmin } = useAdminCheck();
 
   // Live prices (best-effort). If unavailable, we fall back to the stored DB price.
   const stock = useStockPrices();
@@ -221,7 +223,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                       {isUsdDenominated && (
                         <span className="text-xs text-muted-foreground font-mono">USD</span>
                       )}
-                      {isUsingFallback && (
+                      {isUsingFallback && isAdmin && (
                         <span className="text-xs text-muted-foreground">
                           sem cotação ao vivo
                         </span>
