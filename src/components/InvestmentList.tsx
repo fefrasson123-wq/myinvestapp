@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, memo, useCallback } from 'react';
-import { Trash2, Edit, TrendingUp, TrendingDown, DollarSign, BarChart3, LineChart, Building2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Trash2, Edit, TrendingUp, TrendingDown, DollarSign, BarChart3, LineChart, Building2, Tag } from 'lucide-react';
 import { Investment, categoryLabels, categoryColors } from '@/types/investment';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -28,6 +29,7 @@ interface InvestmentListProps {
 }
 
 function InvestmentListComponent({ investments, onEdit, onDelete, onSell, investmentTags = {}, onTagChange }: InvestmentListProps) {
+  const navigate = useNavigate();
   const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
   const [evolutionInvestment, setEvolutionInvestment] = useState<Investment | null>(null);
   const [realEstateChartInvestment, setRealEstateChartInvestment] = useState<Investment | null>(null);
@@ -286,34 +288,42 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
 
                     {/* Ações */}
                     <div className="flex gap-0.5 opacity-70 group-hover:opacity-100 transition-opacity">
-                      {hasFeature('evolution_charts') && (
-                        <Button
+                      <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setEvolutionInvestment(investment)}
+                          onClick={() => hasFeature('evolution_charts') ? setEvolutionInvestment(investment) : navigate('/plans')}
                           className="hover:text-success hover:bg-success/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
                           title="Evolução do Investimento"
                         >
                           <LineChart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </Button>
-                      )}
-                      {hasFeature('benchmark_comparison') && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setSelectedInvestment(investment)}
+                          onClick={() => hasFeature('benchmark_comparison') ? setSelectedInvestment(investment) : navigate('/plans')}
                           className="hover:text-primary hover:bg-primary/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
                           title="Comparar com Benchmarks"
                         >
                           <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </Button>
-                      )}
-                      {hasFeature('tags') && onTagChange && (
-                        <TagSelector
-                          currentTag={currentTag || null}
-                          onTagChange={(tag) => onTagChange(investment.id, tag)}
-                        />
-                      )}
+                        {onTagChange && (
+                          hasFeature('tags') ? (
+                            <TagSelector
+                              currentTag={currentTag || null}
+                              onTagChange={(tag) => onTagChange(investment.id, tag)}
+                            />
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => navigate('/plans')}
+                              className="hover:text-primary hover:bg-primary/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
+                              title="Definir Tag"
+                            >
+                              <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            </Button>
+                          )
+                        )}
                       <Button
                         variant="ghost"
                         size="icon"
