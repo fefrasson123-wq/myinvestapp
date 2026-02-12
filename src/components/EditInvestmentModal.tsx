@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useEconomicRates } from '@/hooks/useEconomicRates';
 import { cn } from '@/lib/utils';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface EditInvestmentModalProps {
   investment: Investment;
@@ -37,6 +38,7 @@ const cashCategories = ['cash'];
 
 export function EditInvestmentModal({ investment, onSave, onClose }: EditInvestmentModalProps) {
   const { rates } = useEconomicRates();
+  const { hasFeature } = useSubscription();
   
   const isMarketAsset = marketCategories.includes(investment.category);
   const isFixedIncome = fixedIncomeCategories.includes(investment.category);
@@ -416,18 +418,20 @@ export function EditInvestmentModal({ investment, onSave, onClose }: EditInvestm
             </div>
           )}
 
-          {/* Observações - comum a todos */}
-          <div>
-            <Label htmlFor="notes">Observações</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Notas sobre o investimento..."
-              rows={2}
-              className="mt-1"
-            />
-          </div>
+          {/* Observações - Pro+ only */}
+          {hasFeature('investment_notes') && (
+            <div>
+              <Label htmlFor="notes">Observações</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Notas sobre o investimento..."
+                rows={2}
+                className="mt-1"
+              />
+            </div>
+          )}
 
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>

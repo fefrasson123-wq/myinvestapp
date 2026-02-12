@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, LogIn, Shield } from 'lucide-react';
+import { User, LogIn, Shield, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminCheck } from '@/hooks/useAdminCheck';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 
 export function UserMenu() {
   const { user, isLoading } = useAuth();
   const { isAdmin } = useAdminCheck();
+  const { isFree, plan } = useSubscription();
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState<string>('');
 
@@ -59,6 +61,18 @@ export function UserMenu() {
           >
             <Shield className="w-4 h-4 text-destructive" />
             <span className="hidden sm:inline text-destructive font-medium">Admin</span>
+          </Button>
+        )}
+        {isFree && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/plans')}
+            className="gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 transition-colors text-amber-600"
+            title="Ver Planos"
+          >
+            <Crown className="w-4 h-4" />
+            <span className="hidden sm:inline font-medium">Pro</span>
           </Button>
         )}
         <Button

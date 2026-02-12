@@ -274,6 +274,7 @@ export type Database = {
           id: string
           is_active: boolean
           max_assets: number
+          max_categories: number
           name: string
           price: number
           updated_at: string
@@ -285,6 +286,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_assets?: number
+          max_categories?: number
           name: string
           price?: number
           updated_at?: string
@@ -296,6 +298,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_assets?: number
+          max_categories?: number
           name?: string
           price?: number
           updated_at?: string

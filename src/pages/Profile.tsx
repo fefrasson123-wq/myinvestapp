@@ -12,6 +12,8 @@ import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { PortfolioAllocationSettings } from '@/components/PortfolioAllocationSettings';
 import { useInvestments } from '@/hooks/useInvestments';
 import { PassiveIncome } from '@/components/PassiveIncome';
+import { useSubscription } from '@/hooks/useSubscription';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,8 +51,8 @@ export default function Profile() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Load investments for allocation settings
   const { investments } = useInvestments();
+  const { hasFeature } = useSubscription();
 
   // Redirect if not logged in
   useEffect(() => {
@@ -257,73 +259,87 @@ export default function Profile() {
               </div>
 
               {/* Passive Income Component */}
-              <div className="animate-smooth-appear" style={{ animationDelay: '50ms' }}>
-                <PassiveIncome />
-              </div>
+              {hasFeature('passive_income') ? (
+                <div className="animate-smooth-appear" style={{ animationDelay: '50ms' }}>
+                  <PassiveIncome />
+                </div>
+              ) : (
+                <div className="animate-smooth-appear" style={{ animationDelay: '50ms' }}>
+                  <UpgradePrompt feature="Rendimentos mensais / Renda Passiva" />
+                </div>
+              )}
             </div>
 
             {/* Coluna da direita no desktop */}
             <div className="space-y-6 min-w-0 overflow-hidden">
               {/* Portfolio Allocation Settings */}
-              <div className="animate-smooth-appear" style={{ animationDelay: '100ms' }}>
-                <PortfolioAllocationSettings investments={investments} />
-              </div>
-
-              {/* Currency Preference Card - Moved below Portfolio Allocation */}
-              <div className="bg-card border border-border rounded-xl shadow-lg p-6 animate-smooth-appear" style={{ animationDelay: '150ms' }}>
-                <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-primary" />
-                  Moeda de Exibição
-                </h3>
-                
-                <p className="text-sm text-muted-foreground mb-4">
-                  Escolha a moeda para exibir seus saldos e valores no app.
-                </p>
-                
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <Button
-                    variant={displayCurrency === 'BRL' ? 'default' : 'outline'}
-                    className="w-full h-16 flex flex-col items-center justify-center gap-1"
-                    onClick={() => setDisplayCurrency('BRL')}
-                  >
-                    <span className="text-lg font-bold">R$</span>
-                    <span className="text-xs">Real Brasileiro</span>
-                  </Button>
-                  <Button
-                    variant={displayCurrency === 'USD' ? 'default' : 'outline'}
-                    className="w-full h-16 flex flex-col items-center justify-center gap-1"
-                    onClick={() => setDisplayCurrency('USD')}
-                  >
-                    <span className="text-lg font-bold">$</span>
-                    <span className="text-xs">Dólar Americano</span>
-                  </Button>
+              {hasFeature('portfolio_allocation') ? (
+                <div className="animate-smooth-appear" style={{ animationDelay: '100ms' }}>
+                  <PortfolioAllocationSettings investments={investments} />
                 </div>
+              ) : (
+                <div className="animate-smooth-appear" style={{ animationDelay: '100ms' }}>
+                  <UpgradePrompt feature="Alocação e rebalanceamento da carteira" />
+                </div>
+              )}
 
-                {/* Exchange rate info */}
-                <div className="bg-background/50 rounded-lg p-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Cotação atual</p>
-                    <p className="text-sm font-semibold text-card-foreground">
-                      {isRateLoading ? (
-                        <span className="animate-pulse">Carregando...</span>
-                      ) : (
-                        <>1 USD = R$ {usdBrlRate.toFixed(4)}</>
-                      )}
-                    </p>
+              {/* Currency Preference Card */}
+              {hasFeature('currency_switch') ? (
+                <div className="bg-card border border-border rounded-xl shadow-lg p-6 animate-smooth-appear" style={{ animationDelay: '150ms' }}>
+                  <h3 className="text-lg font-semibold text-card-foreground mb-4 flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-primary" />
+                    Moeda de Exibição
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Escolha a moeda para exibir seus saldos e valores no app.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <Button
+                      variant={displayCurrency === 'BRL' ? 'default' : 'outline'}
+                      className="w-full h-16 flex flex-col items-center justify-center gap-1"
+                      onClick={() => setDisplayCurrency('BRL')}
+                    >
+                      <span className="text-lg font-bold">R$</span>
+                      <span className="text-xs">Real Brasileiro</span>
+                    </Button>
+                    <Button
+                      variant={displayCurrency === 'USD' ? 'default' : 'outline'}
+                      className="w-full h-16 flex flex-col items-center justify-center gap-1"
+                      onClick={() => setDisplayCurrency('USD')}
+                    >
+                      <span className="text-lg font-bold">$</span>
+                      <span className="text-xs">Dólar Americano</span>
+                    </Button>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                      <RefreshCw className="w-3 h-3" />
-                      Tempo real
-                    </p>
-                    {rateLastUpdated && (
-                      <p className="text-xs text-muted-foreground">
-                        Atualizado: {rateLastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                  <div className="bg-background/50 rounded-lg p-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Cotação atual</p>
+                      <p className="text-sm font-semibold text-card-foreground">
+                        {isRateLoading ? (
+                          <span className="animate-pulse">Carregando...</span>
+                        ) : (
+                          <>1 USD = R$ {usdBrlRate.toFixed(4)}</>
+                        )}
                       </p>
-                    )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
+                        <RefreshCw className="w-3 h-3" />
+                        Tempo real
+                      </p>
+                      {rateLastUpdated && (
+                        <p className="text-xs text-muted-foreground">
+                          Atualizado: {rateLastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="animate-smooth-appear" style={{ animationDelay: '150ms' }}>
+                  <UpgradePrompt feature="Visualização em Real ou Dólar" />
+                </div>
+              )}
 
               {/* Logout Button */}
               <div className="animate-smooth-appear" style={{ animationDelay: '200ms' }}>
