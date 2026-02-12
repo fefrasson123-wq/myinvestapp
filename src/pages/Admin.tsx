@@ -287,12 +287,12 @@ export default function Admin() {
                   <TableRow>
                    <TableHead>Email</TableHead>
                    <TableHead>Nome</TableHead>
-                   <TableHead>Plano</TableHead>
                    <TableHead>WhatsApp</TableHead>
                    <TableHead>Roles</TableHead>
                    <TableHead>Ativos</TableHead>
                    <TableHead>Cadastro</TableHead>
                    <TableHead>Último Login</TableHead>
+                   <TableHead>Plano</TableHead>
                    <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -301,13 +301,6 @@ export default function Admin() {
                     <TableRow key={userData.id}>
                       <TableCell className="font-medium">{userData.email}</TableCell>
                       <TableCell>{userData.display_name}</TableCell>
-                      <TableCell>
-                        {userData.current_plan ? (
-                          <Badge variant="secondary" className="capitalize">{userData.current_plan}</Badge>
-                        ) : (
-                          <Badge variant="outline">free</Badge>
-                        )}
-                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {userData.whatsapp ? (
                           <a 
@@ -349,6 +342,13 @@ export default function Admin() {
                           ? new Date(userData.last_sign_in_at).toLocaleDateString('pt-BR')
                           : 'Nunca'
                         }
+                      </TableCell>
+                      <TableCell>
+                        {userData.current_plan ? (
+                          <Badge variant="secondary" className="capitalize">{userData.current_plan}</Badge>
+                        ) : (
+                          <Badge variant="outline">free</Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Dialog>
