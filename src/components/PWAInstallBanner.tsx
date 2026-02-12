@@ -17,11 +17,12 @@ export function PWAInstallBanner() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
     if (isStandalone) return;
 
-    const dismissed = localStorage.getItem('pwa-banner-dismissed');
-    if (dismissed) {
-      const dismissedAt = parseInt(dismissed, 10);
-      if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
-    }
+    // Temporarily disabled for testing - localStorage check removed
+    // const dismissed = localStorage.getItem('pwa-banner-dismissed');
+    // if (dismissed) {
+    //   const dismissedAt = parseInt(dismissed, 10);
+    //   if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
+    // }
 
     const ua = navigator.userAgent;
     const ios = /iPad|iPhone|iPod/.test(ua);
