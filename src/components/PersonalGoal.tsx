@@ -418,7 +418,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
         </button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto glass-card border-primary/30 shadow-xl shadow-primary/10">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden w-[calc(100vw-2rem)] glass-card border-primary/30 shadow-xl shadow-primary/10">
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-3 text-lg">
             <div className="p-2 rounded-lg bg-primary/20 glow-primary">
