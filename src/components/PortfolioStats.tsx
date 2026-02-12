@@ -25,28 +25,26 @@ export function PortfolioStats({ totalValue, totalInvested, totalProfitLoss }: P
 
   return (
     <div className="space-y-4">
-      {/* Cotação USD/BRL - Pro+ only */}
-      {hasFeature('currency_switch') && (
-        <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground flex-wrap">
-          <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
-            {displayCurrency === 'BRL' ? 'R$' : '$'}
-          </span>
-          <span className="hidden sm:inline">USD/BRL:</span>
-          <span className="sm:hidden">USD:</span>
-          <span className="font-mono font-medium text-primary">
-            {usdBrlRate.toFixed(4)}
-          </span>
-          {isRateLoading ? (
-            <RefreshCw className="w-3 h-3 animate-spin flex-shrink-0" />
-          ) : (
-            rateLastUpdated && (
-              <span className="text-[10px] hidden sm:inline">
-                ({rateLastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})
-              </span>
-            )
-          )}
-        </div>
-      )}
+      {/* Cotação USD/BRL */}
+      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground flex-wrap">
+        <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
+          {displayCurrency === 'BRL' ? 'R$' : '$'}
+        </span>
+        <span className="hidden sm:inline">USD/BRL:</span>
+        <span className="sm:hidden">USD:</span>
+        <span className="font-mono font-medium text-primary">
+          {usdBrlRate.toFixed(4)}
+        </span>
+        {isRateLoading ? (
+          <RefreshCw className="w-3 h-3 animate-spin flex-shrink-0" />
+        ) : (
+          rateLastUpdated && (
+            <span className="text-[10px] hidden sm:inline">
+              ({rateLastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})
+            </span>
+          )
+        )}
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {/* Total Patrimônio */}
