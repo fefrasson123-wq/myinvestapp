@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { TrendingUp, TrendingDown, Zap } from 'lucide-react';
+import { TrendingUp, TrendingDown, Zap, Lock } from 'lucide-react';
 import { Investment, categoryLabels, categoryColors } from '@/types/investment';
 import { PerformanceChart } from './PerformanceChart';
 import { CategoryProfitLoss } from './CategoryProfitLoss';
 import { cn } from '@/lib/utils';
 import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
+import { useSubscription } from '@/hooks/useSubscription';
+import { UpgradePrompt } from './UpgradePrompt';
 
 interface ResultsAreaProps {
   investments: Investment[];
@@ -24,6 +26,7 @@ const periods: { id: Period; label: string }[] = [
 export function ResultsArea({ investments }: ResultsAreaProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('total');
   const { formatCurrencyValue, formatPercent, usdBrlRate } = useValuesVisibility();
+  const { hasFeature } = useSubscription();
 
   // Calcula o valor total da carteira para percentuais
   const totalPortfolioValue = investments.reduce((sum, inv) => sum + inv.currentValue, 0);
@@ -140,7 +143,18 @@ export function ResultsArea({ investments }: ResultsAreaProps) {
 
       {/* Lucro/Prejuízo por Classe */}
       {investments.length > 0 && (
-        <CategoryProfitLoss investments={investments} />
+        hasFeature('category_profit_loss') ? (
+          <CategoryProfitLoss investments={investments} />
+        ) : (
+          <div className="relative">
+            <div className="blur-sm pointer-events-none">
+              <CategoryProfitLoss investments={investments} />
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <UpgradePrompt feature="Lucro/Prejuízo por Classe" />
+            </div>
+          </div>
+        )
       )}
     </div>
   );
