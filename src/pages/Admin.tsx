@@ -198,15 +198,19 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          <Card className="cursor-pointer transition-colors hover:border-primary/50" onClick={() => setShowPremium(!showPremium)}>
-            <CardHeader className="pb-2">
+          <Card>
+            <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Crown className="w-4 h-4" />
                 {showPremium ? 'Usuários Premium' : 'Usuários Pro'}
-                <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0">
-                  clique para alternar
-                </Badge>
               </CardTitle>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => setShowPremium(!showPremium)}
+              >
+                {showPremium ? 'Pro' : 'Premium'}
+              </Button>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-primary">
