@@ -1,38 +1,58 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const supabaseUrl = Deno.env.get('VITE_SUPABASE_URL') || '';
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
 Deno.serve(async (req) => {
-  // Only allow POST
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
   try {
-    // Verify admin access
     const authHeader = req.headers.get('Authorization') || '';
     const token = authHeader.replace('Bearer ', '');
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) {
+
+    // Create a client with the user's token to verify identity
+    const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || '', {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Check if user is admin
-    const { data: adminCheck } = await supabase.rpc('is_admin');
+    const adminUserId = claimsData.claims.sub;
+
+    // Use service role client to check admin and perform operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: adminCheck } = await supabase
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', adminUserId)
+      .eq('role', 'admin')
+      .maybeSingle();
+
     if (!adminCheck) {
       return new Response(JSON.stringify({ error: 'Admin access required' }), {
         status: 403,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -41,11 +61,10 @@ Deno.serve(async (req) => {
     if (!user_id || !plan_id) {
       return new Response(JSON.stringify({ error: 'user_id and plan_id required' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Get the plan to verify it exists
     const { data: plan, error: planError } = await supabase
       .from('plans')
       .select('id, name, display_name')
@@ -55,7 +74,7 @@ Deno.serve(async (req) => {
     if (planError || !plan) {
       return new Response(JSON.stringify({ error: 'Plan not found' }), {
         status: 404,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -74,7 +93,6 @@ Deno.serve(async (req) => {
         .eq('id', existingSub.id);
     }
 
-    // Create or update subscription
     const now = new Date();
     const periodStart = now.toISOString();
     const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -103,7 +121,7 @@ Deno.serve(async (req) => {
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   } catch (error) {
@@ -112,7 +130,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   }

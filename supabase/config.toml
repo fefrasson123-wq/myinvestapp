@@ -17,3 +17,18 @@ verify_jwt = false
 
 [functions.fetch-dividends]
 verify_jwt = false
+
+[functions.admin-upgrade-subscription]
+verify_jwt = false
+
+[functions.admin-set-role]
+verify_jwt = false
+
+[functions.admin-list-users]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false
+
+[functions.exchange-rate]
+verify_jwt = false
