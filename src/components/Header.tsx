@@ -48,28 +48,28 @@ export function Header({ onAddClick, currentPortfolioValue = 0, totalInvestedAmo
             <PersonalGoal currentPortfolioValue={currentPortfolioValue} totalInvestedAmount={totalInvestedAmount} transactions={transactions} />
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={toggleValuesVisibility}
-              className="bg-secondary/50 hover:bg-secondary transition-colors"
-              title={showValues ? 'Ocultar valores' : 'Mostrar valores'}
-            >
-              {showValues ? (
-                <Eye className="w-5 h-5 text-muted-foreground" />
-              ) : (
-                <EyeOff className="w-5 h-5 text-primary" />
-              )}
-            </Button>
-            {user && <NotificationBell />}
-            <Button onClick={onAddClick} size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Adicionar Investimento</span>
-              <span className="sm:hidden">Novo</span>
-            </Button>
-            <UserMenu />
-          </div>
+          <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+             <Button 
+               variant="ghost" 
+               size="icon"
+               onClick={toggleValuesVisibility}
+               className="bg-secondary/50 hover:bg-secondary transition-colors"
+               title={showValues ? 'Ocultar valores' : 'Mostrar valores'}
+             >
+               {showValues ? (
+                 <Eye className="w-5 h-5 text-muted-foreground" />
+               ) : (
+                 <EyeOff className="w-5 h-5 text-primary" />
+               )}
+             </Button>
+             {user && <NotificationBell />}
+             <Button onClick={onAddClick} size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
+               <Plus className="w-4 h-4" />
+               <span className="hidden sm:inline">Adicionar Investimento</span>
+               <span className="sm:hidden">Novo</span>
+             </Button>
+             <UserMenu />
+           </div>
         </div>
       </div>
     </header>
