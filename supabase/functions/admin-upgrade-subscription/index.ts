@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
 
     const { data: plan, error: planError } = await supabase
       .from('plans')
-      .select('id, name, display_name')
+      .select('id, name, display_name, features')
       .eq('id', plan_id)
       .single();
 
@@ -102,6 +102,48 @@ Deno.serve(async (req) => {
 
     if (subError) {
       throw new Error(`Failed to create subscription: ${subError.message}`);
+    }
+
+    // Send upgrade congratulations email
+    if (plan.name === 'pro' || plan.name === 'premium') {
+      try {
+        const { data: userData } = await supabase.auth.admin.getUserById(user_id);
+        const userEmail = userData?.user?.email;
+        const username = userData?.user?.user_metadata?.display_name || 
+                         userData?.user?.user_metadata?.full_name || 
+                         'Investidor';
+        
+        if (userEmail) {
+          const planFeatures = (plan.features as string[]) || [
+            'Ativos ilimitados',
+            'Categorias ilimitadas',
+            'Gráficos de evolução',
+            'Comparação com benchmarks',
+            'Tags personalizadas',
+          ];
+
+          await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({
+              type: 'plan-upgrade',
+              to: userEmail,
+              data: {
+                username,
+                planName: plan.display_name,
+                planFeatures,
+                dashboardUrl: 'https://myinvestapp.lovable.app/app',
+              },
+            }),
+          });
+          console.log(`Upgrade email sent to ${userEmail}`);
+        }
+      } catch (emailError) {
+        console.error('Failed to send upgrade email (non-blocking):', emailError);
+      }
     }
 
     return new Response(
