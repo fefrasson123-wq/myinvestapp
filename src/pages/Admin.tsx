@@ -228,12 +228,12 @@ export default function Admin() {
 
         {/* Total Managed Wealth */}
         <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="py-3 px-4 flex items-center justify-between">
+          <CardContent className="py-3 px-4 flex flex-col">
             <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               Valor em administração
             </span>
-            <span className="text-lg font-bold text-primary">
+            <span className="text-lg font-bold text-primary mt-1">
               R$ {users.reduce((acc, u) => acc + u.investments.reduce((sum, inv) => sum + inv.current_value, 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </span>
           </CardContent>
