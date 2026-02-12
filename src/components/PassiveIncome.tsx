@@ -365,9 +365,14 @@ export function PassiveIncome() {
                     </div>
                   </div>
                   {recentPayment ? (
-                    <span className="text-xs text-muted-foreground">
-                      Último: {recentPayment.paymentDate.toLocaleDateString('pt-BR')}
-                    </span>
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-xs font-mono text-success">
+                        {showValues ? `+${formatCurrencyValue(recentPayment.amount)}` : '•••'}
+                      </span>
+                      <p className="text-[10px] text-muted-foreground">
+                        {recentPayment.paymentDate.toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
                   ) : (
                     <span className="text-xs text-muted-foreground/50">
                       Sem registro
