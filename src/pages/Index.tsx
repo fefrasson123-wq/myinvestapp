@@ -19,6 +19,8 @@ import { InvestmentsByTag, InvestmentTag } from '@/components/InvestmentsByTag';
 import { useAuth } from '@/contexts/AuthContext';
 import { InvestmentRegistration } from '@/components/InvestmentRegistration';
 import { Button } from '@/components/ui/button';
+import { useSubscription } from '@/hooks/useSubscription';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 import { EditInvestmentModal } from '@/components/EditInvestmentModal';
 import { SellAssetModal } from '@/components/SellAssetModal';
@@ -46,6 +48,7 @@ const Index = () => {
   const { toast } = useToast();
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { hasFeature, isFree, canAddAsset, maxAssets, currentAssetCount, maxCategories, canAddCategory } = useSubscription();
 
   // Handle sticky nav on scroll
   useEffect(() => {
@@ -290,7 +293,18 @@ const Index = () => {
   };
 
   const handleAddClick = () => {
-    requireAuth(() => setShowRegistration(true));
+    requireAuth(() => {
+      if (!canAddAsset) {
+        toast({
+          variant: 'destructive',
+          title: `Limite de ${maxAssets} ativos atingido`,
+          description: 'Faça upgrade do seu plano para adicionar mais ativos.',
+        });
+        navigate('/plans');
+        return;
+      }
+      setShowRegistration(true);
+    });
   };
 
   const handleEdit = (investment: Investment) => {
@@ -433,6 +447,31 @@ const Index = () => {
       return;
     }
 
+    // Check asset limit
+    if (!canAddAsset) {
+      toast({
+        variant: 'destructive',
+        title: `Limite de ${maxAssets} ativos atingido`,
+        description: 'Faça upgrade do seu plano para adicionar mais ativos.',
+      });
+      navigate('/plans');
+      return;
+    }
+
+    // Check category limit
+    const existingCategories = new Set(investments.map(inv => inv.category));
+    if (!existingCategories.has(data.category)) {
+      if (!canAddCategory(existingCategories.size)) {
+        toast({
+          variant: 'destructive',
+          title: `Limite de ${maxCategories} categorias atingido`,
+          description: 'Faça upgrade do seu plano para usar mais categorias.',
+        });
+        navigate('/plans');
+        return;
+      }
+    }
+
     const newInvestment = await addInvestment(data);
 
     if (newInvestment) {
@@ -566,25 +605,33 @@ const Index = () => {
                 totalProfitLoss={getTotalProfitLoss()}
               />
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                <div className="lg:col-span-1">
-                  <CategoryChart categoryTotals={getCategoryTotals()} investments={investments} />
+              {hasFeature('performance_charts') ? (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                  <div className="lg:col-span-1">
+                    <CategoryChart categoryTotals={getCategoryTotals()} investments={investments} />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <ResultsArea investments={investments} />
+                  </div>
                 </div>
-                <div className="lg:col-span-2">
-                  <ResultsArea investments={investments} />
-                </div>
-              </div>
-
-              {/* Investimentos por Tag */}
-              {Object.keys(investmentTags).length > 0 && (
+              ) : (
                 <div className="mt-6">
-                  <InvestmentsByTag
-                    investments={investments}
-                    investmentTags={investmentTags}
-                    onTagChange={handleTagChange}
-                  />
+                  <UpgradePrompt feature="Gráficos de evolução, rentabilidade e alocação" />
                 </div>
               )}
+
+              {/* Investimentos por Tag */}
+              {hasFeature('tags') ? (
+                Object.keys(investmentTags).length > 0 && (
+                  <div className="mt-6">
+                    <InvestmentsByTag
+                      investments={investments}
+                      investmentTags={investmentTags}
+                      onTagChange={handleTagChange}
+                    />
+                  </div>
+                )
+              ) : null}
 
               <div className="mt-6">
                 <div className="mb-4">

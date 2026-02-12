@@ -15,6 +15,8 @@ import { useStockPrices } from '@/hooks/useStockPrices';
 import { useUSAStockPrices } from '@/hooks/useUSAStockPrices';
 import { useETFPrices } from '@/hooks/useETFPrices';
 import { useGoldPrice } from '@/hooks/useGoldPrice';
+import { useSubscription } from '@/hooks/useSubscription';
+import { UpgradePrompt } from '@/components/UpgradePrompt';
 
 interface InvestmentListProps {
   investments: Investment[];
@@ -30,6 +32,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
   const [evolutionInvestment, setEvolutionInvestment] = useState<Investment | null>(null);
   const [realEstateChartInvestment, setRealEstateChartInvestment] = useState<Investment | null>(null);
   const { showValues, formatPercent, formatCurrencyValue, usdBrlRate, displayCurrency } = useValuesVisibility();
+  const { hasFeature } = useSubscription();
 
   // Live prices (best-effort). If unavailable, we fall back to the stored DB price.
   const stock = useStockPrices();
@@ -283,25 +286,29 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
 
                     {/* Ações */}
                     <div className="flex gap-0.5 opacity-70 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setEvolutionInvestment(investment)}
-                        className="hover:text-success hover:bg-success/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
-                        title="Evolução do Investimento"
-                      >
-                        <LineChart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setSelectedInvestment(investment)}
-                        className="hover:text-primary hover:bg-primary/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
-                        title="Comparar com Benchmarks"
-                      >
-                        <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      </Button>
-                      {onTagChange && (
+                      {hasFeature('evolution_charts') && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEvolutionInvestment(investment)}
+                          className="hover:text-success hover:bg-success/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
+                          title="Evolução do Investimento"
+                        >
+                          <LineChart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </Button>
+                      )}
+                      {hasFeature('benchmark_comparison') && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setSelectedInvestment(investment)}
+                          className="hover:text-primary hover:bg-primary/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
+                          title="Comparar com Benchmarks"
+                        >
+                          <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </Button>
+                      )}
+                      {hasFeature('tags') && onTagChange && (
                         <TagSelector
                           currentTag={currentTag || null}
                           onTagChange={(tag) => onTagChange(investment.id, tag)}

@@ -1,6 +1,7 @@
 import { Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InvestmentTag, tagLabels, tagColors } from '@/components/InvestmentsByTag';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface FormTagSelectorProps {
   selectedTag: InvestmentTag | null;
@@ -8,7 +9,10 @@ interface FormTagSelectorProps {
 }
 
 export function FormTagSelector({ selectedTag, onTagChange }: FormTagSelectorProps) {
+  const { hasFeature } = useSubscription();
   const tags: InvestmentTag[] = ['short-term', 'long-term', 'passive-income', 'speculation'];
+
+  if (!hasFeature('tags')) return null;
 
   return (
     <div className="space-y-1.5">

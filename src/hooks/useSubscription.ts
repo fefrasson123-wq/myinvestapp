@@ -8,6 +8,7 @@ interface Plan {
   display_name: string;
   price: number;
   max_assets: number;
+  max_categories: number;
   features: string[];
 }
 
@@ -20,6 +21,20 @@ interface Subscription {
   plan: Plan;
 }
 
+// Features gated by Pro+ plans
+export type ProFeature = 
+  | 'unlimited_assets'
+  | 'unlimited_categories'
+  | 'currency_switch'
+  | 'benchmark_comparison'
+  | 'evolution_charts'
+  | 'passive_income'
+  | 'investment_notes'
+  | 'tags'
+  | 'portfolio_allocation'
+  | 'performance_charts'
+  | 'category_profit_loss';
+
 interface UseSubscriptionReturn {
   subscription: Subscription | null;
   plan: Plan | null;
@@ -28,10 +43,27 @@ interface UseSubscriptionReturn {
   isPremium: boolean;
   isFree: boolean;
   maxAssets: number;
+  maxCategories: number;
   canAddAsset: boolean;
+  canAddCategory: (currentCategoryCount: number) => boolean;
+  hasFeature: (feature: ProFeature) => boolean;
   currentAssetCount: number;
   refetch: () => Promise<void>;
 }
+
+const PRO_FEATURES: ProFeature[] = [
+  'unlimited_assets',
+  'unlimited_categories',
+  'currency_switch',
+  'benchmark_comparison',
+  'evolution_charts',
+  'passive_income',
+  'investment_notes',
+  'tags',
+  'portfolio_allocation',
+  'performance_charts',
+  'category_profit_loss',
+];
 
 export function useSubscription(): UseSubscriptionReturn {
   const { user } = useAuth();
@@ -49,7 +81,6 @@ export function useSubscription(): UseSubscriptionReturn {
     }
 
     try {
-      // Fetch user subscription with plan details
       const { data: subData, error: subError } = await supabase
         .from('user_subscriptions')
         .select(`
@@ -75,7 +106,6 @@ export function useSubscription(): UseSubscriptionReturn {
         console.error('Error fetching subscription:', subError);
       }
 
-      // Fetch current asset count
       const { count, error: countError } = await supabase
         .from('investments')
         .select('*', { count: 'exact', head: true })
@@ -88,7 +118,16 @@ export function useSubscription(): UseSubscriptionReturn {
       setCurrentAssetCount(count || 0);
 
       if (subData && subData.plans) {
-        const planData = subData.plans as unknown as Plan;
+        const rawPlan = subData.plans as unknown as Record<string, any>;
+        const planData: Plan = {
+          id: rawPlan.id,
+          name: rawPlan.name,
+          display_name: rawPlan.display_name,
+          price: Number(rawPlan.price),
+          max_assets: rawPlan.max_assets,
+          max_categories: rawPlan.max_categories ?? -1,
+          features: rawPlan.features as string[],
+        };
         setSubscription({
           id: subData.id,
           plan_id: subData.plan_id,
@@ -99,7 +138,6 @@ export function useSubscription(): UseSubscriptionReturn {
         });
         setPlan(planData);
       } else {
-        // User has no active subscription - default to free plan
         const { data: freePlan } = await supabase
           .from('plans')
           .select('*')
@@ -113,6 +151,7 @@ export function useSubscription(): UseSubscriptionReturn {
             display_name: freePlan.display_name,
             price: Number(freePlan.price),
             max_assets: freePlan.max_assets,
+            max_categories: (freePlan as any).max_categories ?? 2,
             features: freePlan.features as string[],
           });
         }
@@ -129,18 +168,36 @@ export function useSubscription(): UseSubscriptionReturn {
     fetchSubscription();
   }, [user]);
 
+  const isPro = plan?.name === 'pro' || plan?.name === 'premium';
+  const isPremium = plan?.name === 'premium';
+  const isFree = !subscription || plan?.name === 'free';
+
   const maxAssets = plan?.max_assets ?? 5;
+  const maxCategories = plan?.max_categories ?? 2;
   const canAddAsset = maxAssets === -1 || currentAssetCount < maxAssets;
+
+  const canAddCategory = (currentCategoryCount: number) => {
+    return maxCategories === -1 || currentCategoryCount < maxCategories;
+  };
+
+  const hasFeature = (feature: ProFeature): boolean => {
+    if (isPro || isPremium) return true;
+    // Free plan only gets: basic stats, goals, limited assets/categories
+    return false;
+  };
 
   return {
     subscription,
     plan,
     isLoading,
-    isPro: plan?.name === 'pro',
-    isPremium: plan?.name === 'premium',
-    isFree: !subscription || plan?.name === 'free',
+    isPro,
+    isPremium,
+    isFree,
     maxAssets,
+    maxCategories,
     canAddAsset,
+    canAddCategory,
+    hasFeature,
     currentAssetCount,
     refetch: fetchSubscription,
   };
