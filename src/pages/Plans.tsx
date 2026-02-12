@@ -81,8 +81,8 @@ export default function Plans() {
         <meta name="description" content="Escolha o melhor plano para gerenciar seus investimentos." />
       </Helmet>
 
-      <div className="min-h-screen bg-background">
-        <header className="border-b border-border/50 bg-card/80 backdrop-blur-md">
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-10">
           <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -99,7 +99,7 @@ export default function Plans() {
           </div>
         </header>
 
-        <main className="w-full max-w-5xl mx-auto px-4 py-8">
+        <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-card-foreground mb-2">
               Gerencie seus investimentos como um profissional
