@@ -318,14 +318,18 @@ function useHistoricalChartData(investment: Investment, isOpen: boolean) {
             );
             
             if (data.length > 0) {
-              // Ajusta último ponto para valor atual real
+              // Ajusta último ponto para valor atual real (convertido para BRL se necessário)
+              const lastValue = investment.currentValue * finalMultiplier;
+              const lastInvested = investment.investedAmount;
+              const lastProfit = lastValue - lastInvested;
+              const lastProfitPercent = lastInvested > 0 ? (lastProfit / lastInvested) * 100 : 0;
               data[data.length - 1] = {
                 ...data[data.length - 1],
                 date: 'Agora',
-                value: investment.currentValue,
-                price: investment.currentPrice,
-                profit: investment.profitLoss,
-                profitPercent: investment.profitLossPercent
+                value: Math.round(lastValue * 100) / 100,
+                price: Math.round(investment.currentPrice * finalMultiplier * 100) / 100,
+                profit: Math.round(lastProfit * 100) / 100,
+                profitPercent: parseFloat(lastProfitPercent.toFixed(2))
               };
               setChartData(data);
             } else {
