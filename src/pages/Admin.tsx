@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Users, TrendingUp, ArrowLeft, Loader2, UserPlus, Edit, Trash2 } from 'lucide-react';
+import { Shield, Users, TrendingUp, ArrowLeft, Loader2, UserPlus, Edit, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,7 @@ interface UserData {
   last_sign_in_at: string | null;
   roles: string[];
   investments_count: number;
+  current_plan: string | null;
   investments: Array<{
     id: string;
     name: string;
@@ -43,6 +44,9 @@ export default function Admin() {
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminRole, setNewAdminRole] = useState<string>('user');
   const [isAddingRole, setIsAddingRole] = useState(false);
+  const [plans, setPlans] = useState<Array<{ id: string; name: string; display_name: string }>>([]);
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
+  const [isUpgradingPlan, setIsUpgradingPlan] = useState(false);
 
   useEffect(() => {
     if (!isCheckingAdmin && !isAdmin) {
@@ -54,6 +58,7 @@ export default function Admin() {
   useEffect(() => {
     if (isAdmin) {
       fetchUsers();
+      fetchPlans();
     }
   }, [isAdmin]);
 
@@ -70,6 +75,22 @@ export default function Admin() {
       toast.error('Erro ao carregar usuários');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('plans')
+        .select('id, name, display_name')
+        .eq('is_active', true)
+        .order('price');
+
+      if (!error) {
+        setPlans(data || []);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar planos:', error);
     }
   };
 
@@ -96,6 +117,31 @@ export default function Admin() {
       toast.error(error.message || 'Erro ao adicionar role');
     } finally {
       setIsAddingRole(false);
+    }
+  };
+
+  const handleUpgradePlan = async (userId: string) => {
+    if (!selectedPlan) {
+      toast.error('Selecione um plano');
+      return;
+    }
+
+    setIsUpgradingPlan(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-upgrade-subscription', {
+        body: { user_id: userId, plan_id: selectedPlan }
+      });
+
+      if (error) throw error;
+
+      toast.success(data.message);
+      setSelectedPlan('');
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Erro ao atualizar plano:', error);
+      toast.error(error.message || 'Erro ao atualizar plano');
+    } finally {
+      setIsUpgradingPlan(false);
     }
   };
 
@@ -239,14 +285,15 @@ export default function Admin() {
               <Table className="min-w-[700px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>WhatsApp</TableHead>
-                    <TableHead>Roles</TableHead>
-                    <TableHead>Ativos</TableHead>
-                    <TableHead>Cadastro</TableHead>
-                    <TableHead>Último Login</TableHead>
-                    <TableHead>Ações</TableHead>
+                   <TableHead>Email</TableHead>
+                   <TableHead>Nome</TableHead>
+                   <TableHead>Plano</TableHead>
+                   <TableHead>WhatsApp</TableHead>
+                   <TableHead>Roles</TableHead>
+                   <TableHead>Ativos</TableHead>
+                   <TableHead>Cadastro</TableHead>
+                   <TableHead>Último Login</TableHead>
+                   <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -254,6 +301,13 @@ export default function Admin() {
                     <TableRow key={userData.id}>
                       <TableCell className="font-medium">{userData.email}</TableCell>
                       <TableCell>{userData.display_name}</TableCell>
+                      <TableCell>
+                        {userData.current_plan ? (
+                          <Badge variant="secondary" className="capitalize">{userData.current_plan}</Badge>
+                        ) : (
+                          <Badge variant="outline">free</Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {userData.whatsapp ? (
                           <a 
@@ -305,46 +359,82 @@ export default function Admin() {
                               onClick={() => setSelectedUser(userData)}
                             >
                               <Edit className="w-4 h-4 mr-1" />
-                              Ver Ativos
+                              Gerenciar
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle>
-                                Ativos de {userData.display_name || userData.email}
+                                Gerenciar {userData.display_name || userData.email}
                               </DialogTitle>
                             </DialogHeader>
-                            <div className="space-y-4">
-                              {userData.investments.length > 0 ? (
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead>Nome</TableHead>
-                                      <TableHead>Categoria</TableHead>
-                                      <TableHead>Valor Atual</TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {userData.investments.map((inv) => (
-                                      <TableRow key={inv.id}>
-                                        <TableCell>{inv.name}</TableCell>
-                                        <TableCell>
-                                          <Badge variant="outline">
-                                            {categoryLabels[inv.category as keyof typeof categoryLabels] || inv.category}
-                                          </Badge>
-                                        </TableCell>
-                                        <TableCell className="font-medium text-success">
-                                          R$ {inv.current_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                        </TableCell>
+                            <div className="space-y-6">
+                              {/* Upgrade Plan Section */}
+                              <div className="border-t pt-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <Crown className="w-4 h-4 text-primary" />
+                                  <h3 className="font-semibold">Atualizar Plano</h3>
+                                </div>
+                                <div className="flex gap-3">
+                                  <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+                                    <SelectTrigger className="flex-1">
+                                      <SelectValue placeholder="Selecione um plano" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {plans.map((plan) => (
+                                        <SelectItem key={plan.id} value={plan.id}>
+                                          {plan.display_name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <Button 
+                                    onClick={() => handleUpgradePlan(userData.id)}
+                                    disabled={isUpgradingPlan || !selectedPlan}
+                                  >
+                                    {isUpgradingPlan ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      'Atualizar'
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Investments Section */}
+                              <div className="border-t pt-4">
+                                <h3 className="font-semibold mb-3">Ativos Cadastrados</h3>
+                                {userData.investments.length > 0 ? (
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Nome</TableHead>
+                                        <TableHead>Categoria</TableHead>
+                                        <TableHead>Valor Atual</TableHead>
                                       </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              ) : (
-                                <p className="text-center text-muted-foreground py-8">
-                                  Este usuário não possui ativos cadastrados.
-                                </p>
-                              )}
+                                    </TableHeader>
+                                    <TableBody>
+                                      {userData.investments.map((inv) => (
+                                        <TableRow key={inv.id}>
+                                          <TableCell>{inv.name}</TableCell>
+                                          <TableCell>
+                                            <Badge variant="outline">
+                                              {categoryLabels[inv.category as keyof typeof categoryLabels] || inv.category}
+                                            </Badge>
+                                          </TableCell>
+                                          <TableCell className="font-medium text-success">
+                                            R$ {inv.current_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                ) : (
+                                  <p className="text-center text-muted-foreground py-8">
+                                    Este usuário não possui ativos cadastrados.
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           </DialogContent>
                         </Dialog>
