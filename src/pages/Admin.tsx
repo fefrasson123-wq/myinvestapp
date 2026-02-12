@@ -200,13 +200,13 @@ export default function Admin() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Shield className="w-4 h-4" />
-                Administradores
+                <Crown className="w-4 h-4" />
+                Usuários Pro
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-destructive">
-                {users.filter(u => u.roles.includes('admin')).length}
+              <p className="text-3xl font-bold text-primary">
+                {users.filter(u => u.current_plan && u.current_plan !== 'free').length}
               </p>
             </CardContent>
           </Card>
@@ -214,17 +214,30 @@ export default function Admin() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" />
-                Total de Ativos
+                <Users className="w-4 h-4" />
+                Usuários Free
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold text-success">
-                {users.reduce((acc, u) => acc + u.investments_count, 0)}
+              <p className="text-3xl font-bold text-muted-foreground">
+                {users.filter(u => !u.current_plan || u.current_plan === 'free').length}
               </p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Total Managed Wealth */}
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="py-3 px-4 flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Quantia administrada no site
+            </span>
+            <span className="text-lg font-bold text-primary">
+              R$ {users.reduce((acc, u) => acc + u.investments.reduce((sum, inv) => sum + inv.current_value, 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </span>
+          </CardContent>
+        </Card>
 
         {/* Add Role */}
         <Card>
