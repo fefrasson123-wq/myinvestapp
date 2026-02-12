@@ -187,9 +187,9 @@ export default function Admin() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                Total de Usuários
+                Clientes
               </CardTitle>
             </CardHeader>
             <CardContent>
