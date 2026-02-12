@@ -78,20 +78,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cancel existing active subscription if exists
-    const { data: existingSub } = await supabase
+    // Delete existing subscription for this user (unique constraint on user_id)
+    await supabase
       .from('user_subscriptions')
-      .select('id')
-      .eq('user_id', user_id)
-      .eq('status', 'active')
-      .maybeSingle();
-
-    if (existingSub) {
-      await supabase
-        .from('user_subscriptions')
-        .update({ status: 'canceled' })
-        .eq('id', existingSub.id);
-    }
+      .delete()
+      .eq('user_id', user_id);
 
     const now = new Date();
     const periodStart = now.toISOString();
