@@ -75,11 +75,19 @@ Deno.serve(async (req) => {
       .from('investments')
       .select('user_id, id, name, category, current_value')
 
+    // Busca assinaturas ativas com plano
+    const { data: subscriptions } = await supabaseAdmin
+      .from('user_subscriptions')
+      .select('user_id, plan_id, status, plans:plan_id(name, display_name)')
+      .eq('status', 'active')
+
     // Combina os dados
     const usersWithDetails = users.map(u => {
       const profile = profiles?.find(p => p.user_id === u.id)
       const userRoles = roles?.filter(r => r.user_id === u.id).map(r => r.role) || []
       const userInvestments = investments?.filter(i => i.user_id === u.id) || []
+      const userSub = subscriptions?.find(s => s.user_id === u.id)
+      const planName = userSub?.plans ? (userSub.plans as any).name : null
       
       return {
         id: u.id,
@@ -91,6 +99,7 @@ Deno.serve(async (req) => {
         last_sign_in_at: u.last_sign_in_at,
         roles: userRoles,
         investments_count: userInvestments.length,
+        current_plan: planName,
         investments: userInvestments
       }
     })
