@@ -231,7 +231,7 @@ export default function Admin() {
           <CardContent className="py-3 px-4 flex items-center justify-between">
             <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
-              Quantia administrada no site
+              Valor em administração
             </span>
             <span className="text-lg font-bold text-primary">
               R$ {users.reduce((acc, u) => acc + u.investments.reduce((sum, inv) => sum + inv.current_value, 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
