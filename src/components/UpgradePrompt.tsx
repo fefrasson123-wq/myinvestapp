@@ -18,7 +18,7 @@ export function UpgradePrompt({ feature, className, compact = false }: UpgradePr
         onClick={() => navigate('/plans')}
         className={cn(
           "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
-          "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-colors border border-amber-500/20",
+          "bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20",
           className
         )}
       >
@@ -30,13 +30,13 @@ export function UpgradePrompt({ feature, className, compact = false }: UpgradePr
 
   return (
     <div className={cn(
-      "relative overflow-hidden rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 via-background/95 to-amber-600/5 px-4 py-3",
+      "relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background/95 to-accent/5 px-4 py-3",
       className
     )}>
-      <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
       <div className="relative flex items-center justify-center gap-3">
-        <div className="p-2 rounded-full bg-amber-500/10">
-          <Lock className="w-4 h-4 text-amber-500" />
+        <div className="p-2 rounded-full bg-primary/10">
+          <Lock className="w-4 h-4 text-primary" />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-card-foreground">
@@ -49,7 +49,7 @@ export function UpgradePrompt({ feature, className, compact = false }: UpgradePr
         <Button
           size="sm"
           onClick={() => navigate('/plans')}
-          className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white ml-2"
+          className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground ml-2"
         >
           <Crown className="w-3.5 h-3.5" />
           Ver Planos
