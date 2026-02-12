@@ -295,7 +295,7 @@ const Index = () => {
 
   const handleAddClick = () => {
     requireAuth(() => {
-      if (!canAddAsset) {
+      if (maxAssets !== -1 && investments.length >= maxAssets) {
         toast({
           variant: 'destructive',
           title: 'Você atingiu o limite do plano Free',
@@ -448,8 +448,16 @@ const Index = () => {
       return;
     }
 
-    // Check asset limit
-    if (!canAddAsset) {
+    // Check if this would be a new asset or merge into existing
+    const isNewAsset = !investments.some(inv => {
+      if (data.ticker && inv.ticker) {
+        return inv.ticker.trim().toUpperCase() === data.ticker.trim().toUpperCase() && inv.category === data.category;
+      }
+      return inv.name.trim().toLowerCase() === data.name.trim().toLowerCase() && inv.category === data.category;
+    });
+
+    // Check asset limit only for truly new assets (not merges)
+    if (isNewAsset && maxAssets !== -1 && investments.length >= maxAssets) {
       toast({
         variant: 'destructive',
         title: 'Você atingiu o limite do plano Free',
