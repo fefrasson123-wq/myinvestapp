@@ -453,7 +453,7 @@ const Index = () => {
       toast({
         variant: 'destructive',
         title: `Limite de ${maxAssets} ativos atingido`,
-        description: 'Você atingiu o número máximo de ativos do plano gratuito. Faça upgrade para cadastrar mais.',
+        description: 'Faça upgrade do seu plano para adicionar mais ativos.',
       });
       navigate('/plans');
       return;
@@ -466,7 +466,7 @@ const Index = () => {
         toast({
           variant: 'destructive',
           title: `Limite de ${maxCategories} categorias atingido`,
-          description: 'Você já utiliza o máximo de tipos de investimento do plano gratuito. Faça upgrade para desbloquear todas as categorias.',
+          description: 'Faça upgrade do seu plano para usar mais categorias.',
         });
         navigate('/plans');
         return;
