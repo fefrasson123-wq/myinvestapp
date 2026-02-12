@@ -95,6 +95,7 @@ export function useSubscription(): UseSubscriptionReturn {
             display_name,
             price,
             max_assets,
+            max_categories,
             features
           )
         `)
