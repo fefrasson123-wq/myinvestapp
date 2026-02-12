@@ -418,7 +418,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
         </button>
       </DialogTrigger>
 
-      <DialogContent className="w-[92vw] max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 glass-card border-primary/30 shadow-xl shadow-primary/10">
+      <DialogContent className="w-[90vw] max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden p-3 sm:p-6 box-border glass-card border-primary/30 shadow-xl shadow-primary/10 [&>button]:right-2 [&>button]:top-2">
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-3 text-lg">
             <div className="p-2 rounded-lg bg-primary/20 glow-primary">
@@ -536,7 +536,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
           </div>
 
           {/* Current Progress Preview */}
-          <div className="investment-card space-y-4">
+          <div className="investment-card space-y-4 min-w-0 overflow-hidden">
             {/* Portfolio / Goal summary */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
               <span className="text-sm text-muted-foreground">Patrimônio / Meta</span>
@@ -557,20 +557,20 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
             </div>
             
             <div className="grid grid-cols-2 gap-2 sm:gap-4">
-              <div className="text-center p-3 rounded-lg bg-secondary/50">
+              <div className="text-center p-2 sm:p-3 rounded-lg bg-secondary/50 min-w-0">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Progresso</p>
                 <p className={cn(
-                  "text-xl font-bold font-mono",
+                  "text-lg sm:text-xl font-bold font-mono",
                   previewProgress >= 100 ? "text-success number-glow" : "text-primary"
                 )}>
                   {previewProgress.toFixed(1).replace('.', ',')}%
                 </p>
               </div>
               
-              <div className="text-center p-3 rounded-lg bg-secondary/50">
+              <div className="text-center p-2 sm:p-3 rounded-lg bg-secondary/50 min-w-0 overflow-hidden">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Faltam</p>
                 <p className={cn(
-                  "text-lg font-bold font-mono",
+                  "text-sm sm:text-lg font-bold font-mono truncate",
                   previewRemaining <= 0 ? "text-success" : "text-card-foreground"
                 )}>
                   {targetToUse <= 0 
@@ -585,13 +585,13 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
 
           {/* Evolution Chart - Only show when we have a target */}
           {targetToUse > 0 && chartData.length > 0 && (
-            <div className="investment-card">
+            <div className="investment-card min-w-0 overflow-hidden">
               <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
                 Projeção de Crescimento
               </h4>
               <div className="h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <AreaChart data={chartData} margin={{ top: 10, right: 5, left: -10, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPatrimonio" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="hsl(142, 76%, 50%)" stopOpacity={0.6}/>
@@ -727,7 +727,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
           )}
         </div>
 
-        <div className="flex justify-between items-center gap-3 pt-2 border-t border-border/30">
+        <div className="flex flex-wrap justify-between items-center gap-2 pt-2 border-t border-border/30">
           {goal && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -756,20 +756,22 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
               </AlertDialogContent>
             </AlertDialog>
           )}
-          <div className="flex gap-3 ml-auto">
+          <div className="flex gap-2 sm:gap-3 ml-auto">
             <Button 
               variant="outline" 
+              size="sm"
               onClick={() => setIsDialogOpen(false)}
-              className="border-border/50 hover:bg-secondary/50"
+              className="border-border/50 hover:bg-secondary/50 text-xs sm:text-sm"
             >
               Cancelar
             </Button>
             <Button 
               onClick={handleSave}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground glow-primary btn-interactive"
+              size="sm"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground glow-primary btn-interactive text-xs sm:text-sm"
             >
-              <Check className="w-4 h-4 mr-1.5" />
-              Salvar Meta
+              <Check className="w-4 h-4 mr-1" />
+              Salvar
             </Button>
           </div>
         </div>
