@@ -301,7 +301,7 @@ const Index = () => {
           title: '✨ Você atingiu o limite do plano Free',
           description: 'No Pro, seus ativos são ilimitados e você vê sua performance completa.',
         });
-        navigate('/plans');
+        setActiveTab('plans');
         return;
       }
       setShowRegistration(true);
@@ -463,7 +463,7 @@ const Index = () => {
         title: '✨ Você atingiu o limite do plano Free',
         description: 'No Pro, seus ativos são ilimitados e você vê sua performance completa.',
       });
-      navigate('/plans');
+      setActiveTab('plans');
       return;
     }
 
@@ -471,13 +471,13 @@ const Index = () => {
     const existingCategories = new Set(investments.map(inv => inv.category));
     if (!existingCategories.has(data.category)) {
       if (!canAddCategory(existingCategories.size)) {
-        toast({
-          variant: 'success',
-          title: '✨ Você atingiu o limite do plano Free',
-          description: 'No Pro, suas categorias são ilimitadas e você vê sua performance completa.',
-        });
-        navigate('/plans');
-        return;
+      toast({
+        variant: 'success',
+        title: '✨ Você atingiu o limite do plano Free',
+        description: 'No Pro, suas categorias são ilimitadas e você vê sua performance completa.',
+      });
+      setActiveTab('plans');
+      return;
       }
     }
 
