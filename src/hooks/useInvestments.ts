@@ -51,6 +51,7 @@ export function useInvestments() {
         const { data, error } = await supabase
           .from('investments')
           .select('*')
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
         
         if (error) {
@@ -607,7 +608,8 @@ export function useInvestments() {
       const { error: transactionsError } = await supabase
         .from('transactions')
         .delete()
-        .eq('investment_id', id);
+        .eq('investment_id', id)
+        .eq('user_id', user.id);
 
       if (transactionsError) {
         console.error('Error deleting transactions for investment:', transactionsError);
@@ -617,7 +619,8 @@ export function useInvestments() {
       const { error } = await supabase
         .from('investments')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error deleting investment:', error);
@@ -625,6 +628,7 @@ export function useInvestments() {
         const { data } = await supabase
           .from('investments')
           .select('*')
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
         if (data) {
           setInvestments(data.map(inv => ({
