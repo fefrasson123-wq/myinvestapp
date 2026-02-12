@@ -81,7 +81,7 @@ export default function Plans() {
         <meta name="description" content="Escolha o melhor plano para gerenciar seus investimentos." />
       </Helmet>
 
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-[100dvh] bg-background flex flex-col overflow-x-hidden">
         <header className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-10">
           <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center gap-3">
