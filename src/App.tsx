@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ValuesVisibilityProvider } from "@/contexts/ValuesVisibilityContext";
+import { PWAInstallBanner } from "@/components/PWAInstallBanner";
 
 // Lazy load all pages for faster initial load
 const Index = lazy(() => import("./pages/Index"));
@@ -46,6 +47,7 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
+            <PWAInstallBanner />
             <BrowserRouter>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
