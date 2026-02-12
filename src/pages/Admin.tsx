@@ -47,6 +47,7 @@ export default function Admin() {
   const [plans, setPlans] = useState<Array<{ id: string; name: string; display_name: string }>>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [isUpgradingPlan, setIsUpgradingPlan] = useState(false);
+  const [showPremium, setShowPremium] = useState(false);
 
   useEffect(() => {
     if (!isCheckingAdmin && !isAdmin) {
@@ -197,16 +198,22 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="cursor-pointer transition-colors hover:border-primary/50" onClick={() => setShowPremium(!showPremium)}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Crown className="w-4 h-4" />
-                Usuários Pro
+                {showPremium ? 'Usuários Premium' : 'Usuários Pro'}
+                <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0">
+                  clique para alternar
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-primary">
-                {users.filter(u => u.current_plan && u.current_plan !== 'free').length}
+                {showPremium
+                  ? users.filter(u => u.current_plan === 'premium').length
+                  : users.filter(u => u.current_plan === 'pro').length
+                }
               </p>
             </CardContent>
           </Card>
