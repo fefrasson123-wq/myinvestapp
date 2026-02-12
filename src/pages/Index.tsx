@@ -297,8 +297,8 @@ const Index = () => {
     requireAuth(() => {
       if (maxAssets !== -1 && investments.length >= maxAssets) {
         toast({
-          variant: 'destructive',
-          title: 'Você atingiu o limite do plano Free',
+          variant: 'success',
+          title: '✨ Você atingiu o limite do plano Free',
           description: 'No Pro, seus ativos são ilimitados e você vê sua performance completa.',
         });
         navigate('/plans');
@@ -459,8 +459,8 @@ const Index = () => {
     // Check asset limit only for truly new assets (not merges)
     if (isNewAsset && maxAssets !== -1 && investments.length >= maxAssets) {
       toast({
-        variant: 'destructive',
-        title: 'Você atingiu o limite do plano Free',
+        variant: 'success',
+        title: '✨ Você atingiu o limite do plano Free',
         description: 'No Pro, seus ativos são ilimitados e você vê sua performance completa.',
       });
       navigate('/plans');
@@ -472,8 +472,8 @@ const Index = () => {
     if (!existingCategories.has(data.category)) {
       if (!canAddCategory(existingCategories.size)) {
         toast({
-          variant: 'destructive',
-          title: 'Você atingiu o limite do plano Free',
+          variant: 'success',
+          title: '✨ Você atingiu o limite do plano Free',
           description: 'No Pro, suas categorias são ilimitadas e você vê sua performance completa.',
         });
         navigate('/plans');
