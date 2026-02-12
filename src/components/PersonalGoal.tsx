@@ -418,7 +418,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
         </button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden w-[calc(100vw-2rem)] glass-card border-primary/30 shadow-xl shadow-primary/10">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] sm:max-w-lg p-4 sm:p-6 glass-card border-primary/30 shadow-xl shadow-primary/10">
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-3 text-lg">
             <div className="p-2 rounded-lg bg-primary/20 glow-primary">
@@ -442,10 +442,10 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
             <RadioGroup
               value={goalType}
               onValueChange={(value) => setGoalType(value as GoalType)}
-              className="grid grid-cols-2 gap-3"
+              className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3"
             >
               <div className={cn(
-                "flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all",
+                "flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-3 rounded-lg border cursor-pointer transition-all min-w-0",
                 goalType === 'value_goal' 
                   ? "border-primary bg-primary/10" 
                   : "border-border/50 bg-secondary/30 hover:border-primary/30"
@@ -457,7 +457,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                 </Label>
               </div>
               <div className={cn(
-                "flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all",
+                "flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-3 rounded-lg border cursor-pointer transition-all min-w-0",
                 goalType === 'buy_car' 
                   ? "border-primary bg-primary/10" 
                   : "border-border/50 bg-secondary/30 hover:border-primary/30"
@@ -469,7 +469,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                 </Label>
               </div>
               <div className={cn(
-                "flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all",
+                "flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-3 rounded-lg border cursor-pointer transition-all min-w-0",
                 goalType === 'financial_independence' 
                   ? "border-primary bg-primary/10" 
                   : "border-border/50 bg-secondary/30 hover:border-primary/30"
@@ -481,7 +481,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
                 </Label>
               </div>
               <div className={cn(
-                "flex items-center space-x-3 p-3 rounded-lg border cursor-pointer transition-all",
+                "flex items-center space-x-2 sm:space-x-3 p-2.5 sm:p-3 rounded-lg border cursor-pointer transition-all min-w-0",
                 goalType === 'passive_income' 
                   ? "border-primary bg-primary/10" 
                   : "border-border/50 bg-secondary/30 hover:border-primary/30"
@@ -538,9 +538,9 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
           {/* Current Progress Preview */}
           <div className="investment-card space-y-4">
             {/* Portfolio / Goal summary */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1">
               <span className="text-sm text-muted-foreground">Patrimônio / Meta</span>
-              <span className="font-mono font-medium text-card-foreground">
+              <span className="font-mono font-medium text-card-foreground text-sm sm:text-base break-all">
                 {formatCurrency(currentPortfolioValue)} <span className="text-muted-foreground">/</span> {targetToUse > 0 ? formatCurrency(targetToUse) : '—'}
               </span>
             </div>
@@ -556,7 +556,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <div className="text-center p-3 rounded-lg bg-secondary/50">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Progresso</p>
                 <p className={cn(
@@ -668,7 +668,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
 
               {/* Projection Stats */}
               {projectionData.monthlyRate > 0 && (
-                <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:gap-3">
                   <div className="p-3 rounded-lg bg-secondary/50 text-center">
                     <div className="flex items-center justify-center gap-1.5 mb-1">
                       <TrendingUp className="w-3.5 h-3.5 text-primary" />
@@ -695,17 +695,17 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
               
               {/* Estimated Date */}
               {projectionData.monthsToGoal !== null && projectionData.monthsToGoal > 0 && projectionData.estimatedDate && (
-                <div className="mt-3 p-3 rounded-lg bg-success/10 border border-success/20 text-center">
-                  <div className="flex items-center justify-center gap-2">
+                <div className="mt-3 p-2.5 sm:p-3 rounded-lg bg-success/10 border border-success/20 text-center">
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
                     <Calendar className="w-4 h-4 text-success" />
-                    <span className="text-sm text-muted-foreground">Previsão:</span>
-                    <span className="font-medium text-success">
+                    <span className="text-xs sm:text-sm text-muted-foreground">Previsão:</span>
+                    <span className="font-medium text-success text-sm">
                       {projectionData.estimatedDate.toLocaleDateString('pt-BR', { 
                         month: 'long', 
                         year: 'numeric' 
                       })}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-[10px] sm:text-xs text-muted-foreground">
                       (~{Math.ceil(projectionData.monthsToGoal)} {Math.ceil(projectionData.monthsToGoal) === 1 ? 'mês' : 'meses'})
                     </span>
                   </div>
