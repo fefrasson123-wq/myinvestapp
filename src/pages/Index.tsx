@@ -298,8 +298,8 @@ const Index = () => {
       if (!canAddAsset) {
         toast({
           variant: 'destructive',
-          title: `Limite de ${maxAssets} ativos atingido`,
-          description: 'Faça upgrade do seu plano para adicionar mais ativos.',
+          title: 'Você atingiu o limite do plano Free',
+          description: 'No Pro, seus ativos são ilimitados e você vê sua performance completa.',
         });
         navigate('/plans');
         return;
@@ -452,8 +452,8 @@ const Index = () => {
     if (!canAddAsset) {
       toast({
         variant: 'destructive',
-        title: `Limite de ${maxAssets} ativos atingido`,
-        description: 'Faça upgrade do seu plano para adicionar mais ativos.',
+        title: 'Você atingiu o limite do plano Free',
+        description: 'No Pro, seus ativos são ilimitados e você vê sua performance completa.',
       });
       navigate('/plans');
       return;
@@ -465,8 +465,8 @@ const Index = () => {
       if (!canAddCategory(existingCategories.size)) {
         toast({
           variant: 'destructive',
-          title: `Limite de ${maxCategories} categorias atingido`,
-          description: 'Faça upgrade do seu plano para usar mais categorias.',
+          title: 'Você atingiu o limite do plano Free',
+          description: 'No Pro, suas categorias são ilimitadas e você vê sua performance completa.',
         });
         navigate('/plans');
         return;
