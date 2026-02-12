@@ -209,7 +209,7 @@ export default function Admin() {
                 variant="outline"
                 onClick={() => setShowPremium(!showPremium)}
               >
-                {showPremium ? 'Pro' : 'Premium'}
+                {showPremium ? 'Premium' : 'Pro'}
               </Button>
             </CardHeader>
             <CardContent>
