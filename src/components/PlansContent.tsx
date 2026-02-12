@@ -72,7 +72,7 @@ export function PlansContent() {
   }
 
   return (
-    <div>
+    <div className="flex-1 flex flex-col">
       <div className="text-center mb-8">
         <h2 className="text-2xl sm:text-3xl font-bold text-card-foreground mb-2">
           Gerencie seus investimentos como um profissional
@@ -82,7 +82,7 @@ export function PlansContent() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 flex-1">
         {plans.map((plan) => {
           const Icon = planIcons[plan.name] || Star;
           const isCurrentPlan = currentPlan?.name === plan.name || (isFree && plan.name === 'free');
@@ -92,7 +92,7 @@ export function PlansContent() {
             <div
               key={plan.id}
               className={cn(
-                "relative rounded-2xl border bg-gradient-to-br p-5 sm:p-6 transition-all duration-300",
+                "relative rounded-2xl border bg-gradient-to-br p-5 sm:p-6 transition-all duration-300 flex flex-col",
                 planColors[plan.name] || planColors.free,
                 isPopular && "ring-2 ring-primary/50 scale-[1.02] shadow-lg shadow-primary/10",
                 isCurrentPlan && "ring-2 ring-success/50"
@@ -137,7 +137,7 @@ export function PlansContent() {
                 )}
               </div>
 
-              <ul className="space-y-2.5 mb-6">
+              <ul className="space-y-2.5 mb-6 flex-1">
                 {plan.features.map((feature, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-sm">
                     <Check className={cn(

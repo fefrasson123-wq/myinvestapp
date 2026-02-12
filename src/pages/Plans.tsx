@@ -99,7 +99,7 @@ export default function Plans() {
           </div>
         </header>
 
-        <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-8">
+        <main className="flex-1 flex flex-col w-full max-w-5xl mx-auto px-4 py-8">
           <div className="text-center mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-card-foreground mb-2">
               Gerencie seus investimentos como um profissional
