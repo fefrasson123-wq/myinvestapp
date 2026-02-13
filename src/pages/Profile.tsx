@@ -12,6 +12,7 @@ import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { PortfolioAllocationSettings } from '@/components/PortfolioAllocationSettings';
 import { useInvestments } from '@/hooks/useInvestments';
 import { PassiveIncome } from '@/components/PassiveIncome';
+import { useEconomicRates } from '@/hooks/useEconomicRates';
 import { useIncomePayments } from '@/hooks/useIncomePayments';
 import { useSubscription } from '@/hooks/useSubscription';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
@@ -56,6 +57,7 @@ export default function Profile() {
   const { investments } = useInvestments();
   const { stats: incomeStats, payments: incomePayments } = useIncomePayments();
   const { hasFeature } = useSubscription();
+  const { rates: economicRates } = useEconomicRates();
 
   // Redirect if not logged in
   useEffect(() => {
@@ -350,7 +352,7 @@ export default function Profile() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => generateInvestmentsPDF(investments, displayName, incomeStats, incomePayments)}
+                    onClick={() => generateInvestmentsPDF(investments, displayName, incomeStats, incomePayments, { cdi: economicRates.cdi })}
                   >
                     <FileDown className="w-4 h-4 mr-2" />
                     Baixar relatório em PDF
