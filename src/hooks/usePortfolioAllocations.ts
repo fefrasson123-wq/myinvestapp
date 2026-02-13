@@ -167,12 +167,11 @@ export function usePortfolioAllocations(investments?: Array<{ category: Investme
       return acc;
     }, {} as Record<InvestmentCategory, number>);
 
-    return allocations.map(allocation => {
+    // Start with categories that have explicit targets
+    const result: AllocationWithDeviation[] = allocations.map(allocation => {
       const currentValue = currentByCategory[allocation.category] || 0;
       const currentPercent = (currentValue / totalValue) * 100;
       const deviation = currentPercent - allocation.target_percent;
-      
-      // Amount to invest (positive) or divest (negative) to reach target
       const targetValue = (allocation.target_percent / 100) * totalValue;
       const amountToRebalance = targetValue - currentValue;
 
@@ -184,6 +183,28 @@ export function usePortfolioAllocations(investments?: Array<{ category: Investme
         amountToRebalance
       };
     });
+
+    // Add categories that have investments but NO allocation target (implicit 0% target)
+    const allocatedCategories = new Set(allocations.map(a => a.category));
+    Object.entries(currentByCategory).forEach(([category, currentValue]) => {
+      if (!allocatedCategories.has(category as InvestmentCategory) && currentValue > 0) {
+        const currentPercent = (currentValue / totalValue) * 100;
+        result.push({
+          id: `implicit-${category}`,
+          user_id: '',
+          category: category as InvestmentCategory,
+          target_percent: 0,
+          created_at: '',
+          updated_at: '',
+          currentPercent,
+          deviation: currentPercent, // all of it is overweight since target is 0%
+          currentValue,
+          amountToRebalance: -currentValue // sell everything
+        });
+      }
+    });
+
+    return result;
   }, [allocations, investments]);
 
   // Get summary for rebalancing
