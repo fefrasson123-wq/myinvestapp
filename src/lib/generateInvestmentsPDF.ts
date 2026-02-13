@@ -142,7 +142,7 @@ export function generateInvestmentsPDF(investments: Investment[], userName: stri
       ${categorySections}
 
       <div class="footer">
-        Relatório gerado automaticamente pelo My Invest • ${formatDate(now)}
+        Relatório gerado pelo My Invest • ${formatDate(now)}
       </div>
     </body>
     </html>
