@@ -76,7 +76,7 @@ export function PlansContent() {
 
   // Adicionar features extras por plano
   const getExtraFeatures = (planName: string): string[] => {
-    if (planName === 'premium') return ['Calculadora de Rebalanceamento da carteira'];
+    if (planName === 'pro') return ['Calculadora de Rebalanceamento da carteira'];
     return [];
   };
 
