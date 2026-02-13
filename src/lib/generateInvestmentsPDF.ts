@@ -13,11 +13,23 @@ function formatDate(date: Date): string {
   return date.toLocaleDateString('pt-BR');
 }
 
+// Categories that pay interest (fixed income) - rate is actual percentage
+const interestCategories = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'debentures', 'cricra', 'fixedincomefund'];
+// Categories where the rate is stored as % of CDI (needs conversion)
+const cdiPercentageCategories = ['cash', 'savings'];
+// Categories that are real estate (rent)
+const rentCategories = ['realestate'];
+
+interface EconomicRatesForPDF {
+  cdi: number;
+}
+
 export function generateInvestmentsPDF(
   investments: Investment[],
   userName: string,
   incomeStats?: IncomeStats,
-  payments?: IncomePayment[]
+  payments?: IncomePayment[],
+  economicRates?: EconomicRatesForPDF
 ) {
   // Group investments by category
   const byCategory = investments.reduce((acc, inv) => {
@@ -90,12 +102,34 @@ export function generateInvestmentsPDF(
   }
 
   // Build unified passive income section
+  const cdiRate = economicRates?.cdi ?? 12.25;
+
   // 1. Assets with manual dividends/rent (from investments.dividends field)
-  const manualIncomeMap = new Map<string, { name: string; type: string; monthly: number }>();
-  investments.filter(inv => inv.dividends && inv.dividends > 0).forEach(inv => {
+  const manualIncomeMap = new Map<string, { name: string; type: string; monthly: number; annual: number }>();
+  
+  // Real estate with rent (dividends field = monthly rent)
+  investments.filter(inv => rentCategories.includes(inv.category) && inv.dividends && inv.dividends > 0).forEach(inv => {
     const key = inv.ticker || inv.name;
-    const type = inv.category === 'realestate' ? 'Aluguel' : ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'debentures', 'cricra', 'savings'].includes(inv.category) ? 'Juros' : 'Dividendo';
-    manualIncomeMap.set(key, { name: key, type, monthly: inv.dividends || 0 });
+    manualIncomeMap.set(key, { name: key, type: 'Aluguel', monthly: inv.dividends!, annual: inv.dividends! * 12 });
+  });
+
+  // Fixed income with direct interest rate
+  investments.filter(inv => interestCategories.includes(inv.category) && inv.interestRate && inv.interestRate > 0).forEach(inv => {
+    const key = inv.ticker || inv.name;
+    const annualRate = inv.interestRate! / 100;
+    const yearlyInterest = inv.currentValue * annualRate;
+    const monthlyInterest = yearlyInterest / 12;
+    manualIncomeMap.set(key, { name: key, type: 'Juros', monthly: monthlyInterest, annual: yearlyInterest });
+  });
+
+  // Cash/Savings where rate is % of CDI
+  investments.filter(inv => cdiPercentageCategories.includes(inv.category) && inv.interestRate && inv.interestRate > 0).forEach(inv => {
+    const key = inv.ticker || inv.name;
+    const effectiveAnnualRate = (inv.interestRate! / 100) * cdiRate;
+    const annualRate = effectiveAnnualRate / 100;
+    const yearlyInterest = inv.currentValue * annualRate;
+    const monthlyInterest = yearlyInterest / 12;
+    manualIncomeMap.set(key, { name: key, type: 'Juros', monthly: monthlyInterest, annual: yearlyInterest });
   });
 
   // 2. Assets with received dividends (from income_payments, last 12 months)
@@ -120,7 +154,7 @@ export function generateInvestmentsPDF(
   
   // Add manual entries first
   manualIncomeMap.forEach((val, key) => {
-    allIncomeAssets.push({ name: val.name, type: val.type, monthly: val.monthly, annual: val.monthly * 12, source: 'Projetado' });
+    allIncomeAssets.push({ name: val.name, type: val.type, monthly: val.monthly, annual: val.annual, source: 'Projetado' });
   });
 
   // Add received entries (only if not already in manual)
