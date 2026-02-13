@@ -69,7 +69,8 @@ export function PlansContent() {
       .replace('Comparação com benchmarks', 'Comparação com outros ativos do mercado')
       .replace('Gráficos de evolução e rentabilidade', 'Gráficos de evolução do patrimônio')
       .replace('Renda passiva e rendimentos', 'Renda Passiva e Rendimentos mensais recebidos')
-      .replace('Observações nos investimentos', 'Observações em cada investimento');
+      .replace('Observações nos investimentos', 'Observações em cada investimento')
+      .replace('Tags de classificação', 'Tags de Classificação de Curto, Médio e Longo Prazo');
   };
 
   if (isLoading || subLoading) {
