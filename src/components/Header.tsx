@@ -1,4 +1,4 @@
-import { TrendingUp, Plus, Eye, EyeOff } from 'lucide-react';
+import { TrendingUp, Plus, Eye, EyeOff, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/UserMenu';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -63,12 +63,21 @@ export function Header({ onAddClick, currentPortfolioValue = 0, totalInvestedAmo
                )}
              </Button>
              {user && <NotificationBell />}
-             <Button onClick={onAddClick} size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
-               <Plus className="w-4 h-4" />
-               <span className="hidden sm:inline">Adicionar Investimento</span>
-               <span className="sm:hidden">Novo</span>
-             </Button>
-             <UserMenu />
+              <Button onClick={onAddClick} size="sm" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Adicionar Investimento</span>
+                <span className="sm:hidden">Novo</span>
+              </Button>
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/install')}
+                className="gap-1.5 sm:gap-2 text-xs sm:text-sm hidden sm:flex"
+              >
+                <Download className="w-4 h-4" />
+                Instalar
+              </Button>
+              <UserMenu />
            </div>
         </div>
       </div>
