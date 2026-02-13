@@ -89,102 +89,128 @@ export function generateInvestmentsPDF(
     `;
   }
 
-  // Build projected passive income section from investments with dividends field
+  // Build unified passive income section
   const investmentsWithIncome = investments.filter(inv => inv.dividends && inv.dividends > 0);
-  let projectedIncomeSection = '';
-  if (investmentsWithIncome.length > 0) {
-    const totalMonthlyProjected = investmentsWithIncome.reduce((s, inv) => s + (inv.dividends || 0), 0);
-    const projectedRows = investmentsWithIncome.map(inv => `
-      <tr>
-        <td style="text-align:left;font-weight:600">${inv.ticker || inv.name}</td>
-        <td>${categoryLabels[inv.category] || inv.category}</td>
-        <td>${formatCurrency(inv.dividends || 0)}</td>
-        <td>${formatCurrency((inv.dividends || 0) * 12)}</td>
-      </tr>
-    `).join('');
+  const totalMonthlyProjected = investmentsWithIncome.reduce((s, inv) => s + (inv.dividends || 0), 0);
 
-    projectedIncomeSection = `
-      <div class="category" style="margin-top:24px;">
-        <div class="cat-header">
-          <span>🏠 Renda Passiva Projetada (Mensal)</span>
-          <span>${formatCurrency(totalMonthlyProjected)}/mês</span>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th style="text-align:left">Ativo</th>
-              <th>Categoria</th>
-              <th>Mensal</th>
-              <th>Anual</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${projectedRows}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td style="text-align:left;font-weight:700">Total</td>
-              <td></td>
-              <td style="font-weight:700">${formatCurrency(totalMonthlyProjected)}</td>
-              <td style="font-weight:700">${formatCurrency(totalMonthlyProjected * 12)}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    `;
-  }
+  const hasIncomeStats = incomeStats && incomeStats.totalReceived > 0;
+  const hasProjected = investmentsWithIncome.length > 0;
 
-  // Build income section from income_payments
   let incomeSection = '';
-  if (incomeStats) {
-    const monthlyRows = incomeStats.last12Months.map(m => `
+  if (hasIncomeStats || hasProjected) {
+    // Projected income rows
+    const projectedRows = investmentsWithIncome.map(inv => {
+      const type = inv.category === 'realestate' ? 'Aluguel' : ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'debentures', 'cricra', 'savings'].includes(inv.category) ? 'Juros' : 'Dividendo';
+      return `
+        <tr>
+          <td style="text-align:left;font-weight:600">${inv.ticker || inv.name}</td>
+          <td>${type}</td>
+          <td>${formatCurrency(inv.dividends || 0)}</td>
+          <td>${formatCurrency((inv.dividends || 0) * 12)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    // Monthly history rows
+    const monthlyRows = incomeStats ? incomeStats.last12Months.map(m => `
       <tr>
         <td style="text-align:left;text-transform:capitalize">${m.month}</td>
         <td>${formatCurrency(m.amount)}</td>
       </tr>
-    `).join('');
+    `).join('') : '';
+
+    const totalReceived = incomeStats?.totalReceived || 0;
+    const monthlyAvg = incomeStats?.monthlyAverage || 0;
+    const dividends = incomeStats?.byType.dividend || 0;
+    const rent = incomeStats?.byType.rent || 0;
+    const interest = incomeStats?.byType.interest || 0;
 
     incomeSection = `
       <div class="category" style="margin-top:24px;">
         <div class="cat-header">
-          <span>💰 Rendimentos Recebidos (Últimos 12 meses)</span>
-          <span>${formatCurrency(incomeStats.totalReceived)}</span>
+          <span>💰 Renda Passiva</span>
+          <span>${formatCurrency(totalMonthlyProjected)}/mês projetado</span>
         </div>
 
         <div class="income-summary">
-          <div class="income-item">
-            <span class="label">Total Recebido</span>
-            <span class="value">${formatCurrency(incomeStats.totalReceived)}</span>
-          </div>
-          <div class="income-item">
-            <span class="label">Média Mensal</span>
-            <span class="value">${formatCurrency(incomeStats.monthlyAverage)}</span>
-          </div>
-          <div class="income-item">
-            <span class="label">Dividendos</span>
-            <span class="value">${formatCurrency(incomeStats.byType.dividend)}</span>
-          </div>
-          <div class="income-item">
-            <span class="label">Aluguéis</span>
-            <span class="value">${formatCurrency(incomeStats.byType.rent)}</span>
-          </div>
-          <div class="income-item">
-            <span class="label">Juros</span>
-            <span class="value">${formatCurrency(incomeStats.byType.interest)}</span>
-          </div>
+          ${hasProjected ? `
+            <div class="income-item">
+              <span class="label">Projeção Mensal</span>
+              <span class="value">${formatCurrency(totalMonthlyProjected)}</span>
+            </div>
+            <div class="income-item">
+              <span class="label">Projeção Anual</span>
+              <span class="value">${formatCurrency(totalMonthlyProjected * 12)}</span>
+            </div>
+          ` : ''}
+          ${hasIncomeStats ? `
+            <div class="income-item">
+              <span class="label">Recebido (12m)</span>
+              <span class="value">${formatCurrency(totalReceived)}</span>
+            </div>
+            <div class="income-item">
+              <span class="label">Média Mensal Real</span>
+              <span class="value">${formatCurrency(monthlyAvg)}</span>
+            </div>
+          ` : ''}
         </div>
 
-        <table style="margin-top:8px">
-          <thead>
-            <tr>
-              <th style="text-align:left">Mês</th>
-              <th>Valor Recebido</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${monthlyRows}
-          </tbody>
-        </table>
+        ${hasIncomeStats ? `
+          <div class="income-summary" style="padding-top:0">
+            <div class="income-item">
+              <span class="label">Dividendos</span>
+              <span class="value">${formatCurrency(dividends)}</span>
+            </div>
+            <div class="income-item">
+              <span class="label">Aluguéis</span>
+              <span class="value">${formatCurrency(rent)}</span>
+            </div>
+            <div class="income-item">
+              <span class="label">Juros</span>
+              <span class="value">${formatCurrency(interest)}</span>
+            </div>
+          </div>
+        ` : ''}
+
+        ${hasProjected ? `
+          <h4 style="font-size:11px;margin:8px 0 4px;color:#1a1a2e;">Ativos com renda projetada</h4>
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:left">Ativo</th>
+                <th>Tipo</th>
+                <th>Mensal</th>
+                <th>Anual</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${projectedRows}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td style="text-align:left;font-weight:700">Total</td>
+                <td></td>
+                <td style="font-weight:700">${formatCurrency(totalMonthlyProjected)}</td>
+                <td style="font-weight:700">${formatCurrency(totalMonthlyProjected * 12)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        ` : ''}
+
+        ${hasIncomeStats ? `
+          <h4 style="font-size:11px;margin:12px 0 4px;color:#1a1a2e;">Histórico mensal (últimos 12 meses)</h4>
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:left">Mês</th>
+                <th>Valor Recebido</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${monthlyRows}
+            </tbody>
+          </table>
+        ` : ''}
       </div>
     `;
   }
@@ -250,8 +276,6 @@ export function generateInvestmentsPDF(
       </div>
 
       ${categorySections}
-
-      ${projectedIncomeSection}
 
       ${incomeSection}
 
