@@ -201,13 +201,13 @@ export function generateInvestmentsPDF(
 
     const totalReceived = incomeStats?.totalReceived || 0;
     const monthlyAvg = incomeStats?.monthlyAverage || 0;
-    // Combine received payments with projected income by type
-    const projectedDividendAnnual = allIncomeAssets.filter(a => a.type === 'Dividendo').reduce((s, a) => s + a.annual, 0);
-    const projectedRentAnnual = allIncomeAssets.filter(a => a.type === 'Aluguel').reduce((s, a) => s + a.annual, 0);
-    const projectedInterestAnnual = allIncomeAssets.filter(a => a.type === 'Juros').reduce((s, a) => s + a.annual, 0);
-    const dividends = (incomeStats?.byType.dividend || 0) + projectedDividendAnnual;
-    const rent = (incomeStats?.byType.rent || 0) + projectedRentAnnual;
-    const interest = (incomeStats?.byType.interest || 0) + projectedInterestAnnual;
+    // Combine received payments with projected income by type (monthly values)
+    const projectedDividendMonthly = allIncomeAssets.filter(a => a.type === 'Dividendo').reduce((s, a) => s + a.monthly, 0);
+    const projectedRentMonthly = allIncomeAssets.filter(a => a.type === 'Aluguel').reduce((s, a) => s + a.monthly, 0);
+    const projectedInterestMonthly = allIncomeAssets.filter(a => a.type === 'Juros').reduce((s, a) => s + a.monthly, 0);
+    const dividends = ((incomeStats?.byType.dividend || 0) / 12) + projectedDividendMonthly;
+    const rent = ((incomeStats?.byType.rent || 0) / 12) + projectedRentMonthly;
+    const interest = ((incomeStats?.byType.interest || 0) / 12) + projectedInterestMonthly;
 
     incomeSection = `
       <div class="category" style="margin-top:24px;">
