@@ -12,7 +12,6 @@ export function PWAInstallBanner() {
   const navigate = useNavigate();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
@@ -24,17 +23,7 @@ export function PWAInstallBanner() {
       if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
     }
 
-    const ua = navigator.userAgent;
-    const ios = /iPad|iPhone|iPod/.test(ua);
-    setIsIOS(ios);
-
-    // iOS: show banner after delay (will redirect to /install)
-    if (ios) {
-      const timer = setTimeout(() => setShowBanner(true), 2000);
-      return () => clearTimeout(timer);
-    }
-
-    // Android/Desktop: wait for beforeinstallprompt
+    // Listen for native install prompt (Chrome, Edge, Samsung Internet, Opera)
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -44,26 +33,29 @@ export function PWAInstallBanner() {
     window.addEventListener('beforeinstallprompt', handler);
     window.addEventListener('appinstalled', () => setShowBanner(false));
 
+    // Show banner after delay for all browsers (native prompt or manual instructions)
+    const timer = setTimeout(() => setShowBanner(true), 2500);
+
     return () => {
+      clearTimeout(timer);
       window.removeEventListener('beforeinstallprompt', handler);
     };
   }, []);
 
   const handleInstall = async () => {
-    // iOS: redirect to install page with visual guide
-    if (isIOS) {
-      navigate('/install');
-      setShowBanner(false);
+    // If native prompt is available, use it (Chrome, Edge, Samsung Internet, Opera)
+    if (deferredPrompt) {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowBanner(false);
+      }
+      setDeferredPrompt(null);
       return;
     }
-    // Android/Desktop: trigger native prompt
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setShowBanner(false);
-    }
-    setDeferredPrompt(null);
+    // Otherwise redirect to install page with browser-specific instructions
+    navigate('/install');
+    setShowBanner(false);
   };
 
   const handleDismiss = () => {
@@ -74,7 +66,7 @@ export function PWAInstallBanner() {
   if (!showBanner) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-80 animate-in slide-in-from-right-4 duration-500">
+    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-50 sm:w-80 animate-in slide-in-from-bottom-4 sm:slide-in-from-right-4 duration-500">
       <div className="relative rounded-xl border border-border/50 bg-card/95 backdrop-blur-md shadow-xl shadow-primary/10 p-4">
         <button
           onClick={handleDismiss}
@@ -85,7 +77,7 @@ export function PWAInstallBanner() {
 
         <div className="flex items-center gap-3 pr-6">
           <div className="p-2 rounded-lg bg-primary/20 shrink-0">
-            {isIOS ? <Smartphone className="w-5 h-5 text-primary" /> : <Download className="w-5 h-5 text-primary" />}
+            <Download className="w-5 h-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-card-foreground">Instale o My Invest</p>
