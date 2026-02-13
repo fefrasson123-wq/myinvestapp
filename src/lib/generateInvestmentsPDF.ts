@@ -89,7 +89,52 @@ export function generateInvestmentsPDF(
     `;
   }
 
-  // Build income section
+  // Build projected passive income section from investments with dividends field
+  const investmentsWithIncome = investments.filter(inv => inv.dividends && inv.dividends > 0);
+  let projectedIncomeSection = '';
+  if (investmentsWithIncome.length > 0) {
+    const totalMonthlyProjected = investmentsWithIncome.reduce((s, inv) => s + (inv.dividends || 0), 0);
+    const projectedRows = investmentsWithIncome.map(inv => `
+      <tr>
+        <td style="text-align:left;font-weight:600">${inv.ticker || inv.name}</td>
+        <td>${categoryLabels[inv.category] || inv.category}</td>
+        <td>${formatCurrency(inv.dividends || 0)}</td>
+        <td>${formatCurrency((inv.dividends || 0) * 12)}</td>
+      </tr>
+    `).join('');
+
+    projectedIncomeSection = `
+      <div class="category" style="margin-top:24px;">
+        <div class="cat-header">
+          <span>🏠 Renda Passiva Projetada (Mensal)</span>
+          <span>${formatCurrency(totalMonthlyProjected)}/mês</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left">Ativo</th>
+              <th>Categoria</th>
+              <th>Mensal</th>
+              <th>Anual</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${projectedRows}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td style="text-align:left;font-weight:700">Total</td>
+              <td></td>
+              <td style="font-weight:700">${formatCurrency(totalMonthlyProjected)}</td>
+              <td style="font-weight:700">${formatCurrency(totalMonthlyProjected * 12)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    `;
+  }
+
+  // Build income section from income_payments
   let incomeSection = '';
   if (incomeStats) {
     const monthlyRows = incomeStats.last12Months.map(m => `
@@ -205,6 +250,8 @@ export function generateInvestmentsPDF(
       </div>
 
       ${categorySections}
+
+      ${projectedIncomeSection}
 
       ${incomeSection}
 
