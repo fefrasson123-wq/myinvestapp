@@ -64,7 +64,9 @@ export function PlansContent() {
   };
 
   const normalizeFeatureText = (text: string): string => {
-    return text.replace('Visualização em Real ou Dólar', 'Visualização do patrimonio em Reais ou Dólares');
+    return text
+      .replace('Visualização em Real ou Dólar', 'Visualização do patrimonio em Reais ou Dólares')
+      .replace('Comparação com benchmarks', 'Comparação com outros ativos do mercado');
   };
 
   if (isLoading || subLoading) {
