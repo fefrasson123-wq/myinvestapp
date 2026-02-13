@@ -182,15 +182,19 @@ export function generateInvestmentsPDF(
       </tr>
     `).join('');
 
-    // Monthly history rows - combine received payments with projected monthly income
-    const projectedMonthly = totalMonthlyAll; // projected monthly from interest + rent
+    // Monthly history rows - split projected income by type
+    const projectedMonthlyRent = allIncomeAssets.filter(a => a.type === 'Aluguel').reduce((s, a) => s + a.monthly, 0);
+    const projectedMonthlyInterest = allIncomeAssets.filter(a => a.type === 'Juros').reduce((s, a) => s + a.monthly, 0);
+    const projectedMonthlyDividend = allIncomeAssets.filter(a => a.type === 'Dividendo').reduce((s, a) => s + a.monthly, 0);
     const monthlyRows = incomeStats ? incomeStats.last12Months.map(m => {
-      const totalMonth = m.amount + projectedMonthly;
+      const dividendTotal = m.amount + projectedMonthlyDividend;
+      const totalMonth = dividendTotal + projectedMonthlyRent + projectedMonthlyInterest;
       return `
       <tr>
         <td style="text-align:left;text-transform:capitalize">${m.month}</td>
-        <td>${formatCurrency(m.amount)}</td>
-        <td>${formatCurrency(projectedMonthly)}</td>
+        <td>${formatCurrency(dividendTotal)}</td>
+        <td>${formatCurrency(projectedMonthlyRent)}</td>
+        <td>${formatCurrency(projectedMonthlyInterest)}</td>
         <td style="font-weight:600">${formatCurrency(totalMonth)}</td>
       </tr>
     `}).join('') : '';
@@ -276,7 +280,8 @@ export function generateInvestmentsPDF(
               <tr>
                 <th style="text-align:left">Mês</th>
                 <th>Dividendos</th>
-                <th>Juros/Aluguéis</th>
+                <th>Aluguéis</th>
+                <th>Juros</th>
                 <th>Total</th>
               </tr>
             </thead>
