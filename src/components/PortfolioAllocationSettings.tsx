@@ -93,7 +93,7 @@ export function PortfolioAllocationSettings({ investments }: PortfolioAllocation
     setLocalAllocations(initial);
   };
 
-  const { allocationsWithDeviation, totalToInvest, underweightCategories, overweightCategories } = getRebalancingSummary();
+  const { allocationsWithDeviation, underweightCategories, overweightCategories } = getRebalancingSummary();
 
   // Calcula alocação atual por categoria
   const currentAllocations = useMemo(() => {
@@ -311,7 +311,7 @@ export function PortfolioAllocationSettings({ investments }: PortfolioAllocation
                                     "text-xs font-mono",
                                     allocation.amountToRebalance > 0 ? "text-primary" : "text-amber-500"
                                   )}>
-                                    {allocation.amountToRebalance > 0 ? 'Investir: ' : 'Reduzir: '}
+                                    {allocation.amountToRebalance > 0 ? 'Comprar: ' : 'Vender: '}
                                     {formatCurrencyValue(Math.abs(allocation.amountToRebalance))}
                                   </p>
                                 )}
@@ -324,13 +324,28 @@ export function PortfolioAllocationSettings({ investments }: PortfolioAllocation
                     {/* Resumo de rebalanceamento */}
                     {(underweightCategories.length > 0 || overweightCategories.length > 0) && (
                       <div className="pt-3 border-t border-border/50">
-                        <h4 className="text-sm font-medium mb-2">Para rebalancear:</h4>
+                        <h4 className="text-sm font-medium mb-2">Para rebalancear (vender → comprar):</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {overweightCategories.length > 0 && (
+                            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                              <p className="text-xs text-muted-foreground mb-1">Vender</p>
+                              <div className="space-y-1">
+                                {overweightCategories.slice(0, 5).map(cat => (
+                                  <div key={cat.category} className="flex justify-between text-sm">
+                                    <span>{categoryLabels[cat.category]}</span>
+                                    <span className="font-mono text-amber-500">
+                                      {formatCurrencyValue(Math.abs(cat.amountToRebalance))}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                           {underweightCategories.length > 0 && (
                             <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                              <p className="text-xs text-muted-foreground mb-1">Investir em</p>
+                              <p className="text-xs text-muted-foreground mb-1">Comprar</p>
                               <div className="space-y-1">
-                                {underweightCategories.slice(0, 3).map(cat => (
+                                {underweightCategories.slice(0, 5).map(cat => (
                                   <div key={cat.category} className="flex justify-between text-sm">
                                     <span>{categoryLabels[cat.category]}</span>
                                     <span className="font-mono text-primary">
@@ -341,35 +356,7 @@ export function PortfolioAllocationSettings({ investments }: PortfolioAllocation
                               </div>
                             </div>
                           )}
-                          {overweightCategories.length > 0 && (
-                            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                              <p className="text-xs text-muted-foreground mb-1">Acima do ideal</p>
-                              <div className="space-y-1">
-                                {overweightCategories.slice(0, 3).map(cat => (
-                                  <div key={cat.category} className="flex justify-between text-sm">
-                                    <span>{categoryLabels[cat.category]}</span>
-                                    <span className="font-mono text-amber-500">
-                                      +{formatCurrencyValue(Math.abs(cat.amountToRebalance))}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    )}
-
-                    {/* Total para investir */}
-                    {totalToInvest > 0 && (
-                      <div className="p-4 rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 text-center">
-                        <p className="text-sm text-muted-foreground mb-1">Para atingir a alocação ideal, invista</p>
-                        <p className="text-2xl font-mono font-bold text-primary">
-                          {formatCurrencyValue(totalToInvest)}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          nas categorias abaixo do ideal
-                        </p>
                       </div>
                     )}
                   </>
