@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Download, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -9,7 +8,6 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function PWAInstallBanner() {
-  const navigate = useNavigate();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -29,6 +27,11 @@ export function PWAInstallBanner() {
     const ios = /iPad|iPhone|iPod/.test(ua);
     setIsIOS(ios);
 
+    if (ios) {
+      const timer = setTimeout(() => setShowBanner(true), 2000);
+      return () => clearTimeout(timer);
+    }
+
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -38,20 +41,7 @@ export function PWAInstallBanner() {
     window.addEventListener('beforeinstallprompt', handler);
     window.addEventListener('appinstalled', () => setShowBanner(false));
 
-    // For iOS or if beforeinstallprompt already fired, show banner after delay
-    if (ios) {
-      const timer = setTimeout(() => setShowBanner(true), 2000);
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('beforeinstallprompt', handler);
-      };
-    }
-
-    // On Android/Desktop, wait a bit for the event to fire, then show anyway
-    const timer = setTimeout(() => setShowBanner(true), 3000);
-
     return () => {
-      clearTimeout(timer);
       window.removeEventListener('beforeinstallprompt', handler);
     };
   }, []);
@@ -61,12 +51,7 @@ export function PWAInstallBanner() {
       setShowIOSTip(true);
       return;
     }
-    if (!deferredPrompt) {
-      // Redirect to install page with instructions
-      navigate('/install');
-      setShowBanner(false);
-      return;
-    }
+    if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
