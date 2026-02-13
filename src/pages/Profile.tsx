@@ -12,6 +12,7 @@ import { useValuesVisibility } from '@/contexts/ValuesVisibilityContext';
 import { PortfolioAllocationSettings } from '@/components/PortfolioAllocationSettings';
 import { useInvestments } from '@/hooks/useInvestments';
 import { PassiveIncome } from '@/components/PassiveIncome';
+import { useIncomePayments } from '@/hooks/useIncomePayments';
 import { useSubscription } from '@/hooks/useSubscription';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
 import { generateInvestmentsPDF } from '@/lib/generateInvestmentsPDF';
@@ -53,6 +54,7 @@ export default function Profile() {
   const [isDeleting, setIsDeleting] = useState(false);
   
   const { investments } = useInvestments();
+  const { stats: incomeStats } = useIncomePayments();
   const { hasFeature } = useSubscription();
 
   // Redirect if not logged in
@@ -348,7 +350,7 @@ export default function Profile() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => generateInvestmentsPDF(investments, displayName)}
+                    onClick={() => generateInvestmentsPDF(investments, displayName, incomeStats)}
                   >
                     <FileDown className="w-4 h-4 mr-2" />
                     Baixar relatório em PDF

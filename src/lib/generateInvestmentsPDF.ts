@@ -1,4 +1,5 @@
 import { Investment, categoryLabels } from '@/types/investment';
+import type { IncomePayment, IncomeStats } from '@/hooks/useIncomePayments';
 
 function formatCurrency(value: number): string {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -12,7 +13,12 @@ function formatDate(date: Date): string {
   return date.toLocaleDateString('pt-BR');
 }
 
-export function generateInvestmentsPDF(investments: Investment[], userName: string) {
+export function generateInvestmentsPDF(
+  investments: Investment[],
+  userName: string,
+  incomeStats?: IncomeStats,
+  payments?: IncomePayment[]
+) {
   // Group investments by category
   const byCategory = investments.reduce((acc, inv) => {
     const label = categoryLabels[inv.category] || inv.category;
@@ -83,6 +89,61 @@ export function generateInvestmentsPDF(investments: Investment[], userName: stri
     `;
   }
 
+  // Build income section
+  let incomeSection = '';
+  if (incomeStats) {
+    const monthlyRows = incomeStats.last12Months.map(m => `
+      <tr>
+        <td style="text-align:left;text-transform:capitalize">${m.month}</td>
+        <td>${formatCurrency(m.amount)}</td>
+      </tr>
+    `).join('');
+
+    incomeSection = `
+      <div class="category" style="margin-top:24px;">
+        <div class="cat-header">
+          <span>💰 Rendimentos Recebidos (Últimos 12 meses)</span>
+          <span>${formatCurrency(incomeStats.totalReceived)}</span>
+        </div>
+
+        <div class="income-summary">
+          <div class="income-item">
+            <span class="label">Total Recebido</span>
+            <span class="value">${formatCurrency(incomeStats.totalReceived)}</span>
+          </div>
+          <div class="income-item">
+            <span class="label">Média Mensal</span>
+            <span class="value">${formatCurrency(incomeStats.monthlyAverage)}</span>
+          </div>
+          <div class="income-item">
+            <span class="label">Dividendos</span>
+            <span class="value">${formatCurrency(incomeStats.byType.dividend)}</span>
+          </div>
+          <div class="income-item">
+            <span class="label">Aluguéis</span>
+            <span class="value">${formatCurrency(incomeStats.byType.rent)}</span>
+          </div>
+          <div class="income-item">
+            <span class="label">Juros</span>
+            <span class="value">${formatCurrency(incomeStats.byType.interest)}</span>
+          </div>
+        </div>
+
+        <table style="margin-top:8px">
+          <thead>
+            <tr>
+              <th style="text-align:left">Mês</th>
+              <th>Valor Recebido</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${monthlyRows}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
   const html = `
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -107,6 +168,10 @@ export function generateInvestmentsPDF(investments: Investment[], userName: stri
         th { background: #f0f0f0; padding: 5px 6px; text-align: right; font-weight: 600; border-bottom: 1px solid #ddd; }
         td { padding: 4px 6px; text-align: right; border-bottom: 1px solid #eee; }
         tfoot td { border-top: 2px solid #ccc; background: #fafafa; }
+        .income-summary { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0; }
+        .income-item { flex: 1 1 120px; background: #f5f5f5; border-radius: 6px; padding: 8px 12px; text-align: center; }
+        .income-item .label { display: block; font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        .income-item .value { display: block; font-size: 13px; font-weight: 700; margin-top: 2px; }
         .footer { text-align: center; margin-top: 24px; padding-top: 12px; border-top: 1px solid #ddd; color: #999; font-size: 9px; }
         @media print {
           body { padding: 12px; }
@@ -140,6 +205,8 @@ export function generateInvestmentsPDF(investments: Investment[], userName: stri
       </div>
 
       ${categorySections}
+
+      ${incomeSection}
 
       <div class="footer">
         Relatório gerado pelo My Invest • ${formatDate(now)}
