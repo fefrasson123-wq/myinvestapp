@@ -266,7 +266,7 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="averagePrice">Preço Médio (USD)</Label>
+          <Label htmlFor="averagePrice">Preço de Compra (USD)</Label>
           <Input
             id="averagePrice"
             type="number"

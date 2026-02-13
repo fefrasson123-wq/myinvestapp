@@ -426,7 +426,7 @@ export function GoldForm({ onSubmit, onBack }: GoldFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="averagePrice">Preço Médio (USD) *</Label>
+          <Label htmlFor="averagePrice">Preço de Compra (USD) *</Label>
           <Input
             id="averagePrice"
             type="number"

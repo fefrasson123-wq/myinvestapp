@@ -262,7 +262,7 @@ export function ETFForm({ onSubmit, onSell, onBack }: ETFFormProps) {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="averagePrice">Preço Médio (R$)</Label>
+          <Label htmlFor="averagePrice">Preço de Compra (R$)</Label>
           <Input
             id="averagePrice"
             type="number"

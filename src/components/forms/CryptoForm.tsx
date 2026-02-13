@@ -505,7 +505,7 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="averagePrice">{mode === 'buy' ? 'Preço Médio (USD)' : 'Preço de Venda (USD)'}</Label>
+          <Label htmlFor="averagePrice">{mode === 'buy' ? 'Preço de Compra (USD)' : 'Preço de Venda (USD)'}</Label>
           <Input
             id="averagePrice"
             type="number"

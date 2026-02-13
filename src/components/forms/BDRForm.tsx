@@ -345,7 +345,7 @@ export function BDRForm({ onSubmit, onSell, onBack }: BDRFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="averagePrice">{mode === 'buy' ? 'Preço Médio (R$)' : 'Preço de Venda (R$)'} *</Label>
+          <Label htmlFor="averagePrice">{mode === 'buy' ? 'Preço de Compra (R$)' : 'Preço de Venda (R$)'} *</Label>
           <Input
             id="averagePrice"
             type="number"

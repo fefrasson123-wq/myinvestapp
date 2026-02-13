@@ -268,7 +268,7 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="averagePrice" className="text-xs">{mode === 'buy' ? 'Preço Médio (R$)' : 'Preço Venda (R$)'} *</Label>
+          <Label htmlFor="averagePrice" className="text-xs">{mode === 'buy' ? 'Preço de Compra (R$)' : 'Preço de Venda (R$)'} *</Label>
           <Input
             id="averagePrice"
             type="number"
