@@ -260,103 +260,87 @@ export function PortfolioAllocationSettings({ investments }: PortfolioAllocation
                   </p>
                 ) : (
                   <>
-                    {/* Lista de desvios */}
-                    <div className="space-y-3">
-                      {allocationsWithDeviation
-                        .sort((a, b) => Math.abs(b.deviation) - Math.abs(a.deviation))
-                        .map(allocation => {
-                          const isOverweight = allocation.deviation > 0;
-                          const isUnderweight = allocation.deviation < 0;
-                          const isBalanced = Math.abs(allocation.deviation) <= 1;
-                          
-                          return (
-                            <div 
-                              key={allocation.category}
-                              className="flex items-center justify-between p-3 rounded-lg bg-secondary/30"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div 
-                                  className="w-2 h-8 rounded-full"
-                                  style={{ backgroundColor: categoryColors[allocation.category] }}
-                                />
-                                <div>
-                                  <p className="font-medium text-sm">
-                                    {categoryLabels[allocation.category]}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Meta: {allocation.target_percent.toFixed(0)}% • Atual: {allocation.currentPercent.toFixed(1)}%
-                                  </p>
+                    {/* Resumo de ações: primeiro vender, depois comprar */}
+                    {(overweightCategories.length > 0 || underweightCategories.length > 0) && (
+                      <div className="space-y-3">
+                        {overweightCategories.length > 0 && (
+                          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                            <p className="text-xs font-semibold text-amber-500 mb-2 uppercase tracking-wide">⬇ Reduzir (acima da meta)</p>
+                            <div className="space-y-2">
+                              {overweightCategories.map(cat => (
+                                <div key={cat.category} className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div 
+                                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                      style={{ backgroundColor: categoryColors[cat.category] }}
+                                    />
+                                    <span className="text-sm truncate">{categoryLabels[cat.category]}</span>
+                                  </div>
+                                  <div className="text-right flex-shrink-0">
+                                    <p className="text-sm font-mono text-amber-500">
+                                      Vender {formatCurrencyValue(Math.abs(cat.amountToRebalance))}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      {cat.currentPercent.toFixed(1)}% → {cat.target_percent.toFixed(0)}% (−{Math.abs(cat.deviation).toFixed(1)}%)
+                                    </p>
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="flex items-center gap-1 justify-end">
-                                  {isBalanced ? (
-                                    <CheckCircle2 className="w-4 h-4 text-success" />
-                                  ) : isOverweight ? (
-                                    <TrendingUp className="w-4 h-4 text-amber-500" />
-                                  ) : (
-                                    <TrendingDown className="w-4 h-4 text-primary" />
-                                  )}
-                                  <span className={cn(
-                                    "font-mono text-sm font-medium",
-                                    isBalanced && "text-success",
-                                    isOverweight && "text-amber-500",
-                                    isUnderweight && "text-primary"
-                                  )}>
-                                    {allocation.deviation >= 0 ? '+' : ''}{allocation.deviation.toFixed(1)}%
-                                  </span>
-                                </div>
-                                {!isBalanced && (
-                                  <p className={cn(
-                                    "text-xs font-mono",
-                                    allocation.amountToRebalance > 0 ? "text-primary" : "text-amber-500"
-                                  )}>
-                                    {allocation.amountToRebalance > 0 ? 'Comprar: ' : 'Vender: '}
-                                    {formatCurrencyValue(Math.abs(allocation.amountToRebalance))}
-                                  </p>
-                                )}
-                              </div>
+                              ))}
                             </div>
-                          );
-                        })}
-                    </div>
+                          </div>
+                        )}
 
-                    {/* Resumo de rebalanceamento */}
-                    {(underweightCategories.length > 0 || overweightCategories.length > 0) && (
-                      <div className="pt-3 border-t border-border/50">
-                        <h4 className="text-sm font-medium mb-2">Para rebalancear (vender → comprar):</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {overweightCategories.length > 0 && (
-                            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                              <p className="text-xs text-muted-foreground mb-1">Vender</p>
-                              <div className="space-y-1">
-                                {overweightCategories.slice(0, 5).map(cat => (
-                                  <div key={cat.category} className="flex justify-between text-sm">
-                                    <span>{categoryLabels[cat.category]}</span>
-                                    <span className="font-mono text-amber-500">
-                                      {formatCurrencyValue(Math.abs(cat.amountToRebalance))}
+                        {underweightCategories.length > 0 && (
+                          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                            <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">⬆ Aumentar (abaixo da meta)</p>
+                            <div className="space-y-2">
+                              {underweightCategories.map(cat => (
+                                <div key={cat.category} className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div 
+                                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                      style={{ backgroundColor: categoryColors[cat.category] }}
+                                    />
+                                    <span className="text-sm truncate">{categoryLabels[cat.category]}</span>
+                                  </div>
+                                  <div className="text-right flex-shrink-0">
+                                    <p className="text-sm font-mono text-primary">
+                                      Comprar {formatCurrencyValue(cat.amountToRebalance)}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      {cat.currentPercent.toFixed(1)}% → {cat.target_percent.toFixed(0)}% (+{Math.abs(cat.deviation).toFixed(1)}%)
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Categorias balanceadas */}
+                        {allocationsWithDeviation.filter(a => Math.abs(a.deviation) <= 1).length > 0 && (
+                          <div className="p-3 rounded-lg bg-success/10 border border-success/20">
+                            <p className="text-xs font-semibold text-success mb-2 uppercase tracking-wide">✓ Dentro da meta</p>
+                            <div className="space-y-1">
+                              {allocationsWithDeviation
+                                .filter(a => Math.abs(a.deviation) <= 1)
+                                .map(cat => (
+                                  <div key={cat.category} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      <div 
+                                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                        style={{ backgroundColor: categoryColors[cat.category] }}
+                                      />
+                                      <span className="text-sm">{categoryLabels[cat.category]}</span>
+                                    </div>
+                                    <span className="text-xs text-muted-foreground font-mono">
+                                      {cat.currentPercent.toFixed(1)}% / {cat.target_percent.toFixed(0)}%
                                     </span>
                                   </div>
                                 ))}
-                              </div>
                             </div>
-                          )}
-                          {underweightCategories.length > 0 && (
-                            <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                              <p className="text-xs text-muted-foreground mb-1">Comprar</p>
-                              <div className="space-y-1">
-                                {underweightCategories.slice(0, 5).map(cat => (
-                                  <div key={cat.category} className="flex justify-between text-sm">
-                                    <span>{categoryLabels[cat.category]}</span>
-                                    <span className="font-mono text-primary">
-                                      {formatCurrencyValue(cat.amountToRebalance)}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
