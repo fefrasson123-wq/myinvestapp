@@ -316,31 +316,6 @@ export function PortfolioAllocationSettings({ investments }: PortfolioAllocation
                             </div>
                           </div>
                         )}
-
-                        {/* Categorias balanceadas */}
-                        {allocationsWithDeviation.filter(a => Math.abs(a.deviation) <= 1).length > 0 && (
-                          <div className="p-3 rounded-lg bg-success/10 border border-success/20">
-                            <p className="text-xs font-semibold text-success mb-2 uppercase tracking-wide">✓ Dentro da meta</p>
-                            <div className="space-y-1">
-                              {allocationsWithDeviation
-                                .filter(a => Math.abs(a.deviation) <= 1)
-                                .map(cat => (
-                                  <div key={cat.category} className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <div 
-                                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                        style={{ backgroundColor: categoryColors[cat.category] }}
-                                      />
-                                      <span className="text-sm">{categoryLabels[cat.category]}</span>
-                                    </div>
-                                    <span className="text-xs text-muted-foreground font-mono">
-                                      {cat.currentPercent.toFixed(1)}% / {cat.target_percent.toFixed(0)}%
-                                    </span>
-                                  </div>
-                                ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     )}
                   </>
