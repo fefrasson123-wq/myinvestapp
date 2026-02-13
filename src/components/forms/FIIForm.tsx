@@ -271,7 +271,7 @@ export function FIIForm({ onSubmit, onSell, onBack }: FIIFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="averagePrice">Preço Médio (R$) *</Label>
+          <Label htmlFor="averagePrice">Preço de Compra (R$) *</Label>
           <Input
             id="averagePrice"
             type="number"
