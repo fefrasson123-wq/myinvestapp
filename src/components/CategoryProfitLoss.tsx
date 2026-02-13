@@ -32,9 +32,9 @@ export function CategoryProfitLoss({ investments }: CategoryProfitLossProps) {
   const categoryData: CategoryData[] = Object.entries(
     investments.reduce((acc, inv) => {
       const category = inv.category;
-      const isCrypto = category === 'crypto';
-      const invested = isCrypto ? inv.investedAmount * usdToBrl : inv.investedAmount;
-      const currentValue = isCrypto ? inv.currentValue * usdToBrl : inv.currentValue;
+      const isUsdBased = category === 'crypto' || category === 'usastocks' || category === 'reits';
+      const invested = isUsdBased ? inv.investedAmount * usdToBrl : inv.investedAmount;
+      const currentValue = isUsdBased ? inv.currentValue * usdToBrl : inv.currentValue;
       
       if (!acc[category]) {
         acc[category] = { invested: 0, currentValue: 0 };
