@@ -182,13 +182,18 @@ export function generateInvestmentsPDF(
       </tr>
     `).join('');
 
-    // Monthly history rows
-    const monthlyRows = incomeStats ? incomeStats.last12Months.map(m => `
+    // Monthly history rows - combine received payments with projected monthly income
+    const projectedMonthly = totalMonthlyAll; // projected monthly from interest + rent
+    const monthlyRows = incomeStats ? incomeStats.last12Months.map(m => {
+      const totalMonth = m.amount + projectedMonthly;
+      return `
       <tr>
         <td style="text-align:left;text-transform:capitalize">${m.month}</td>
         <td>${formatCurrency(m.amount)}</td>
+        <td>${formatCurrency(projectedMonthly)}</td>
+        <td style="font-weight:600">${formatCurrency(totalMonth)}</td>
       </tr>
-    `).join('') : '';
+    `}).join('') : '';
 
     const totalReceived = incomeStats?.totalReceived || 0;
     const monthlyAvg = incomeStats?.monthlyAverage || 0;
@@ -270,7 +275,9 @@ export function generateInvestmentsPDF(
             <thead>
               <tr>
                 <th style="text-align:left">Mês</th>
-                <th>Valor Recebido</th>
+                <th>Dividendos</th>
+                <th>Juros/Aluguéis</th>
+                <th>Total</th>
               </tr>
             </thead>
             <tbody>
