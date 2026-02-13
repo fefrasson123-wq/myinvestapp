@@ -48,8 +48,8 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <PWAInstallBanner />
             <BrowserRouter>
+              <PWAInstallBanner />
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Index />} />
