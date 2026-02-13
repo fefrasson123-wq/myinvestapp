@@ -324,6 +324,7 @@ export function generateInvestmentsPDF(
         @media print {
           body { padding: 12px; }
           .category { page-break-inside: avoid; }
+          .no-print { display: none !important; }
         }
       </style>
     </head>
@@ -356,6 +357,12 @@ export function generateInvestmentsPDF(
 
       ${incomeSection}
 
+      <div class="no-print" style="text-align:center;margin:24px 0;">
+        <button onclick="window.print()" style="background:#00e676;color:#1a1a2e;border:none;padding:12px 32px;font-size:14px;font-weight:700;border-radius:8px;cursor:pointer;">
+          📥 Baixar PDF
+        </button>
+      </div>
+
       <div class="footer">
         Relatório gerado pelo My Invest • ${formatDate(now)}
       </div>
@@ -363,7 +370,7 @@ export function generateInvestmentsPDF(
     </html>
   `;
 
-  // Open print dialog
+  // Open in new tab
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
     alert('Permita pop-ups para baixar o PDF.');
@@ -372,7 +379,4 @@ export function generateInvestmentsPDF(
   printWindow.document.write(html);
   printWindow.document.close();
   printWindow.focus();
-  setTimeout(() => {
-    printWindow.print();
-  }, 500);
 }
