@@ -19,27 +19,36 @@ export function PWAInstallBanner() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
     if (isStandalone) return;
 
-    // Temporarily disabled for testing - localStorage check removed
-    // const dismissed = localStorage.getItem('pwa-banner-dismissed');
-    // if (dismissed) {
-    //   const dismissedAt = parseInt(dismissed, 10);
-    //   if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
-    // }
+    const dismissed = localStorage.getItem('pwa-banner-dismissed');
+    if (dismissed) {
+      const dismissedAt = parseInt(dismissed, 10);
+      if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) return;
+    }
 
     const ua = navigator.userAgent;
     const ios = /iPad|iPhone|iPod/.test(ua);
     setIsIOS(ios);
 
-    // Always show banner after a short delay
-    const timer = setTimeout(() => setShowBanner(true), 2000);
-
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setShowBanner(true);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
     window.addEventListener('appinstalled', () => setShowBanner(false));
+
+    // For iOS or if beforeinstallprompt already fired, show banner after delay
+    if (ios) {
+      const timer = setTimeout(() => setShowBanner(true), 2000);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('beforeinstallprompt', handler);
+      };
+    }
+
+    // On Android/Desktop, wait a bit for the event to fire, then show anyway
+    const timer = setTimeout(() => setShowBanner(true), 3000);
 
     return () => {
       clearTimeout(timer);
