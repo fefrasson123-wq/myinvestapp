@@ -117,8 +117,8 @@ export function CryptoForm({ onSubmit, onSell, onBack }: CryptoFormProps) {
   };
 
   const filteredCryptos = useMemo(() => {
-    if (!searchQuery) return cryptoList;
-    return searchCrypto(searchQuery);
+    if (!searchQuery) return cryptoList.slice(0, 30);
+    return searchCrypto(searchQuery).slice(0, 30);
   }, [searchQuery]);
 
   // Busca preço em tempo real pelo símbolo
