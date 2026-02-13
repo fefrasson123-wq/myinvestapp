@@ -33,8 +33,8 @@ export function CategoryDetailModal({ category, investments, onClose }: Category
     .sort((a, b) => b.profitLoss - a.profitLoss);
 
   const investmentsWithValues = categoryInvestments.map((inv) => {
-    const isCrypto = inv.category === 'crypto';
-    const calculatedValue = isCrypto ? inv.currentValue * usdToBrl : inv.currentValue;
+    const isUsdBased = inv.category === 'crypto' || inv.category === 'usastocks' || inv.category === 'reits';
+    const calculatedValue = isUsdBased ? inv.currentValue * usdToBrl : inv.currentValue;
     return { ...inv, calculatedValue };
   });
 
