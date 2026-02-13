@@ -11,6 +11,8 @@ import { useTransactions } from '@/hooks/useTransactions';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { useStockPrices } from '@/hooks/useStockPrices';
 import { useFIIPrices } from '@/hooks/useFIIPrices';
+import { useETFPrices } from '@/hooks/useETFPrices';
+import { useUSAStockPrices } from '@/hooks/useUSAStockPrices';
 import { useGoldPrice } from '@/hooks/useGoldPrice';
 import { Investment, Transaction } from '@/types/investment';
 import { useToast } from '@/hooks/use-toast';
@@ -138,6 +140,21 @@ const Index = () => {
   } = useFIIPrices();
 
   const {
+    getPrice: getETFPrice,
+    isLoading: etfLoading,
+    lastUpdate: etfLastUpdate,
+    fetchPrices: fetchETFPrices,
+  } = useETFPrices();
+
+  const {
+    prices: usaStockPrices,
+    getPrice: getUSAStockPrice,
+    isLoading: usaStocksLoading,
+    lastUpdate: usaStocksLastUpdate,
+    fetchPrices: fetchUSAStockPrices,
+  } = useUSAStockPrices();
+
+  const {
     pricePerGram: goldPricePerGram,
     isLoading: goldLoading,
     lastUpdate: goldLastUpdate,
@@ -145,10 +162,10 @@ const Index = () => {
   } = useGoldPrice();
 
   // Combina o status de loading
-  const pricesLoading = cryptoLoading || stocksLoading || fiiLoading || goldLoading;
+  const pricesLoading = cryptoLoading || stocksLoading || fiiLoading || etfLoading || usaStocksLoading || goldLoading;
   
   // Usa a atualização mais recente
-  const lastUpdate = [cryptoLastUpdate, stocksLastUpdate, fiiLastUpdate, goldLastUpdate]
+  const lastUpdate = [cryptoLastUpdate, stocksLastUpdate, fiiLastUpdate, etfLastUpdate, usaStocksLastUpdate, goldLastUpdate]
     .filter(Boolean)
     .sort((a, b) => (b?.getTime() || 0) - (a?.getTime() || 0))[0] || null;
 
@@ -162,9 +179,9 @@ const Index = () => {
       fetchCryptoPrices(cryptoIds);
     }
     
-    // Busca preços de ações da carteira via API
+    // Busca preços de ações BR e BDRs da carteira via API
     const stockTickers = investments
-      .filter(inv => inv.category === 'stocks' && inv.ticker)
+      .filter(inv => (inv.category === 'stocks' || inv.category === 'bdr') && inv.ticker)
       .map(inv => inv.ticker!);
     if (stockTickers.length > 0) {
       fetchStockPrices(stockTickers);
@@ -178,12 +195,28 @@ const Index = () => {
       fetchFIIPrices(fiiTickers);
     }
 
+    // Busca preços de ETFs da carteira via API
+    const etfTickers = investments
+      .filter(inv => inv.category === 'etf' && inv.ticker)
+      .map(inv => inv.ticker!);
+    if (etfTickers.length > 0) {
+      fetchETFPrices(etfTickers);
+    }
+
+    // Busca preços de ações USA e REITs da carteira via API
+    const usaTickers = investments
+      .filter(inv => (inv.category === 'usastocks' || inv.category === 'reits') && inv.ticker)
+      .map(inv => inv.ticker!);
+    if (usaTickers.length > 0) {
+      fetchUSAStockPrices(usaTickers);
+    }
+
     // Busca preço do ouro
     const hasGold = investments.some(inv => inv.category === 'gold');
     if (hasGold) {
       fetchGoldPrice();
     }
-  }, [investments, fetchCryptoPrices, fetchStockPrices, fetchFIIPrices, fetchGoldPrice]);
+  }, [investments, fetchCryptoPrices, fetchStockPrices, fetchFIIPrices, fetchETFPrices, fetchUSAStockPrices, fetchGoldPrice]);
 
   // Busca preços reais quando a carteira é carregada
   useEffect(() => {
@@ -210,8 +243,14 @@ const Index = () => {
         realTimePrice = getCryptoPrice(inv.ticker);
       } else if (inv.category === 'stocks' && inv.ticker) {
         realTimePrice = getStockPrice(inv.ticker);
+      } else if (inv.category === 'bdr' && inv.ticker) {
+        realTimePrice = getStockPrice(inv.ticker);
       } else if (inv.category === 'fii' && inv.ticker) {
         realTimePrice = getFIIPrice(inv.ticker);
+      } else if (inv.category === 'etf' && inv.ticker) {
+        realTimePrice = getETFPrice(inv.ticker);
+      } else if ((inv.category === 'usastocks' || inv.category === 'reits') && inv.ticker) {
+        realTimePrice = getUSAStockPrice(inv.ticker);
       } else if (inv.category === 'gold' && goldPricePerGram && inv.weightGrams && inv.purity) {
         const purityMultiplier = inv.purity / 24;
         realTimePrice = goldPricePerGram * purityMultiplier;
@@ -221,7 +260,7 @@ const Index = () => {
         update(inv.id, { currentPrice: realTimePrice });
       }
     });
-  }, [cryptoPrices, goldPricePerGram, getCryptoPrice, getStockPrice, getFIIPrice]);
+  }, [cryptoPrices, usaStockPrices, goldPricePerGram, getCryptoPrice, getStockPrice, getFIIPrice, getETFPrice, getUSAStockPrice]);
 
   // Handler para venda direta do formulário de cadastro
   const handleDirectSell = async (data: {
