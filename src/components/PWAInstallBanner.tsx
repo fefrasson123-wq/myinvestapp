@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Download, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -8,10 +9,10 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function PWAInstallBanner() {
+  const navigate = useNavigate();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [showIOSTip, setShowIOSTip] = useState(false);
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
@@ -27,11 +28,13 @@ export function PWAInstallBanner() {
     const ios = /iPad|iPhone|iPod/.test(ua);
     setIsIOS(ios);
 
+    // iOS: show banner after delay (will redirect to /install)
     if (ios) {
       const timer = setTimeout(() => setShowBanner(true), 2000);
       return () => clearTimeout(timer);
     }
 
+    // Android/Desktop: wait for beforeinstallprompt
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -47,10 +50,13 @@ export function PWAInstallBanner() {
   }, []);
 
   const handleInstall = async () => {
+    // iOS: redirect to install page with visual guide
     if (isIOS) {
-      setShowIOSTip(true);
+      navigate('/install');
+      setShowBanner(false);
       return;
     }
+    // Android/Desktop: trigger native prompt
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -62,7 +68,6 @@ export function PWAInstallBanner() {
 
   const handleDismiss = () => {
     setShowBanner(false);
-    setShowIOSTip(false);
     localStorage.setItem('pwa-banner-dismissed', Date.now().toString());
   };
 
@@ -78,32 +83,18 @@ export function PWAInstallBanner() {
           <X className="w-4 h-4" />
         </button>
 
-        {showIOSTip ? (
-          <div className="space-y-2 pr-6">
-            <div className="flex items-center gap-2">
-              <Smartphone className="w-5 h-5 text-primary shrink-0" />
-              <p className="text-sm font-medium text-card-foreground">Como instalar no iPhone/iPad</p>
-            </div>
-            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-              <li>Toque no botão <strong className="text-primary">Compartilhar</strong> (quadrado com seta para cima)</li>
-              <li>Role e toque em <strong className="text-primary">"Adicionar à Tela de Início"</strong></li>
-              <li>Toque em <strong className="text-primary">"Adicionar"</strong></li>
-            </ol>
+        <div className="flex items-center gap-3 pr-6">
+          <div className="p-2 rounded-lg bg-primary/20 shrink-0">
+            {isIOS ? <Smartphone className="w-5 h-5 text-primary" /> : <Download className="w-5 h-5 text-primary" />}
           </div>
-        ) : (
-          <div className="flex items-center gap-3 pr-6">
-            <div className="p-2 rounded-lg bg-primary/20 shrink-0">
-              <Download className="w-5 h-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-card-foreground">Instale o My Invest</p>
-              <p className="text-xs text-muted-foreground">Acesso rápido pela tela inicial</p>
-            </div>
-            <Button size="sm" onClick={handleInstall} className="shrink-0 text-xs">
-              Instalar
-            </Button>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-card-foreground">Instale o My Invest</p>
+            <p className="text-xs text-muted-foreground">Acesso rápido pela tela inicial</p>
           </div>
-        )}
+          <Button size="sm" onClick={handleInstall} className="shrink-0 text-xs">
+            Instalar
+          </Button>
+        </div>
       </div>
     </div>
   );
