@@ -294,17 +294,6 @@ export function FIIForm({ onSubmit, onSell, onBack }: FIIFormProps) {
           />
         </div>
 
-        <div>
-          <Label htmlFor="dividends">Rendimentos Mensais (R$)</Label>
-          <Input
-            id="dividends"
-            type="number"
-            step="any"
-            value={formData.dividends}
-            onChange={(e) => setFormData(prev => ({ ...prev, dividends: e.target.value }))}
-            placeholder="0.00"
-          />
-        </div>
 
         <div className="col-span-2">
           <Label htmlFor="notes">Observações</Label>

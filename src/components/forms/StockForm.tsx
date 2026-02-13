@@ -293,20 +293,6 @@ export function StockForm({ onSubmit, onSell, onBack }: StockFormProps) {
           />
         </div>
 
-        {mode === 'buy' && (
-          <div>
-            <Label htmlFor="dividends" className="text-xs">Dividendos (R$)</Label>
-            <Input
-              id="dividends"
-              type="number"
-              step="any"
-              value={formData.dividends}
-              onChange={(e) => setFormData(prev => ({ ...prev, dividends: e.target.value }))}
-              placeholder="0.00"
-              className="h-8 text-sm"
-            />
-          </div>
-        )}
 
         <div className="col-span-2">
           <Label htmlFor="notes" className="text-xs">Observações</Label>
