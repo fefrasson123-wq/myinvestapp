@@ -81,7 +81,7 @@ export function PlansContent() {
       'Rentabilidade por Classe de Investimento e alocação percentual',
       'Relatórios por classe de Investimento',
       'Relatório mensal da sua carteira de Investimentos',
-      'Gráfico de projeção de crescimento do Patrimonio',
+      'Gráfico de projeção de crescimento do Patrimônio',
     ];
     return [];
   };
