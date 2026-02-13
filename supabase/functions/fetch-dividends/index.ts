@@ -11,9 +11,17 @@ interface YahooDividend {
   date: number; // Unix timestamp
 }
 
-// Normalize Brazilian ticker to Yahoo format
-function normalizeToYahooSymbol(symbol: string): string {
-  let normalized = symbol.toUpperCase().replace('.SA', '');
+// Normalize ticker to Yahoo Finance symbol based on category
+function normalizeToYahooSymbol(symbol: string, category: string): string {
+  let normalized = symbol.toUpperCase();
+  
+  // US stocks and REITs don't need .SA suffix
+  if (category === 'usastocks' || category === 'reits') {
+    return normalized.replace('.SA', '');
+  }
+  
+  // Brazilian tickers
+  normalized = normalized.replace('.SA', '');
   // Remove 'N' from units (ex: ITUBN4 -> ITUB4)
   normalized = normalized.replace(/^([A-Z]+)N(\d+)$/, '$1$2');
   // Remove 'F' from fractional (ex: PETR4F -> PETR4)
@@ -139,12 +147,12 @@ serve(async (req) => {
     // Fetch dividends for all tickers in parallel
     const fetchPromises = tickers.map(async (ticker: string) => {
       try {
-        const yahooSymbol = normalizeToYahooSymbol(ticker);
+        const investment = investmentMap?.[ticker.toUpperCase()];
+        const category = investment?.category || 'stocks';
+        const yahooSymbol = normalizeToYahooSymbol(ticker, category);
         
         // Yahoo Finance chart API with dividend events
         const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?period1=${period1}&period2=${period2}&interval=1d&events=div`;
-        
-        console.log(`Fetching dividends from Yahoo Finance for: ${yahooSymbol}`);
         
         const response = await fetchWithRetry(url, {
           method: 'GET',
@@ -174,10 +182,8 @@ serve(async (req) => {
           return [];
         }
 
-        const investment = investmentMap?.[ticker.toUpperCase()];
         const investmentId = investment?.id || null;
         const investmentName = investment?.name || ticker;
-        const category = investment?.category || 'stocks';
         const quantity = investment?.quantity || 1;
 
         const tickerDividends: typeof allDividends = [];
