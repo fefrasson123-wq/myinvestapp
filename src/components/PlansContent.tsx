@@ -63,6 +63,10 @@ export function PlansContent() {
     premium: 'bg-amber-500 hover:bg-amber-600 text-white',
   };
 
+  const normalizeFeatureText = (text: string): string => {
+    return text.replace('Visualização em Real ou Dólar', 'Visualização do patrimonio em Reais ou Dólares');
+  };
+
   if (isLoading || subLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -144,7 +148,7 @@ export function PlansContent() {
                       "w-4 h-4 mt-0.5 flex-shrink-0",
                       plan.name === 'premium' ? 'text-amber-500' : 'text-success'
                     )} />
-                    <span className="text-card-foreground">{feature}</span>
+                    <span className="text-card-foreground">{normalizeFeatureText(feature)}</span>
                   </li>
                 ))}
               </ul>
