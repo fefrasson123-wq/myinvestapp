@@ -12,10 +12,12 @@ interface UpgradePromptProps {
 export function UpgradePrompt({ feature, className, compact = false }: UpgradePromptProps) {
   const navigate = useNavigate();
 
+  const goToPlans = () => navigate('/app?tab=plans');
+
   if (compact) {
     return (
       <button
-        onClick={() => navigate('/plans')}
+        onClick={goToPlans}
         className={cn(
           "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
           "bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20",
@@ -48,7 +50,7 @@ export function UpgradePrompt({ feature, className, compact = false }: UpgradePr
         </div>
         <Button
           size="sm"
-          onClick={() => navigate('/plans')}
+          onClick={goToPlans}
           className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground ml-2"
         >
           <Crown className="w-3.5 h-3.5" />
