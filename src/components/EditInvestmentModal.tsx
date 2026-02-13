@@ -68,8 +68,6 @@ export function EditInvestmentModal({ investment, onSave, onClose }: EditInvestm
     
     // Campos de imóveis
     dividends: investment.dividends?.toString() || '', // aluguel mensal
-    address: investment.address || '',
-    areaM2: investment.areaM2?.toString() || '',
   });
 
   // Calcula taxa efetiva para exibição
@@ -120,8 +118,6 @@ export function EditInvestmentModal({ investment, onSave, onClose }: EditInvestm
       updates.currentPrice = currentPrice;
       updates.dividends = dividends;
       updates.interestRate = interestRate;
-      updates.address = formData.address.trim() || undefined;
-      updates.areaM2 = parseFloat(formData.areaM2) || undefined;
     }
 
     onSave(investment.id, updates);
@@ -388,31 +384,7 @@ export function EditInvestmentModal({ investment, onSave, onClose }: EditInvestm
                     onChange={(e) => setFormData(prev => ({ ...prev, purchaseDate: e.target.value }))}
                     className="mt-1"
                   />
-                </div>
 
-                <div className="col-span-2">
-                  <Label htmlFor="address">Endereço</Label>
-                  <Input
-                    id="address"
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                    placeholder="Ex: Rua das Flores, 123"
-                    className="mt-1"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="areaM2">Área (m²)</Label>
-                  <Input
-                    id="areaM2"
-                    type="number"
-                    step="0.01"
-                    value={formData.areaM2}
-                    onChange={(e) => setFormData(prev => ({ ...prev, areaM2: e.target.value }))}
-                    placeholder="0"
-                    className="mt-1"
-                  />
                 </div>
               </div>
             </div>
