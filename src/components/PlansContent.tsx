@@ -82,6 +82,7 @@ export function PlansContent() {
       'Relatórios por classe de Investimento',
       'Relatório mensal da sua carteira de Investimentos',
       'Gráfico de projeção de crescimento do Patrimônio',
+      'Acesso a todas as aréas do App',
     ];
     return [];
   };
