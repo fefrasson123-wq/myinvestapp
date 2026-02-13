@@ -7,35 +7,12 @@ import { Investment } from '@/types/investment';
 import { Card, CardContent } from '@/components/ui/card';
 import { useUSAStockPrices } from '@/hooks/useUSAStockPrices';
 import { AssetPriceChart } from '@/components/AssetPriceChart';
+import { usaStocksList, searchUSAStocks } from '@/data/usaStocksList';
 
 interface USAStockFormProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
   onBack: () => void;
 }
-
-// Lista de ações americanas populares
-const popularUSAStocks = [
-  { ticker: 'AAPL', name: 'Apple Inc.' },
-  { ticker: 'MSFT', name: 'Microsoft Corporation' },
-  { ticker: 'GOOGL', name: 'Alphabet Inc.' },
-  { ticker: 'AMZN', name: 'Amazon.com Inc.' },
-  { ticker: 'TSLA', name: 'Tesla Inc.' },
-  { ticker: 'NVDA', name: 'NVIDIA Corporation' },
-  { ticker: 'META', name: 'Meta Platforms Inc.' },
-  { ticker: 'BRK.B', name: 'Berkshire Hathaway' },
-  { ticker: 'JPM', name: 'JPMorgan Chase & Co.' },
-  { ticker: 'V', name: 'Visa Inc.' },
-  { ticker: 'JNJ', name: 'Johnson & Johnson' },
-  { ticker: 'WMT', name: 'Walmart Inc.' },
-  { ticker: 'PG', name: 'Procter & Gamble' },
-  { ticker: 'MA', name: 'Mastercard Inc.' },
-  { ticker: 'UNH', name: 'UnitedHealth Group' },
-  { ticker: 'HD', name: 'The Home Depot' },
-  { ticker: 'DIS', name: 'The Walt Disney Company' },
-  { ticker: 'NFLX', name: 'Netflix Inc.' },
-  { ticker: 'ADBE', name: 'Adobe Inc.' },
-  { ticker: 'CRM', name: 'Salesforce Inc.' },
-];
 
 export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,9 +24,9 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
 
   const { prices, isLoading, fetchPrices, getPrice, getPriceChange, lastUpdate } = useUSAStockPrices();
 
-  // Fetch prices for popular stocks on mount
+  // Fetch prices for first 30 stocks on mount
   useEffect(() => {
-    const tickers = popularUSAStocks.map(s => s.ticker);
+    const tickers = usaStocksList.slice(0, 30).map(s => s.ticker);
     fetchPrices(tickers);
   }, []);
 
@@ -60,11 +37,9 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
     }
   }, [selectedStock]);
 
-  const filteredStocks = popularUSAStocks.filter(
-    stock =>
-      stock.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      stock.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredStocks = searchQuery
+    ? searchUSAStocks(searchQuery)
+    : usaStocksList.slice(0, 50);
 
   const handleSelectStock = (stock: { ticker: string; name: string }) => {
     setSelectedStock(stock);
@@ -133,7 +108,7 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => fetchPrices(popularUSAStocks.map(s => s.ticker))}
+              onClick={() => fetchPrices(usaStocksList.slice(0, 30).map(s => s.ticker))}
               disabled={isLoading}
               className="gap-1 text-xs"
             >

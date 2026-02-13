@@ -7,35 +7,12 @@ import { Investment } from '@/types/investment';
 import { Card, CardContent } from '@/components/ui/card';
 import { useUSAStockPrices } from '@/hooks/useUSAStockPrices';
 import { AssetPriceChart } from '@/components/AssetPriceChart';
+import { reitsList, searchREITs } from '@/data/reitsList';
 
 interface REITsFormProps {
   onSubmit: (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue' | 'profitLoss' | 'profitLossPercent'>) => void;
   onBack: () => void;
 }
-
-// Lista de REITs populares
-const popularREITs = [
-  { ticker: 'O', name: 'Realty Income Corporation' },
-  { ticker: 'VNQ', name: 'Vanguard Real Estate ETF' },
-  { ticker: 'SPG', name: 'Simon Property Group' },
-  { ticker: 'AMT', name: 'American Tower Corporation' },
-  { ticker: 'PLD', name: 'Prologis Inc.' },
-  { ticker: 'CCI', name: 'Crown Castle Inc.' },
-  { ticker: 'EQIX', name: 'Equinix Inc.' },
-  { ticker: 'PSA', name: 'Public Storage' },
-  { ticker: 'DLR', name: 'Digital Realty Trust' },
-  { ticker: 'WELL', name: 'Welltower Inc.' },
-  { ticker: 'AVB', name: 'AvalonBay Communities' },
-  { ticker: 'EQR', name: 'Equity Residential' },
-  { ticker: 'VICI', name: 'VICI Properties Inc.' },
-  { ticker: 'IRM', name: 'Iron Mountain Inc.' },
-  { ticker: 'SBAC', name: 'SBA Communications' },
-  { ticker: 'WPC', name: 'W. P. Carey Inc.' },
-  { ticker: 'ARE', name: 'Alexandria Real Estate' },
-  { ticker: 'MAA', name: 'Mid-America Apartment' },
-  { ticker: 'ESS', name: 'Essex Property Trust' },
-  { ticker: 'UDR', name: 'UDR Inc.' },
-];
 
 export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,9 +24,9 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
 
   const { prices, isLoading, fetchPrices, getPrice, getPriceChange, lastUpdate } = useUSAStockPrices();
 
-  // Fetch prices for popular REITs on mount
+  // Fetch prices for first 30 REITs on mount
   useEffect(() => {
-    const tickers = popularREITs.map(r => r.ticker);
+    const tickers = reitsList.slice(0, 30).map(r => r.ticker);
     fetchPrices(tickers);
   }, []);
 
@@ -60,11 +37,9 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
     }
   }, [selectedREIT]);
 
-  const filteredREITs = popularREITs.filter(
-    reit =>
-      reit.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      reit.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredREITs = searchQuery
+    ? searchREITs(searchQuery)
+    : reitsList.slice(0, 50);
 
   const handleSelectREIT = (reit: { ticker: string; name: string }) => {
     setSelectedREIT(reit);
@@ -133,7 +108,7 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => fetchPrices(popularREITs.map(r => r.ticker))}
+              onClick={() => fetchPrices(reitsList.slice(0, 30).map(r => r.ticker))}
               disabled={isLoading}
               className="gap-1 text-xs"
             >
