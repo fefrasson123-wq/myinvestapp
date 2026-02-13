@@ -221,12 +221,6 @@ export function generateInvestmentsPDF(
             <span class="label">Estimativa Anual</span>
             <span class="value">${formatCurrency(totalAnnualAll)}</span>
           </div>
-          ${hasIncomeStats ? `
-            <div class="income-item">
-              <span class="label">Recebido (12m)</span>
-              <span class="value">${formatCurrency(totalReceived)}</span>
-            </div>
-          ` : ''}
         </div>
 
         ${hasIncomeStats ? `
