@@ -79,7 +79,7 @@ export function PlansContent() {
     if (planName === 'pro') return [
       'Calculadora de Rebalanceamento da carteira',
       'Rentabilidade por Classe de Investimento e alocação percentual',
-      'Relatórios por classe de Investimento',
+      'Relatórios por categoria de Investimento',
       'Relatório mensal da sua carteira de Investimentos',
       'Gráfico de projeção de crescimento do Patrimônio',
       'Acesso a todas as aréas do App',
