@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Search, Building2, DollarSign, Info, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,9 +24,9 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
 
   const { prices, isLoading, fetchPrices, getPrice, getPriceChange, lastUpdate } = useUSAStockPrices();
 
-  // Fetch prices for first 30 REITs on mount
+  // Only fetch prices for initial display - limit to 10 for fast load
   useEffect(() => {
-    const tickers = reitsList.slice(0, 30).map(r => r.ticker);
+    const tickers = reitsList.slice(0, 10).map(r => r.ticker);
     fetchPrices(tickers);
   }, []);
 
@@ -37,9 +37,10 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
     }
   }, [selectedREIT]);
 
-  const filteredREITs = searchQuery
-    ? searchREITs(searchQuery)
-    : reitsList.slice(0, 50);
+  const filteredREITs = useMemo(() => {
+    if (searchQuery) return searchREITs(searchQuery).slice(0, 30);
+    return reitsList.slice(0, 20);
+  }, [searchQuery]);
 
   const handleSelectREIT = (reit: { ticker: string; name: string }) => {
     setSelectedREIT(reit);
@@ -108,7 +109,7 @@ export function REITsForm({ onSubmit, onBack }: REITsFormProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => fetchPrices(reitsList.slice(0, 30).map(r => r.ticker))}
+              onClick={() => fetchPrices(reitsList.slice(0, 10).map(r => r.ticker))}
               disabled={isLoading}
               className="gap-1 text-xs"
             >

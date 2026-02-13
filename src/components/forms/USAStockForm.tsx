@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Search, TrendingUp, DollarSign, Info, RefreshCw, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,9 +24,9 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
 
   const { prices, isLoading, fetchPrices, getPrice, getPriceChange, lastUpdate } = useUSAStockPrices();
 
-  // Fetch prices for first 30 stocks on mount
+  // Only fetch prices when user hasn't searched yet - limit to 10 for fast load
   useEffect(() => {
-    const tickers = usaStocksList.slice(0, 30).map(s => s.ticker);
+    const tickers = usaStocksList.slice(0, 10).map(s => s.ticker);
     fetchPrices(tickers);
   }, []);
 
@@ -37,9 +37,10 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
     }
   }, [selectedStock]);
 
-  const filteredStocks = searchQuery
-    ? searchUSAStocks(searchQuery)
-    : usaStocksList.slice(0, 50);
+  const filteredStocks = useMemo(() => {
+    if (searchQuery) return searchUSAStocks(searchQuery).slice(0, 30);
+    return usaStocksList.slice(0, 20);
+  }, [searchQuery]);
 
   const handleSelectStock = (stock: { ticker: string; name: string }) => {
     setSelectedStock(stock);
@@ -108,7 +109,7 @@ export function USAStockForm({ onSubmit, onBack }: USAStockFormProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => fetchPrices(usaStocksList.slice(0, 30).map(s => s.ticker))}
+              onClick={() => fetchPrices(usaStocksList.slice(0, 10).map(s => s.ticker))}
               disabled={isLoading}
               className="gap-1 text-xs"
             >
