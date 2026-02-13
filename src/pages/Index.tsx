@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { LayoutDashboard, History, Crown } from 'lucide-react';
 import { Header } from '@/components/Header';
@@ -36,7 +36,20 @@ import { TransactionHistory } from '@/components/TransactionHistory';
 type ActiveTab = 'dashboard' | 'plans' | 'history';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+    const tab = searchParams.get('tab');
+    return tab === 'plans' || tab === 'history' ? tab : 'dashboard';
+  });
+
+  // Sync tab from URL search params
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'plans' || tab === 'history') {
+      setActiveTab(tab);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const [showRegistration, setShowRegistration] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [sellingInvestment, setSellingInvestment] = useState<Investment | null>(null);
