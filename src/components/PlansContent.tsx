@@ -76,7 +76,13 @@ export function PlansContent() {
 
   // Adicionar features extras por plano
   const getExtraFeatures = (planName: string): string[] => {
-    if (planName === 'pro') return ['Calculadora de Rebalanceamento da carteira'];
+    if (planName === 'pro') return [
+      'Calculadora de Rebalanceamento da carteira',
+      'Rentabilidade por Classe de Investimento e alocação percentual',
+      'Relatórios por classe de Investimento',
+      'Relatório mensal da sua carteira de Investimentos',
+      'Gráfico de projeção de crescimento do Patrimonio',
+    ];
     return [];
   };
 
