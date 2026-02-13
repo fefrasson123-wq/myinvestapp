@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Download, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { TrendingUp, Download, CheckCircle2, ArrowLeft, Share, Plus, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -13,10 +13,14 @@ export default function Install() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
     setIsStandalone(isStandaloneMode);
+
+    const ua = navigator.userAgent;
+    setIsIOS(/iPad|iPhone|iPod/.test(ua));
 
     const handler = (e: Event) => {
       e.preventDefault();
@@ -69,7 +73,7 @@ export default function Install() {
           </div>
           <h1 className="text-3xl font-bold text-primary text-glow">My Invest</h1>
           <p className="text-muted-foreground text-lg">
-            Instale o app para acesso rápido direto da tela inicial do seu dispositivo
+            Instale o app para acesso rápido direto da tela inicial
           </p>
         </div>
 
@@ -88,12 +92,74 @@ export default function Install() {
           ))}
         </div>
 
-        {/* Install Button */}
+        {/* Android/Desktop: one-click install */}
         {deferredPrompt && (
           <Button onClick={handleInstall} size="lg" className="w-full gap-2 text-base" variant="glow">
             <Download className="w-5 h-5" />
             Instalar My Invest
           </Button>
+        )}
+
+        {/* iOS: guided instructions */}
+        {isIOS && !deferredPrompt && (
+          <div className="space-y-4 p-5 rounded-xl bg-card border border-border/50">
+            <h2 className="text-lg font-semibold text-card-foreground flex items-center gap-2">
+              <Smartphone className="w-5 h-5 text-primary" />
+              Instalar no iPhone/iPad
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Siga os 3 passos rápidos abaixo:
+            </p>
+            <div className="space-y-5">
+              <IOSStep 
+                number={1} 
+                icon={<Share className="w-5 h-5 text-primary" />}
+                title="Toque em Compartilhar"
+                description="Toque no ícone de compartilhar na barra inferior do Safari"
+              >
+                <div className="mt-2 flex justify-center">
+                  <div className="p-3 rounded-xl bg-secondary/50 border border-border/30 animate-bounce">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-primary">
+                      <path d="M12 2L12 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      <path d="M8 6L12 2L16 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <rect x="4" y="10" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+                    </svg>
+                  </div>
+                </div>
+              </IOSStep>
+
+              <IOSStep 
+                number={2} 
+                icon={<Plus className="w-5 h-5 text-primary" />}
+                title="Adicionar à Tela de Início"
+                description='Role para baixo e toque em "Adicionar à Tela de Início"'
+              >
+                <div className="mt-2 p-3 rounded-lg bg-secondary/30 border border-border/30 flex items-center gap-3">
+                  <div className="p-1.5 rounded-md bg-secondary">
+                    <Plus className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-sm text-card-foreground font-medium">Adicionar à Tela de Início</span>
+                </div>
+              </IOSStep>
+
+              <IOSStep 
+                number={3} 
+                icon={<CheckCircle2 className="w-5 h-5 text-primary" />}
+                title='Toque em "Adicionar"'
+                description="Confirme tocando em Adicionar no canto superior direito"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Non-iOS without prompt: generic guidance */}
+        {!isIOS && !deferredPrompt && (
+          <div className="text-center p-5 rounded-xl bg-card border border-border/50 space-y-3">
+            <Download className="w-8 h-8 text-primary mx-auto" />
+            <p className="text-sm text-muted-foreground">
+              Abra este site no <strong className="text-card-foreground">Google Chrome</strong> para instalar o app com um clique.
+            </p>
+          </div>
         )}
 
         {/* Back button */}
@@ -103,6 +169,39 @@ export default function Install() {
             Voltar ao App
           </Button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function IOSStep({ 
+  number, 
+  icon, 
+  title, 
+  description, 
+  children 
+}: { 
+  number: number; 
+  icon: React.ReactNode; 
+  title: string; 
+  description: string; 
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex gap-3">
+      <div className="flex flex-col items-center gap-1">
+        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm shrink-0">
+          {number}
+        </div>
+        {number < 3 && <div className="w-px flex-1 bg-border/50" />}
+      </div>
+      <div className="flex-1 pb-4">
+        <div className="flex items-center gap-2 mb-1">
+          {icon}
+          <h3 className="text-sm font-semibold text-card-foreground">{title}</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">{description}</p>
+        {children}
       </div>
     </div>
   );
