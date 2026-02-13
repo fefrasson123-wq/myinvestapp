@@ -74,6 +74,12 @@ export function PlansContent() {
       .replace('Alocação e rebalanceamento', 'Alocação Percentual da carteira e quanto investir para rebalancear');
   };
 
+  // Adicionar features extras por plano
+  const getExtraFeatures = (planName: string): string[] => {
+    if (planName === 'premium') return ['Calculadora de Rebalanceamento da carteira'];
+    return [];
+  };
+
   if (isLoading || subLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -149,7 +155,7 @@ export function PlansContent() {
               </div>
 
               <ul className="space-y-2.5 mb-6 flex-1">
-                {plan.features.map((feature, idx) => (
+                {[...plan.features, ...getExtraFeatures(plan.name)].map((feature, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-sm">
                     <Check className={cn(
                       "w-4 h-4 mt-0.5 flex-shrink-0",
