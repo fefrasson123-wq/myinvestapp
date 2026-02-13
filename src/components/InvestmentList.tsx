@@ -293,7 +293,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                       <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => hasFeature('evolution_charts') ? setEvolutionInvestment(investment) : navigate('/app?tab=plans')}
+                          onClick={() => hasFeature('evolution_charts') ? setEvolutionInvestment(investment) : navigate('/?tab=plans')}
                           className="hover:text-success hover:bg-success/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
                           title="Evolução do Investimento"
                         >
@@ -302,7 +302,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => hasFeature('benchmark_comparison') ? setSelectedInvestment(investment) : navigate('/app?tab=plans')}
+                          onClick={() => hasFeature('benchmark_comparison') ? setSelectedInvestment(investment) : navigate('/?tab=plans')}
                           className="hover:text-primary hover:bg-primary/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
                           title="Comparar com Benchmarks"
                         >
@@ -318,7 +318,7 @@ function InvestmentListComponent({ investments, onEdit, onDelete, onSell, invest
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => navigate('/app?tab=plans')}
+                              onClick={() => navigate('/?tab=plans')}
                               className="hover:text-primary hover:bg-primary/10 btn-interactive h-7 w-7 sm:h-8 sm:w-8"
                               title="Definir Tag"
                             >

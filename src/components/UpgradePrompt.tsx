@@ -12,7 +12,7 @@ interface UpgradePromptProps {
 export function UpgradePrompt({ feature, className, compact = false }: UpgradePromptProps) {
   const navigate = useNavigate();
 
-  const goToPlans = () => navigate('/app?tab=plans');
+  const goToPlans = () => navigate('/?tab=plans');
 
   if (compact) {
     return (
