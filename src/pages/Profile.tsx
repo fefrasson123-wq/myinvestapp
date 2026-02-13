@@ -54,7 +54,7 @@ export default function Profile() {
   const [isDeleting, setIsDeleting] = useState(false);
   
   const { investments } = useInvestments();
-  const { stats: incomeStats } = useIncomePayments();
+  const { stats: incomeStats, payments: incomePayments } = useIncomePayments();
   const { hasFeature } = useSubscription();
 
   // Redirect if not logged in
@@ -350,7 +350,7 @@ export default function Profile() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={() => generateInvestmentsPDF(investments, displayName, incomeStats)}
+                    onClick={() => generateInvestmentsPDF(investments, displayName, incomeStats, incomePayments)}
                   >
                     <FileDown className="w-4 h-4 mr-2" />
                     Baixar relatório em PDF

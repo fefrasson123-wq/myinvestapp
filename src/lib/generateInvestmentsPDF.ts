@@ -90,26 +90,62 @@ export function generateInvestmentsPDF(
   }
 
   // Build unified passive income section
-  const investmentsWithIncome = investments.filter(inv => inv.dividends && inv.dividends > 0);
-  const totalMonthlyProjected = investmentsWithIncome.reduce((s, inv) => s + (inv.dividends || 0), 0);
+  // 1. Assets with manual dividends/rent (from investments.dividends field)
+  const manualIncomeMap = new Map<string, { name: string; type: string; monthly: number }>();
+  investments.filter(inv => inv.dividends && inv.dividends > 0).forEach(inv => {
+    const key = inv.ticker || inv.name;
+    const type = inv.category === 'realestate' ? 'Aluguel' : ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'debentures', 'cricra', 'savings'].includes(inv.category) ? 'Juros' : 'Dividendo';
+    manualIncomeMap.set(key, { name: key, type, monthly: inv.dividends || 0 });
+  });
 
+  // 2. Assets with received dividends (from income_payments, last 12 months)
+  const receivedIncomeMap = new Map<string, { name: string; type: string; total: number }>();
+  if (payments && payments.length > 0) {
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    payments.filter(p => p.paymentDate >= oneYearAgo).forEach(p => {
+      const key = p.investmentName;
+      const existing = receivedIncomeMap.get(key);
+      const type = p.type === 'rent' ? 'Aluguel' : p.type === 'interest' ? 'Juros' : 'Dividendo';
+      if (existing) {
+        existing.total += p.amount;
+      } else {
+        receivedIncomeMap.set(key, { name: key, type, total: p.amount });
+      }
+    });
+  }
+
+  // 3. Merge: combine both sources, avoid duplicates
+  const allIncomeAssets: { name: string; type: string; monthly: number; annual: number; source: string }[] = [];
+  
+  // Add manual entries first
+  manualIncomeMap.forEach((val, key) => {
+    allIncomeAssets.push({ name: val.name, type: val.type, monthly: val.monthly, annual: val.monthly * 12, source: 'Projetado' });
+  });
+
+  // Add received entries (only if not already in manual)
+  receivedIncomeMap.forEach((val, key) => {
+    if (!manualIncomeMap.has(key)) {
+      const monthlyAvg = val.total / 12;
+      allIncomeAssets.push({ name: val.name, type: val.type, monthly: monthlyAvg, annual: val.total, source: 'Média 12m' });
+    }
+  });
+
+  const totalMonthlyAll = allIncomeAssets.reduce((s, a) => s + a.monthly, 0);
   const hasIncomeStats = incomeStats && incomeStats.totalReceived > 0;
-  const hasProjected = investmentsWithIncome.length > 0;
+  const hasAssets = allIncomeAssets.length > 0;
 
   let incomeSection = '';
-  if (hasIncomeStats || hasProjected) {
-    // Projected income rows
-    const projectedRows = investmentsWithIncome.map(inv => {
-      const type = inv.category === 'realestate' ? 'Aluguel' : ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'debentures', 'cricra', 'savings'].includes(inv.category) ? 'Juros' : 'Dividendo';
-      return `
-        <tr>
-          <td style="text-align:left;font-weight:600">${inv.ticker || inv.name}</td>
-          <td>${type}</td>
-          <td>${formatCurrency(inv.dividends || 0)}</td>
-          <td>${formatCurrency((inv.dividends || 0) * 12)}</td>
-        </tr>
-      `;
-    }).join('');
+  if (hasIncomeStats || hasAssets) {
+    const assetRows = allIncomeAssets.map(a => `
+      <tr>
+        <td style="text-align:left;font-weight:600">${a.name}</td>
+        <td>${a.type}</td>
+        <td>${a.source}</td>
+        <td>${formatCurrency(a.monthly)}</td>
+        <td>${formatCurrency(a.annual)}</td>
+      </tr>
+    `).join('');
 
     // Monthly history rows
     const monthlyRows = incomeStats ? incomeStats.last12Months.map(m => `
@@ -129,28 +165,22 @@ export function generateInvestmentsPDF(
       <div class="category" style="margin-top:24px;">
         <div class="cat-header">
           <span>💰 Renda Passiva</span>
-          <span>${formatCurrency(totalMonthlyProjected)}/mês projetado</span>
+          <span>${formatCurrency(totalMonthlyAll)}/mês</span>
         </div>
 
         <div class="income-summary">
-          ${hasProjected ? `
-            <div class="income-item">
-              <span class="label">Projeção Mensal</span>
-              <span class="value">${formatCurrency(totalMonthlyProjected)}</span>
-            </div>
-            <div class="income-item">
-              <span class="label">Projeção Anual</span>
-              <span class="value">${formatCurrency(totalMonthlyProjected * 12)}</span>
-            </div>
-          ` : ''}
+          <div class="income-item">
+            <span class="label">Estimativa Mensal</span>
+            <span class="value">${formatCurrency(totalMonthlyAll)}</span>
+          </div>
+          <div class="income-item">
+            <span class="label">Estimativa Anual</span>
+            <span class="value">${formatCurrency(totalMonthlyAll * 12)}</span>
+          </div>
           ${hasIncomeStats ? `
             <div class="income-item">
               <span class="label">Recebido (12m)</span>
               <span class="value">${formatCurrency(totalReceived)}</span>
-            </div>
-            <div class="income-item">
-              <span class="label">Média Mensal Real</span>
-              <span class="value">${formatCurrency(monthlyAvg)}</span>
             </div>
           ` : ''}
         </div>
@@ -172,26 +202,28 @@ export function generateInvestmentsPDF(
           </div>
         ` : ''}
 
-        ${hasProjected ? `
-          <h4 style="font-size:11px;margin:8px 0 4px;color:#1a1a2e;">Ativos com renda projetada</h4>
+        ${hasAssets ? `
+          <h4 style="font-size:11px;margin:8px 0 4px;color:#1a1a2e;">Ativos com renda passiva</h4>
           <table>
             <thead>
               <tr>
                 <th style="text-align:left">Ativo</th>
                 <th>Tipo</th>
+                <th>Fonte</th>
                 <th>Mensal</th>
                 <th>Anual</th>
               </tr>
             </thead>
             <tbody>
-              ${projectedRows}
+              ${assetRows}
             </tbody>
             <tfoot>
               <tr>
                 <td style="text-align:left;font-weight:700">Total</td>
                 <td></td>
-                <td style="font-weight:700">${formatCurrency(totalMonthlyProjected)}</td>
-                <td style="font-weight:700">${formatCurrency(totalMonthlyProjected * 12)}</td>
+                <td></td>
+                <td style="font-weight:700">${formatCurrency(totalMonthlyAll)}</td>
+                <td style="font-weight:700">${formatCurrency(totalMonthlyAll * 12)}</td>
               </tr>
             </tfoot>
           </table>
