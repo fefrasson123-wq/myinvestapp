@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { TrendingUp, ArrowLeft, User, Edit2, Save, X, LogOut, DollarSign, RefreshCw, Trash2 } from 'lucide-react';
+import { TrendingUp, ArrowLeft, User, Edit2, Save, X, LogOut, DollarSign, RefreshCw, Trash2, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ import { useInvestments } from '@/hooks/useInvestments';
 import { PassiveIncome } from '@/components/PassiveIncome';
 import { useSubscription } from '@/hooks/useSubscription';
 import { UpgradePrompt } from '@/components/UpgradePrompt';
+import { generateInvestmentsPDF } from '@/lib/generateInvestmentsPDF';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -341,8 +342,26 @@ export default function Profile() {
                 </div>
               )}
 
+              {/* PDF Export Button - Premium only */}
+              {hasFeature('unlimited_assets') ? (
+                <div className="animate-smooth-appear" style={{ animationDelay: '200ms' }}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => generateInvestmentsPDF(investments, displayName)}
+                  >
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Baixar relatório em PDF
+                  </Button>
+                </div>
+              ) : (
+                <div className="animate-smooth-appear" style={{ animationDelay: '200ms' }}>
+                  <UpgradePrompt feature="Exportar relatório em PDF" />
+                </div>
+              )}
+
               {/* Logout Button */}
-              <div className="animate-smooth-appear" style={{ animationDelay: '200ms' }}>
+              <div className="animate-smooth-appear" style={{ animationDelay: '250ms' }}>
                 <Button
                   variant="outline"
                   className="w-full"
