@@ -201,9 +201,13 @@ export function generateInvestmentsPDF(
 
     const totalReceived = incomeStats?.totalReceived || 0;
     const monthlyAvg = incomeStats?.monthlyAverage || 0;
-    const dividends = incomeStats?.byType.dividend || 0;
-    const rent = incomeStats?.byType.rent || 0;
-    const interest = incomeStats?.byType.interest || 0;
+    // Combine received payments with projected income by type
+    const projectedDividendAnnual = allIncomeAssets.filter(a => a.type === 'Dividendo').reduce((s, a) => s + a.annual, 0);
+    const projectedRentAnnual = allIncomeAssets.filter(a => a.type === 'Aluguel').reduce((s, a) => s + a.annual, 0);
+    const projectedInterestAnnual = allIncomeAssets.filter(a => a.type === 'Juros').reduce((s, a) => s + a.annual, 0);
+    const dividends = (incomeStats?.byType.dividend || 0) + projectedDividendAnnual;
+    const rent = (incomeStats?.byType.rent || 0) + projectedRentAnnual;
+    const interest = (incomeStats?.byType.interest || 0) + projectedInterestAnnual;
 
     incomeSection = `
       <div class="category" style="margin-top:24px;">
@@ -223,7 +227,7 @@ export function generateInvestmentsPDF(
           </div>
         </div>
 
-        ${hasIncomeStats ? `
+        ${(dividends > 0 || rent > 0 || interest > 0) ? `
           <div class="income-summary" style="padding-top:0">
             <div class="income-item">
               <span class="label">Dividendos</span>
