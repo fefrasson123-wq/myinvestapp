@@ -68,7 +68,8 @@ export function PlansContent() {
       .replace('Visualização em Real ou Dólar', 'Visualização do patrimonio em Reais ou Dólares')
       .replace('Comparação com benchmarks', 'Comparação com outros ativos do mercado')
       .replace('Gráficos de evolução e rentabilidade', 'Gráficos de evolução do patrimônio')
-      .replace('Renda passiva e rendimentos', 'Renda Passiva e Rendimentos mensais recebidos');
+      .replace('Renda passiva e rendimentos', 'Renda Passiva e Rendimentos mensais recebidos')
+      .replace('Observações nos investimentos', 'Observações em cada investimento');
   };
 
   if (isLoading || subLoading) {
