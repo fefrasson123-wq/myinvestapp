@@ -197,12 +197,28 @@ export function usePortfolioAllocations(investments?: Array<{ category: Investme
           created_at: '',
           updated_at: '',
           currentPercent,
-          deviation: currentPercent, // all of it is overweight since target is 0%
+          deviation: currentPercent,
           currentValue,
-          amountToRebalance: -currentValue // sell everything
+          amountToRebalance: -currentValue
         });
       }
     });
+
+    // Ajuste de fechamento: garantir que ∑compras = ∑vendas
+    const totalBuys = result.filter(r => r.amountToRebalance > 0).reduce((s, r) => s + r.amountToRebalance, 0);
+    const totalSells = result.filter(r => r.amountToRebalance < 0).reduce((s, r) => s + Math.abs(r.amountToRebalance), 0);
+    const diff = totalBuys - totalSells;
+
+    if (Math.abs(diff) > 0.01) {
+      // Ajustar na maior posição compradora para fechar a conta
+      const largestBuy = result
+        .filter(r => r.amountToRebalance > 0)
+        .sort((a, b) => b.amountToRebalance - a.amountToRebalance)[0];
+
+      if (largestBuy) {
+        largestBuy.amountToRebalance -= diff;
+      }
+    }
 
     return result;
   }, [allocations, investments]);
