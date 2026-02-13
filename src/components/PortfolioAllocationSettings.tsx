@@ -95,6 +95,71 @@ export function PortfolioAllocationSettings({ investments }: PortfolioAllocation
 
   const { allocationsWithDeviation, underweightCategories, overweightCategories } = getRebalancingSummary();
 
+  // Calcula detalhes por ativo para vender/comprar
+  const assetDetails = useMemo(() => {
+    const sellDetails: Array<{ name: string; ticker?: string; category: InvestmentCategory; quantity: number; value: number; currentPrice: number }> = [];
+    const buyDetails: Array<{ name: string; ticker?: string; category: InvestmentCategory; quantity: number; value: number; currentPrice: number }> = [];
+
+    // Ativos para vender (categorias acima da meta)
+    overweightCategories.forEach(cat => {
+      const amountToSell = Math.abs(cat.amountToRebalance);
+      const categoryAssets = investments
+        .filter(inv => inv.category === cat.category && inv.currentValue > 0)
+        .sort((a, b) => b.currentValue - a.currentValue); // vende do maior primeiro
+
+      let remaining = amountToSell;
+      for (const asset of categoryAssets) {
+        if (remaining <= 0) break;
+        const sellValue = Math.min(remaining, asset.currentValue);
+        const sellQty = asset.currentPrice > 0 ? sellValue / asset.currentPrice : 0;
+        sellDetails.push({
+          name: asset.ticker || asset.name,
+          ticker: asset.ticker,
+          category: asset.category,
+          quantity: sellQty,
+          value: sellValue,
+          currentPrice: asset.currentPrice,
+        });
+        remaining -= sellValue;
+      }
+    });
+
+    // Ativos para comprar (categorias abaixo da meta)
+    underweightCategories.forEach(cat => {
+      const amountToBuy = cat.amountToRebalance;
+      const categoryAssets = investments
+        .filter(inv => inv.category === cat.category && inv.currentValue > 0)
+        .sort((a, b) => a.currentValue - b.currentValue); // compra do menor primeiro para equilibrar
+
+      if (categoryAssets.length > 0) {
+        // Distribui igualmente entre ativos existentes da categoria
+        const perAsset = amountToBuy / categoryAssets.length;
+        categoryAssets.forEach(asset => {
+          const buyQty = asset.currentPrice > 0 ? perAsset / asset.currentPrice : 0;
+          buyDetails.push({
+            name: asset.ticker || asset.name,
+            ticker: asset.ticker,
+            category: asset.category,
+            quantity: buyQty,
+            value: perAsset,
+            currentPrice: asset.currentPrice,
+          });
+        });
+      } else {
+        // Categoria sem ativos existentes - mostra só o valor
+        buyDetails.push({
+          name: categoryLabels[cat.category],
+          category: cat.category,
+          quantity: 0,
+          value: amountToBuy,
+          currentPrice: 0,
+        });
+      }
+    });
+
+    return { sellDetails, buyDetails };
+  }, [overweightCategories, underweightCategories, investments]);
+
   // Calcula alocação atual por categoria
   const currentAllocations = useMemo(() => {
     const totalValue = investments.reduce((sum, inv) => sum + inv.currentValue, 0);
@@ -322,35 +387,53 @@ export function PortfolioAllocationSettings({ investments }: PortfolioAllocation
                     </div>
 
                     {/* Resumo de rebalanceamento */}
-                    {(underweightCategories.length > 0 || overweightCategories.length > 0) && (
+                    {(assetDetails.sellDetails.length > 0 || assetDetails.buyDetails.length > 0) && (
                       <div className="pt-3 border-t border-border/50">
                         <h4 className="text-sm font-medium mb-2">Para rebalancear (vender → comprar):</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {overweightCategories.length > 0 && (
+                          {assetDetails.sellDetails.length > 0 && (
                             <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
                               <p className="text-xs text-muted-foreground mb-1">Vender</p>
-                              <div className="space-y-1">
-                                {overweightCategories.slice(0, 5).map(cat => (
-                                  <div key={cat.category} className="flex justify-between text-sm">
-                                    <span>{categoryLabels[cat.category]}</span>
-                                    <span className="font-mono text-amber-500">
-                                      {formatCurrencyValue(Math.abs(cat.amountToRebalance))}
-                                    </span>
+                              <div className="space-y-2">
+                                {assetDetails.sellDetails.map((asset, i) => (
+                                  <div key={`sell-${i}`} className="text-sm">
+                                    <div className="flex justify-between items-center">
+                                      <span className="font-medium">{asset.name}</span>
+                                      <span className="font-mono text-amber-500">
+                                        {formatCurrencyValue(asset.value)}
+                                      </span>
+                                    </div>
+                                    {asset.quantity > 0 && (
+                                      <p className="text-xs text-muted-foreground">
+                                        {asset.quantity < 1 
+                                          ? asset.quantity.toFixed(6) 
+                                          : asset.quantity.toFixed(2)} unid. a {formatCurrencyValue(asset.currentPrice)}
+                                      </p>
+                                    )}
                                   </div>
                                 ))}
                               </div>
                             </div>
                           )}
-                          {underweightCategories.length > 0 && (
+                          {assetDetails.buyDetails.length > 0 && (
                             <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
                               <p className="text-xs text-muted-foreground mb-1">Comprar</p>
-                              <div className="space-y-1">
-                                {underweightCategories.slice(0, 5).map(cat => (
-                                  <div key={cat.category} className="flex justify-between text-sm">
-                                    <span>{categoryLabels[cat.category]}</span>
-                                    <span className="font-mono text-primary">
-                                      {formatCurrencyValue(cat.amountToRebalance)}
-                                    </span>
+                              <div className="space-y-2">
+                                {assetDetails.buyDetails.map((asset, i) => (
+                                  <div key={`buy-${i}`} className="text-sm">
+                                    <div className="flex justify-between items-center">
+                                      <span className="font-medium">{asset.name}</span>
+                                      <span className="font-mono text-primary">
+                                        {formatCurrencyValue(asset.value)}
+                                      </span>
+                                    </div>
+                                    {asset.quantity > 0 && (
+                                      <p className="text-xs text-muted-foreground">
+                                        {asset.quantity < 1 
+                                          ? asset.quantity.toFixed(6) 
+                                          : asset.quantity.toFixed(2)} unid. a {formatCurrencyValue(asset.currentPrice)}
+                                      </p>
+                                    )}
                                   </div>
                                 ))}
                               </div>
