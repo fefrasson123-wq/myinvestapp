@@ -132,6 +132,7 @@ export function generateInvestmentsPDF(
   });
 
   const totalMonthlyAll = allIncomeAssets.reduce((s, a) => s + a.monthly, 0);
+  const totalAnnualAll = allIncomeAssets.reduce((s, a) => s + a.annual, 0);
   const hasIncomeStats = incomeStats && incomeStats.totalReceived > 0;
   const hasAssets = allIncomeAssets.length > 0;
 
@@ -175,7 +176,7 @@ export function generateInvestmentsPDF(
           </div>
           <div class="income-item">
             <span class="label">Estimativa Anual</span>
-            <span class="value">${formatCurrency(totalMonthlyAll * 12)}</span>
+            <span class="value">${formatCurrency(totalAnnualAll)}</span>
           </div>
           ${hasIncomeStats ? `
             <div class="income-item">
@@ -223,7 +224,7 @@ export function generateInvestmentsPDF(
                 <td></td>
                 <td></td>
                 <td style="font-weight:700">${formatCurrency(totalMonthlyAll)}</td>
-                <td style="font-weight:700">${formatCurrency(totalMonthlyAll * 12)}</td>
+                <td style="font-weight:700">${formatCurrency(totalAnnualAll)}</td>
               </tr>
             </tfoot>
           </table>
