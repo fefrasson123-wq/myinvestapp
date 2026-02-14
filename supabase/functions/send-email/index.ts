@@ -574,6 +574,10 @@ const handler = async (req: Request): Promise<Response> => {
       to: [to],
       subject,
       html,
+      headers: {
+        "List-Unsubscribe": `<mailto:${fromEmail.match(/<(.+)>/)?.[1] || 'suporte@myinvestapp.com.br'}?subject=unsubscribe>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
     });
 
     console.log("Email sent successfully:", emailResponse);
