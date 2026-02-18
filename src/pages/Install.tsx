@@ -86,6 +86,14 @@ export default function Install() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-lg mx-auto px-4 py-8 space-y-8">
+        {/* Back button */}
+        <div>
+          <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
+            <ArrowLeft className="w-4 h-4" />
+            Voltar à Página Inicial
+          </Button>
+        </div>
+
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="p-3 rounded-2xl bg-primary/20 w-fit mx-auto glow-primary">
@@ -125,13 +133,6 @@ export default function Install() {
           <BrowserInstructions browser={browser} device={device} />
         )}
 
-        {/* Back button */}
-        <div className="text-center pt-4">
-          <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            Voltar à Página Inicial
-          </Button>
-        </div>
       </div>
     </div>
   );
