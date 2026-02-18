@@ -19,13 +19,13 @@ const EMAIL_CONFIG = {
     emoji: "💰",
     tagline: "Gerencie seus investimentos com inteligência",
     year: new Date().getFullYear(),
-    website: "https://myinvestapp.lovable.app",
+    website: "https://myinvestapp.com.br",
   },
   
   // URLs padrão
   urls: {
-    login: "https://myinvestapp.lovable.app/auth",
-    dashboard: "https://myinvestapp.lovable.app",
+    login: "https://myinvestapp.com.br/auth",
+    dashboard: "https://myinvestapp.com.br",
     support: "mailto:suporte@myinvest.app",
   },
   
@@ -47,7 +47,7 @@ const EMAIL_CONFIG = {
   
   // Logo (pode ser URL de imagem ou null para usar emoji)
   logo: {
-    url: null as string | null, // Ex: "https://myinvestapp.lovable.app/logo.png"
+    url: null as string | null, // Ex: "https://myinvestapp.com.br/logo.png"
     width: "120",
     height: "40",
   },

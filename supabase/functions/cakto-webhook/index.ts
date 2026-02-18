@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
                 username,
                 planName: plan.display_name,
                 planFeatures,
-                dashboardUrl: 'https://myinvestapp.lovable.app/app',
+                dashboardUrl: 'https://myinvestapp.com.br',
               },
             }),
           });

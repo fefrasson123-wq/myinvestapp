@@ -17,7 +17,7 @@ const EMAIL_CONFIG = {
     name: "My Invest",
     emoji: "💰",
     year: new Date().getFullYear(),
-    website: "https://myinvestapp.lovable.app",
+    website: "https://myinvestapp.com.br",
   },
   colors: {
     primary: "#22c55e",

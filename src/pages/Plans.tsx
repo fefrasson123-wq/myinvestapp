@@ -189,7 +189,7 @@ export default function Plans() {
                       className={cn("w-full", planButtonColors[plan.name])}
                       onClick={() => {
                         // Opens external checkout - webhook handles activation
-                        window.open('https://myinvestapp.lovable.app', '_blank');
+                        window.open('https://myinvestapp.com.br', '_blank');
                       }}
                     >
                       Assinar {plan.display_name}
