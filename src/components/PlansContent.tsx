@@ -185,7 +185,7 @@ export function PlansContent() {
                 <Button
                   className={cn("w-full", planButtonColors[plan.name])}
                   onClick={() => {
-                    window.open('https://myinvestapp.lovable.app', '_blank');
+                    window.open('https://myinvestapp.com.br', '_blank');
                   }}
                 >
                   Assinar {plan.display_name}

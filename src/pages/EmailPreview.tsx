@@ -386,10 +386,10 @@ export default function EmailPreview() {
           result = await sendWelcomeEmail(testEmail, testUsername);
           break;
         case 'confirmation':
-          result = await sendEmailConfirmation(testEmail, 'https://myinvestapp.lovable.app/auth?confirm=token', testUsername);
+          result = await sendEmailConfirmation(testEmail, 'https://myinvestapp.com.br/auth?confirm=token', testUsername);
           break;
         case 'password-reset':
-          result = await sendPasswordResetEmail(testEmail, 'https://myinvestapp.lovable.app/auth?mode=reset', testUsername);
+          result = await sendPasswordResetEmail(testEmail, 'https://myinvestapp.com.br/auth?mode=reset', testUsername);
           break;
         case 'upgrade':
           result = await sendPlanUpgradeEmail(testEmail, testPlanName, planFeatures, testUsername);
