@@ -127,9 +127,9 @@ export default function Install() {
 
         {/* Back button */}
         <div className="text-center pt-4">
-          <Button variant="ghost" onClick={() => navigate('/')} className="gap-2 text-muted-foreground">
+          <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
-            Voltar ao App
+            Voltar à Página Inicial
           </Button>
         </div>
       </div>
