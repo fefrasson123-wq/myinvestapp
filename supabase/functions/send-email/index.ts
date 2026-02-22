@@ -285,7 +285,7 @@ const getProUpgradeEmailHtml = (username: string, dashboardUrl: string) => {
   
   const content = `
     <div style="text-align: center; margin: 16px 0;">
-      <span style="font-size: 64px;">⭐</span>
+      <span style="font-size: 64px;">🚀</span>
     </div>
     
     <h1 style="color: ${colors.textPrimary}; font-size: 32px; font-weight: bold; text-align: center; margin: 0 0 24px;">
@@ -298,7 +298,7 @@ const getProUpgradeEmailHtml = (username: string, dashboardUrl: string) => {
     
     <div style="text-align: center; margin: 32px 0;">
       <span style="display: inline-block; background-color: ${colors.primary}; color: #000000; font-size: 20px; font-weight: bold; padding: 12px 32px; border-radius: 50px;">
-        ⭐ Plano PRO
+        Plano PRO
       </span>
       <p style="color: ${colors.textMuted}; font-size: 14px; margin-top: 12px;">Seu novo plano está ativo</p>
     </div>
@@ -331,7 +331,7 @@ const getPremiumUpgradeEmailHtml = (username: string, dashboardUrl: string) => {
   
   const content = `
     <div style="text-align: center; margin: 16px 0;">
-      <span style="font-size: 64px;">👑</span>
+      <span style="font-size: 64px;">🚀</span>
     </div>
     
     <h1 style="color: ${colors.textPrimary}; font-size: 32px; font-weight: bold; text-align: center; margin: 0 0 24px;">
@@ -344,13 +344,13 @@ const getPremiumUpgradeEmailHtml = (username: string, dashboardUrl: string) => {
     
     <div style="text-align: center; margin: 32px 0;">
       <span style="display: inline-block; background-color: ${goldColor}; color: #000000; font-size: 20px; font-weight: bold; padding: 12px 32px; border-radius: 50px;">
-        👑 Plano Premium
+        Plano Premium
       </span>
       <p style="color: ${colors.textMuted}; font-size: 14px; margin-top: 12px;">Seu novo plano está ativo</p>
     </div>
     
     <div style="background-color: ${colors.cardBg}; border: 1px solid ${goldColor}; border-radius: 12px; padding: 24px; margin: 32px 0;">
-      <p style="color: ${colors.textPrimary}; font-size: 18px; font-weight: bold; margin-bottom: 16px;">👑 Benefícios exclusivos:</p>
+      <p style="color: ${colors.textPrimary}; font-size: 18px; font-weight: bold; margin-bottom: 16px;">Benefícios exclusivos:</p>
       ${premiumFeatures.map(item => `<p style="color: ${colors.textSecondary}; font-size: 14px; line-height: 28px; margin: 0;">✅ ${item}</p>`).join('')}
     </div>
     
@@ -611,13 +611,13 @@ const handler = async (req: Request): Promise<Response> => {
         const isPremiumPlan = planName.includes('premium');
         
         if (isPremiumPlan) {
-          subject = `Parabéns! Bem-vindo ao Plano Premium 👑`;
+          subject = `Parabéns! Bem-vindo ao Plano Premium`;
           html = getPremiumUpgradeEmailHtml(
             data.username || 'Investidor',
             data.dashboardUrl || urls.dashboard
           );
         } else {
-          subject = `Parabéns! Bem-vindo ao Plano PRO ⭐`;
+          subject = `Parabéns! Bem-vindo ao Plano PRO`;
           html = getProUpgradeEmailHtml(
             data.username || 'Investidor',
             data.dashboardUrl || urls.dashboard
