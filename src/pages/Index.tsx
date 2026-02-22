@@ -231,10 +231,13 @@ const Index = () => {
     }
   }, [investments, fetchCryptoPrices, fetchStockPrices, fetchFIIPrices, fetchETFPrices, fetchUSAStockPrices, fetchGoldPrice]);
 
-  // Busca preços reais quando a carteira é carregada
+  // Busca preços reais quando a carteira é carregada + auto-refresh a cada 2 minutos
   useEffect(() => {
     if (investments.length > 0) {
       refreshAllPrices();
+      
+      const interval = setInterval(refreshAllPrices, 120000); // 2 minutes
+      return () => clearInterval(interval);
     }
   }, [investments.length]); // Só executa quando o número de investimentos muda
 
