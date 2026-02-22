@@ -174,17 +174,24 @@ export default function Auth() {
         return;
       }
 
-      // Use the Supabase built-in password reset which handles the token
-      // Note: Supabase sends its own email with the recovery link - no need for custom email
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth?mode=reset`,
+      // Send password reset email via our custom Resend template
+      // The edge function generates the recovery link using Supabase Admin API
+      const { data: response, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'password-reset',
+          to: email,
+          data: {
+            username: 'Investidor',
+            expiresIn: '1 hora',
+          }
+        }
       });
 
-      if (error) {
+      if (error || (response && !response.success)) {
         toast({
           variant: 'destructive',
           title: 'Erro ao enviar email',
-          description: error.message,
+          description: 'Não foi possível enviar o email de recuperação. Tente novamente.',
         });
       } else {
         toast({
