@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { etfList, ETFAsset } from '@/data/etfList';
 import { getPriceCache } from '@/lib/priceCache';
 import { yahooRateLimiter } from '@/lib/rateLimiter';
 
@@ -16,19 +15,19 @@ interface ETFPrice {
 
 type ETFPriceMap = Record<string, ETFPrice>;
 
-// Cache instance
 const etfCache = getPriceCache<ETFPriceMap>('etf');
 
-// Fallback prices from local data
-function getLocalETFPrices(): Record<string, ETFAsset> {
-  const priceMap: Record<string, ETFAsset> = {};
-  etfList.forEach(etf => {
-    priceMap[etf.ticker] = etf;
-  });
-  return priceMap;
+// Lazy-load local ETF data
+let _localETFPrices: Record<string, { ticker: string; price: number; change: number; changePercent: number }> | null = null;
+async function getLocalETFPricesData() {
+  if (_localETFPrices) return _localETFPrices;
+  const { etfList } = await import('@/data/etfList');
+  _localETFPrices = {};
+  for (const etf of etfList) {
+    _localETFPrices[etf.ticker] = etf;
+  }
+  return _localETFPrices;
 }
-
-const localETFPrices = getLocalETFPrices();
 
 export function useETFPrices() {
   const [prices, setPrices] = useState<ETFPriceMap>({});
@@ -36,12 +35,11 @@ export function useETFPrices() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   
-  // Mantém o último preço válido da API
   const lastValidPrices = useRef<ETFPriceMap>({});
   const retryCount = useRef(0);
   const maxRetries = 3;
 
-  // Inicializa com cache
+  // Initialize from cache only
   useEffect(() => {
     const initCache = async () => {
       const cached = await etfCache.get();
@@ -53,7 +51,6 @@ export function useETFPrices() {
     };
     initCache();
     
-    // Subscribe to cache updates from other tabs
     const unsubscribe = etfCache.subscribe((data) => {
       setPrices(data as ETFPriceMap);
       setLastUpdate(new Date());
@@ -62,7 +59,6 @@ export function useETFPrices() {
     return unsubscribe;
   }, []);
 
-  // Fetch a single ETF price via edge function with rate limiting
   const fetchSinglePrice = async (symbol: string): Promise<ETFPrice | null> => {
     try {
       const result = await yahooRateLimiter.execute(async () => {
@@ -70,10 +66,7 @@ export function useETFPrices() {
           body: { symbols: [symbol], market: 'br' },
         });
 
-        if (fetchError) {
-          console.error('Edge function error for ETF', symbol, ':', fetchError);
-          return null;
-        }
+        if (fetchError) return null;
 
         if (data?.quotes?.[symbol]) {
           const q = data.quotes[symbol];
@@ -89,7 +82,6 @@ export function useETFPrices() {
         }
         return null;
       }, 1);
-      
       return result;
     } catch (err) {
       console.error('Error fetching price for ETF', symbol, ':', err);
@@ -97,26 +89,22 @@ export function useETFPrices() {
     }
   };
 
-  // Get local fallback price for a symbol - usa cache primeiro
   const getLocalFallback = useCallback(async (symbol: string): Promise<ETFPrice | null> => {
     const upperSymbol = symbol.toUpperCase();
     
-    // Primeiro tenta usar preço do cache se não for muito antigo
     const cached = await etfCache.get();
     if (cached && cached.data[upperSymbol] && !cached.isStale) {
       return cached.data[upperSymbol];
     }
     
-    // Depois tenta último preço válido em memória
     if (lastValidPrices.current[upperSymbol]) {
       return lastValidPrices.current[upperSymbol];
     }
     
-    // Por fim usa dados locais estáticos
-    const etfData = localETFPrices[upperSymbol];
+    const localPrices = await getLocalETFPricesData();
+    const etfData = localPrices[upperSymbol];
     if (!etfData) return null;
     
-    // Small random variation
     const variationPercent = (Math.random() - 0.5) * 0.008;
     const variation = etfData.price * variationPercent;
     const currentPrice = etfData.price + variation;
@@ -132,17 +120,13 @@ export function useETFPrices() {
     };
   }, []);
 
-  // Fetch prices for specific symbols only (on demand)
   const fetchPrices = useCallback(async (symbols?: string[]) => {
     if (!symbols || symbols.length === 0) {
-      // Don't fetch all ETFs at once - use cached/local data for initial load
-      const priceMap: ETFPriceMap = {};
-      for (const symbol of Object.keys(localETFPrices)) {
-        const fallback = await getLocalFallback(symbol);
-        if (fallback) priceMap[symbol] = fallback;
+      const cached = await etfCache.get();
+      if (cached) {
+        setPrices(cached.data);
+        setLastUpdate(new Date(etfCache.getTimestamp() || Date.now()));
       }
-      setPrices(priceMap);
-      setLastUpdate(new Date());
       return;
     }
 
@@ -150,31 +134,22 @@ export function useETFPrices() {
     setError(null);
 
     try {
-      // Fetch each symbol individually
       const newPrices: ETFPriceMap = {};
       let successCount = 0;
       
       for (const symbol of symbols) {
         const upperSymbol = symbol.toUpperCase();
-        
-        // Try live price first
         const livePrice = await fetchSinglePrice(upperSymbol);
         
         if (livePrice) {
           newPrices[upperSymbol] = livePrice;
           successCount++;
-          console.log(`Updated ETF ${upperSymbol} price:`, livePrice.price);
         } else {
-          // Fallback to cache/local data
           const fallback = await getLocalFallback(upperSymbol);
-          if (fallback) {
-            newPrices[upperSymbol] = fallback;
-            console.log(`Using fallback for ETF ${upperSymbol}:`, fallback.price);
-          }
+          if (fallback) newPrices[upperSymbol] = fallback;
         }
       }
 
-      // Merge with cache and save
       const updatedPrices = await etfCache.merge(newPrices);
       
       if (successCount > 0) {
@@ -190,7 +165,6 @@ export function useETFPrices() {
       
       retryCount.current++;
       
-      // Use fallback for all requested symbols
       const fallbackPrices: ETFPriceMap = {};
       for (const symbol of symbols) {
         const fallback = await getLocalFallback(symbol.toUpperCase());
@@ -198,7 +172,6 @@ export function useETFPrices() {
       }
       setPrices(prev => ({ ...prev, ...fallbackPrices }));
       
-      // Retry se falhou
       if (retryCount.current < maxRetries) {
         setTimeout(() => fetchPrices(symbols), 15000);
       }
@@ -216,42 +189,8 @@ export function useETFPrices() {
     const upperSymbol = symbol.toUpperCase();
     const etfPrice = prices[upperSymbol];
     if (!etfPrice) return null;
-    return {
-      change: etfPrice.change,
-      percent: etfPrice.changePercent,
-    };
+    return { change: etfPrice.change, percent: etfPrice.changePercent };
   }, [prices]);
-
-  // Load cached/local prices on mount and auto-refresh every 60 seconds
-  useEffect(() => {
-    const loadPrices = async () => {
-      const cached = await etfCache.get();
-      
-      // Se cache é válido, usa
-      if (cached?.isValid) {
-        console.log('Using valid cached ETF prices');
-        setPrices(cached.data);
-        setLastUpdate(new Date(etfCache.getTimestamp() || Date.now()));
-        lastValidPrices.current = cached.data;
-        return;
-      }
-      
-      // Senão usa fallback local
-      const priceMap: ETFPriceMap = {};
-      for (const symbol of Object.keys(localETFPrices)) {
-        const fallback = await getLocalFallback(symbol);
-        if (fallback) priceMap[symbol] = fallback;
-      }
-      setPrices(priceMap);
-      setLastUpdate(new Date());
-    };
-
-    loadPrices();
-
-    // Atualiza a cada 60 segundos
-    const interval = setInterval(loadPrices, 60000);
-    return () => clearInterval(interval);
-  }, [getLocalFallback]);
 
   return {
     prices,

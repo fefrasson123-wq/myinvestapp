@@ -183,9 +183,9 @@ export function useCryptoPrices() {
     };
   }, [prices]);
 
-  // Busca preços na inicialização e verifica cache
+  // Only load from cache on mount - actual fetches are triggered by Index.tsx when investments are loaded
   useEffect(() => {
-    const initAndFetch = async () => {
+    const initFromCache = async () => {
       const cached = await cryptoCache.get();
       
       if (cached?.isValid) {
@@ -194,20 +194,11 @@ export function useCryptoPrices() {
         setLastUpdate(new Date(cryptoCache.getTimestamp() || Date.now()));
         lastValidPrices.current = cached.data;
         hasFetchedOnce.current = true;
-      } else if (!hasFetchedOnce.current) {
-        fetchPrices();
       }
     };
     
-    initAndFetch();
-    
-    // Atualiza a cada 60 segundos
-    const interval = setInterval(() => {
-      fetchPrices();
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [fetchPrices]);
+    initFromCache();
+  }, []);
 
   return {
     prices,
