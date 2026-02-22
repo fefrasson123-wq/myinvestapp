@@ -288,6 +288,44 @@ const getMonthlyReportEmailHtml = (username: string, data: ReportData): string =
 `;
 };
 
+// Categories where current_value and invested_amount are stored in USD
+const USD_CATEGORIES = ['crypto', 'usastocks', 'reits'];
+
+const fetchUsdBrlRate = async (): Promise<number> => {
+  // Try AwesomeAPI first
+  try {
+    const response = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL', {
+      headers: { 'Accept': 'application/json', 'User-Agent': 'MyInvest/1.0' },
+    });
+    if (!response.ok) throw new Error(`AwesomeAPI returned ${response.status}`);
+    const data = await response.json();
+    const rate = parseFloat(data.USDBRL?.bid);
+    if (isNaN(rate)) throw new Error('Invalid rate from AwesomeAPI');
+    console.log(`USD/BRL rate (AwesomeAPI): ${rate}`);
+    return rate;
+  } catch (err1) {
+    console.warn(`AwesomeAPI failed:`, err1);
+  }
+
+  // Fallback: OpenExchange
+  try {
+    const response = await fetch('https://open.er-api.com/v6/latest/USD', {
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!response.ok) throw new Error(`OpenExchange returned ${response.status}`);
+    const data = await response.json();
+    const rate = data.rates?.BRL;
+    if (!rate || isNaN(rate)) throw new Error('Invalid rate from OpenExchange');
+    console.log(`USD/BRL rate (OpenExchange): ${rate}`);
+    return rate;
+  } catch (err2) {
+    console.warn(`OpenExchange also failed:`, err2);
+  }
+
+  console.warn('All exchange rate APIs failed, using fallback 5.85');
+  return 5.85;
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -299,6 +337,9 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Fetch USD/BRL exchange rate for converting USD-denominated assets
+    const usdBrlRate = await fetchUsdBrlRate();
 
     const now = new Date();
     const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -365,17 +406,22 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
-        // Calculate totals
-        const totalValue = investments.reduce((sum, inv) => sum + (inv.current_value || 0), 0);
-        const totalInvested = investments.reduce((sum, inv) => sum + (inv.invested_amount || 0), 0);
+        // Helper to convert investment values to BRL if needed
+        const toBrl = (inv: any, value: number): number => {
+          return USD_CATEGORIES.includes(inv.category) ? value * usdBrlRate : value;
+        };
+
+        // Calculate totals with USD→BRL conversion
+        const totalValue = investments.reduce((sum, inv) => sum + toBrl(inv, inv.current_value || 0), 0);
+        const totalInvested = investments.reduce((sum, inv) => sum + toBrl(inv, inv.invested_amount || 0), 0);
         const totalProfitLoss = totalValue - totalInvested;
         const totalProfitLossPercent = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
 
-        // Category breakdown
+        // Category breakdown with conversion
         const categoryMap = new Map<string, number>();
         investments.forEach(inv => {
           const cat = getCategoryLabel(inv.category);
-          categoryMap.set(cat, (categoryMap.get(cat) || 0) + (inv.current_value || 0));
+          categoryMap.set(cat, (categoryMap.get(cat) || 0) + toBrl(inv, inv.current_value || 0));
         });
         const categoryBreakdown = Array.from(categoryMap.entries())
           .sort((a, b) => b[1] - a[1])
@@ -385,28 +431,35 @@ const handler = async (req: Request): Promise<Response> => {
             percent: totalValue > 0 ? `${((value / totalValue) * 100).toFixed(1)}%` : '0%',
           }));
 
-        // Top and worst performers
-        const sortedByPerformance = investments
+        // Top and worst performers with converted values
+        const investmentsWithBrl = investments
           .filter(inv => inv.invested_amount > 0)
-          .sort((a, b) => (b.profit_loss_percent || 0) - (a.profit_loss_percent || 0));
+          .map(inv => {
+            const cvBrl = toBrl(inv, inv.current_value || 0);
+            const invBrl = toBrl(inv, inv.invested_amount || 0);
+            const plBrl = cvBrl - invBrl;
+            const plPercent = invBrl > 0 ? (plBrl / invBrl) * 100 : 0;
+            return { ...inv, plBrl, plPercent };
+          })
+          .sort((a, b) => b.plPercent - a.plPercent);
 
-        const topPerformers = sortedByPerformance
-          .filter(inv => (inv.profit_loss_percent || 0) > 0)
+        const topPerformers = investmentsWithBrl
+          .filter(inv => inv.plPercent > 0)
           .slice(0, 5)
           .map(inv => ({
             name: inv.ticker || inv.name,
-            percent: formatPercent(inv.profit_loss_percent || 0),
-            value: formatCurrency(inv.profit_loss || 0),
+            percent: formatPercent(inv.plPercent),
+            value: formatCurrency(inv.plBrl),
           }));
 
-        const worstPerformers = sortedByPerformance
-          .filter(inv => (inv.profit_loss_percent || 0) < 0)
+        const worstPerformers = investmentsWithBrl
+          .filter(inv => inv.plPercent < 0)
           .slice(-5)
           .reverse()
           .map(inv => ({
             name: inv.ticker || inv.name,
-            percent: formatPercent(inv.profit_loss_percent || 0),
-            value: formatCurrency(inv.profit_loss || 0),
+            percent: formatPercent(inv.plPercent),
+            value: formatCurrency(inv.plBrl),
           }));
 
         // 30-day capital flow
