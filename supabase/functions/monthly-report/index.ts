@@ -225,18 +225,18 @@ const getMonthlyReportEmailHtml = (username: string, data: ReportData): string =
           ${data.portfolioIncreased ? 'Seu patrimônio cresceu neste período! 🎉' : 'Seu patrimônio recuou neste período.'}
         </p>
       </div>
-      <table style="width: 100%; text-align: center; margin-top: 16px;">
+      <table style="width: 100%; text-align: center; margin-top: 16px; table-layout: fixed;">
         <tr>
-          <td style="padding: 8px;">
-            <p style="color: ${colors.success}; font-size: 14px; font-weight: bold; margin: 0;">${data.capitalAdded}</p>
+          <td style="padding: 8px; width: 33%; word-break: break-word;">
+            <p style="color: ${colors.success}; font-size: 13px; font-weight: bold; margin: 0;">${data.capitalAdded}</p>
             <p style="color: ${colors.textMuted}; font-size: 11px; margin: 2px 0 0;">Aportes</p>
           </td>
-          <td style="padding: 8px;">
-            <p style="color: ${colors.danger}; font-size: 14px; font-weight: bold; margin: 0;">${data.capitalWithdrawn}</p>
+          <td style="padding: 8px; width: 33%; word-break: break-word;">
+            <p style="color: ${colors.danger}; font-size: 13px; font-weight: bold; margin: 0;">${data.capitalWithdrawn}</p>
             <p style="color: ${colors.textMuted}; font-size: 11px; margin: 2px 0 0;">Retiradas</p>
           </td>
-          <td style="padding: 8px;">
-            <p style="color: ${colors.info}; font-size: 14px; font-weight: bold; margin: 0;">${data.netCapitalChange}</p>
+          <td style="padding: 8px; width: 34%; word-break: break-word;">
+            <p style="color: ${colors.info}; font-size: 13px; font-weight: bold; margin: 0;">${data.netCapitalChange}</p>
             <p style="color: ${colors.textMuted}; font-size: 11px; margin: 2px 0 0;">Saldo Líquido</p>
           </td>
         </tr>
