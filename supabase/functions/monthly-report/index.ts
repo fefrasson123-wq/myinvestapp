@@ -256,10 +256,6 @@ const getMonthlyReportEmailHtml = (username: string, data: ReportData): string =
             <p style="color: ${colors.info}; font-size: 24px; font-weight: bold; margin: 0;">${data.totalCategories}</p>
             <p style="color: ${colors.textMuted}; font-size: 12px; margin: 4px 0 0;">Categorias</p>
           </td>
-          <td style="padding: 8px;">
-            <p style="color: ${colors.warning}; font-size: 24px; font-weight: bold; margin: 0;">${data.totalTransactions}</p>
-            <p style="color: ${colors.textMuted}; font-size: 12px; margin: 4px 0 0;">Transações/mês</p>
-          </td>
         </tr>
       </table>
     </div>
@@ -392,8 +388,7 @@ const handler = async (req: Request): Promise<Response> => {
             .gte('date', monthStart.toISOString()).lte('date', monthEnd.toISOString()),
           supabase.from('transactions').select('type, total_value, date').eq('user_id', profile.user_id)
             .gte('date', thirtyDaysAgo.toISOString()),
-          supabase.from('income_payments').select('amount, payment_date').eq('user_id', profile.user_id)
-            .gte('payment_date', monthStart.toISOString().split('T')[0]).lte('payment_date', monthEnd.toISOString().split('T')[0]),
+          supabase.from('income_payments').select('amount, payment_date').eq('user_id', profile.user_id),
         ]);
 
         const investments = investmentsRes.data || [];
