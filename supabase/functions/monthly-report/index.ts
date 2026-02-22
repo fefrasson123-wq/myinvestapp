@@ -482,6 +482,11 @@ const handler = async (req: Request): Promise<Response> => {
         const html = getMonthlyReportEmailHtml(username, reportData);
         const subject = `📊 Seu Relatório Mensal - ${monthName} | ${EMAIL_CONFIG.brand.name}`;
 
+        // Rate limit: wait 600ms between emails (Resend allows 2/s)
+        if (sentCount > 0) {
+          await new Promise(resolve => setTimeout(resolve, 600));
+        }
+
         const emailResponse = await resend.emails.send({
           from: fromEmail,
           to: [userEmail],
