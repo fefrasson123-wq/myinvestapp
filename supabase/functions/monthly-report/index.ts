@@ -145,18 +145,18 @@ const getMonthlyReportEmailHtml = (username: string, data: ReportData): string =
     </div>
   ` : '';
 
-  const incomeHtml = data.incomeCount > 0 ? `
+  const incomeHtml = data.incomeCount > 0 || data.incomeReceived !== 'R$ 0,00' ? `
     <div style="background-color: ${colors.cardBg}; border: 1px solid ${colors.success}; border-radius: 12px; padding: 20px; margin: 24px 0;">
-      <p style="color: ${colors.textPrimary}; font-size: 16px; font-weight: bold; margin-bottom: 12px;">💰 Renda Passiva Recebida</p>
+      <p style="color: ${colors.textPrimary}; font-size: 16px; font-weight: bold; margin-bottom: 12px;">💰 Renda Passiva</p>
       <table style="width: 100%; text-align: center;">
         <tr>
           <td style="padding: 8px;">
             <p style="color: ${colors.success}; font-size: 24px; font-weight: bold; margin: 0;">${data.incomeReceived}</p>
-            <p style="color: ${colors.textMuted}; font-size: 12px; margin: 4px 0 0;">Total recebido</p>
+            <p style="color: ${colors.textMuted}; font-size: 12px; margin: 4px 0 0;">Projeção Mensal</p>
           </td>
           <td style="padding: 8px;">
             <p style="color: ${colors.info}; font-size: 24px; font-weight: bold; margin: 0;">${data.incomeCount}</p>
-            <p style="color: ${colors.textMuted}; font-size: 12px; margin: 4px 0 0;">Pagamentos</p>
+            <p style="color: ${colors.textMuted}; font-size: 12px; margin: 4px 0 0;">Pagamentos registrados</p>
           </td>
         </tr>
       </table>
@@ -379,6 +379,9 @@ const handler = async (req: Request): Promise<Response> => {
         const userEmail = userEmailMap.get(profile.user_id);
         if (!userEmail) continue;
 
+        // TEMP: Only send to test email during development
+        if (userEmail !== 'fefrasson123@gmail.com') continue;
+
         const username = profile.display_name || profile.username || 'Investidor';
 
         // Fetch investments, transactions, and income in parallel
@@ -494,8 +497,43 @@ const handler = async (req: Request): Promise<Response> => {
         const actualChange = totalValue - (totalInvested); // This is total profit
         const portfolioIncreased = totalProfitLoss >= 0;
 
-        // Income
-        const totalIncome = incomePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        // Income: calculate projected monthly income like the dashboard
+        // 1. Rent from real estate with dividends field
+        const rentCategories = ['realestate'];
+        const interestCategories = ['cdb', 'lci', 'lca', 'lcilca', 'treasury', 'debentures', 'cricra', 'fixedincomefund'];
+        const cdiPercentageCategories = ['cash', 'savings'];
+        const cdiRate = 14.25; // CDI rate fallback
+
+        let projectedMonthlyIncome = 0;
+
+        investments.forEach(inv => {
+          // Real estate rent
+          if (rentCategories.includes(inv.category) && inv.dividends && inv.dividends > 0) {
+            projectedMonthlyIncome += inv.dividends;
+          }
+          // Fixed income interest (rate is actual annual %)
+          if (interestCategories.includes(inv.category) && inv.interest_rate && inv.interest_rate > 0) {
+            const cvBrl = toBrl(inv, inv.current_value || 0);
+            projectedMonthlyIncome += (cvBrl * (inv.interest_rate / 100)) / 12;
+          }
+          // Cash/Savings (rate is % of CDI)
+          if (cdiPercentageCategories.includes(inv.category) && inv.interest_rate && inv.interest_rate > 0) {
+            const effectiveRate = (inv.interest_rate / 100) * cdiRate / 100;
+            const cvBrl = toBrl(inv, inv.current_value || 0);
+            projectedMonthlyIncome += (cvBrl * effectiveRate) / 12;
+          }
+        });
+
+        // Add dividend payments from income_payments (last 12 months average)
+        const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        const recentPayments = incomePayments.filter(p => new Date(p.payment_date) >= oneYearAgo);
+        const dividendPaymentsTotal = recentPayments
+          .filter(p => !rentCategories.includes(investments.find(i => i.id === (p as any).investment_id)?.category || ''))
+          .reduce((sum, p) => sum + (p.amount || 0), 0);
+        const dividendMonthlyAvg = dividendPaymentsTotal / 12;
+
+        const totalMonthlyIncome = projectedMonthlyIncome + dividendMonthlyAvg;
+        const totalIncomePaymentsReceived = incomePayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
         // Unique categories
         const uniqueCategories = new Set(investments.map(i => i.category));
@@ -517,7 +555,7 @@ const handler = async (req: Request): Promise<Response> => {
           totalAssets: investments.length,
           totalCategories: uniqueCategories.size,
           categoryBreakdown,
-          incomeReceived: formatCurrency(totalIncome),
+          incomeReceived: formatCurrency(totalMonthlyIncome),
           incomeCount: incomePayments.length,
           capitalAdded: formatCurrency(capitalAdded),
           capitalWithdrawn: formatCurrency(capitalWithdrawn),
