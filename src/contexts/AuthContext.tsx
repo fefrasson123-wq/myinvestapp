@@ -91,10 +91,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    // After successful login, detect suspicious activity in background
+    if (!error && data?.session) {
+      supabase.functions.invoke('detect-login', {
+        body: {
+          userAgent: navigator.userAgent,
+        }
+      }).catch(err => console.error('Login detection failed:', err));
+    }
     
     return { error: error as Error | null };
   };
