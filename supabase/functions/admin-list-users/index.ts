@@ -28,14 +28,17 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     })
 
-    const { data: { user } } = await supabaseClient.auth.getUser()
+    const token = authHeader.replace('Bearer ', '')
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token)
     
-    if (!user) {
+    if (claimsError || !claimsData?.claims) {
       return new Response(
         JSON.stringify({ error: 'Não autorizado' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    const userId = claimsData.claims.sub
 
     // Verifica se é admin
     const { data: isAdmin } = await supabaseClient.rpc('is_admin')
