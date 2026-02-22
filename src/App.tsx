@@ -17,6 +17,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const EmailPreview = lazy(() => import("./pages/EmailPreview"));
 const Install = lazy(() => import("./pages/Install"));
 const Plans = lazy(() => import("./pages/Plans"));
+const EmailConfirmed = lazy(() => import("./pages/EmailConfirmed"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -59,6 +60,7 @@ const App = () => (
                   <Route path="/email-preview" element={<EmailPreview />} />
                   <Route path="/install" element={<Install />} />
                   <Route path="/plans" element={<Plans />} />
+                  <Route path="/email-confirmed" element={<EmailConfirmed />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

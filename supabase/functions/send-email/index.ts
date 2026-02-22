@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -503,14 +504,44 @@ const handler = async (req: Request): Promise<Response> => {
         );
         break;
         
-      case 'password-reset':
+      case 'password-reset': {
         subject = `Redefinição de Senha - ${brand.name} 🔐`;
+        
+        // Generate real recovery link using Supabase Admin API
+        let resetUrl = data.resetUrl || '#';
+        
+        if (!data.resetUrl || data.resetUrl === '#') {
+          try {
+            const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+            const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+            const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+            
+            const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+              type: 'recovery',
+              email: to,
+              options: {
+                redirectTo: `${EMAIL_CONFIG.brand.website}/auth?mode=reset`,
+              },
+            });
+            
+            if (linkError) {
+              console.error("Error generating recovery link:", linkError);
+            } else if (linkData?.properties?.action_link) {
+              resetUrl = linkData.properties.action_link;
+              console.log("Generated recovery link for:", to);
+            }
+          } catch (linkErr) {
+            console.error("Failed to generate recovery link:", linkErr);
+          }
+        }
+        
         html = getPasswordResetEmailHtml(
           data.username || 'Investidor',
-          data.resetUrl || '#',
+          resetUrl,
           data.expiresIn || '1 hora'
         );
         break;
+      }
         
       case 'plan-upgrade':
         subject = `Parabéns! Seu plano foi atualizado para ${data.planName} 🚀`;
