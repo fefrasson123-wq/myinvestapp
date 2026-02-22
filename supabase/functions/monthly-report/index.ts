@@ -380,9 +380,6 @@ const handler = async (req: Request): Promise<Response> => {
         const userEmail = userEmailMap.get(profile.user_id);
         if (!userEmail) continue;
 
-        // TEMP: Only send to test email during development
-        if (userEmail !== 'fefrasson123@gmail.com') continue;
-
         const username = profile.display_name || profile.username || 'Investidor';
 
         // Fetch investments, transactions, and income in parallel
