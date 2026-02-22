@@ -78,17 +78,26 @@ const getMonthName = (month: number): string => {
 
 const getCategoryLabel = (category: string): string => {
   const labels: Record<string, string> = {
-    'Ações': 'Ações',
-    'FIIs': 'Fundos Imobiliários',
-    'ETFs': 'ETFs',
-    'Renda Fixa': 'Renda Fixa',
-    'Criptomoedas': 'Criptomoedas',
-    'Stocks (EUA)': 'Stocks EUA',
-    'BDRs': 'BDRs',
-    'REITs': 'REITs',
-    'Ouro': 'Ouro',
-    'Imóveis': 'Imóveis',
-    'Dinheiro': 'Dinheiro',
+    crypto: 'Criptomoedas',
+    stocks: 'Ações',
+    fii: 'Fundos Imobiliários',
+    cdb: 'CDB',
+    lci: 'LCI',
+    lca: 'LCA',
+    lcilca: 'LCI/LCA',
+    treasury: 'Tesouro Direto',
+    savings: 'Poupança',
+    debentures: 'Debêntures',
+    cricra: 'CRI/CRA',
+    fixedincomefund: 'Fundo de Renda Fixa',
+    cash: 'Dinheiro em Espécie',
+    realestate: 'Imóveis',
+    gold: 'Ouro',
+    usastocks: 'Ações Americanas',
+    reits: 'REITs',
+    bdr: 'BDR',
+    etf: 'ETF',
+    other: 'Outros',
   };
   return labels[category] || category;
 };
@@ -145,21 +154,13 @@ const getMonthlyReportEmailHtml = (username: string, data: ReportData): string =
     </div>
   ` : '';
 
-  const incomeHtml = data.incomeCount > 0 || data.incomeReceived !== 'R$ 0,00' ? `
+  const incomeHtml = data.incomeReceived !== 'R$ 0,00' ? `
     <div style="background-color: ${colors.cardBg}; border: 1px solid ${colors.success}; border-radius: 12px; padding: 20px; margin: 24px 0;">
       <p style="color: ${colors.textPrimary}; font-size: 16px; font-weight: bold; margin-bottom: 12px;">💰 Renda Passiva</p>
-      <table style="width: 100%; text-align: center;">
-        <tr>
-          <td style="padding: 8px;">
-            <p style="color: ${colors.success}; font-size: 24px; font-weight: bold; margin: 0;">${data.incomeReceived}</p>
-            <p style="color: ${colors.textMuted}; font-size: 12px; margin: 4px 0 0;">Projeção Mensal</p>
-          </td>
-          <td style="padding: 8px;">
-            <p style="color: ${colors.info}; font-size: 24px; font-weight: bold; margin: 0;">${data.incomeCount}</p>
-            <p style="color: ${colors.textMuted}; font-size: 12px; margin: 4px 0 0;">Pagamentos registrados</p>
-          </td>
-        </tr>
-      </table>
+      <div style="text-align: center; padding: 8px;">
+        <p style="color: ${colors.success}; font-size: 24px; font-weight: bold; margin: 0;">${data.incomeReceived}</p>
+        <p style="color: ${colors.textMuted}; font-size: 12px; margin: 4px 0 0;">Projeção Mensal</p>
+      </div>
     </div>
   ` : '';
 
