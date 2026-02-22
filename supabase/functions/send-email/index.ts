@@ -265,33 +265,96 @@ const getPasswordResetEmailHtml = (username: string, resetUrl: string, expiresIn
   return getBaseTemplate(content);
 };
 
-// 4. Plan Upgrade
-const getPlanUpgradeEmailHtml = (username: string, planName: string, planFeatures: string[], dashboardUrl: string) => {
+// 4. Plan Upgrade - PRO
+const getProUpgradeEmailHtml = (username: string, dashboardUrl: string) => {
   const { colors, texts } = EMAIL_CONFIG;
+  
+  const proFeatures = [
+    'Ativos e Categorias ilimitados',
+    'Visualização do patrimônio em Reais ou Dólares',
+    'Comparação com outros ativos do mercado',
+    'Gráficos de evolução do patrimônio',
+    'Renda Passiva e Rendimentos mensais recebidos',
+    'Tags de Classificação de Curto, Médio e Longo Prazo',
+    'Calculadora de Rebalanceamento da carteira',
+    'Rentabilidade por Classe de Investimento',
+    'Relatório mensal da sua carteira de Investimentos',
+    'Gráfico de projeção de crescimento do Patrimônio',
+    'Acesso a todas as áreas do App',
+  ];
   
   const content = `
     <div style="text-align: center; margin: 16px 0;">
-      <span style="font-size: 64px;">🚀</span>
+      <span style="font-size: 64px;">⭐</span>
     </div>
     
     <h1 style="color: ${colors.textPrimary}; font-size: 32px; font-weight: bold; text-align: center; margin: 0 0 24px;">
-      Upgrade Confirmado!
+      Bem-vindo ao Plano PRO!
     </h1>
     
     <p style="color: ${colors.textSecondary}; font-size: 16px; line-height: 26px; text-align: center;">
-      Olá, ${username}! Parabéns pela sua decisão de investir no seu futuro financeiro.
+      Olá, ${username}! Parabéns pela sua decisão de investir no seu futuro financeiro. Agora você tem acesso a recursos avançados para gerenciar sua carteira como um profissional.
     </p>
     
     <div style="text-align: center; margin: 32px 0;">
       <span style="display: inline-block; background-color: ${colors.primary}; color: #000000; font-size: 20px; font-weight: bold; padding: 12px 32px; border-radius: 50px;">
-        ${planName}
+        ⭐ Plano PRO
       </span>
       <p style="color: ${colors.textMuted}; font-size: 14px; margin-top: 12px;">Seu novo plano está ativo</p>
     </div>
     
-    ${getInfoBoxHtml("Novos recursos desbloqueados:", planFeatures, "✨")}
+    ${getInfoBoxHtml("Recursos desbloqueados:", proFeatures, "🔓")}
     
-    ${getButtonHtml("Explorar Novos Recursos", dashboardUrl)}
+    ${getButtonHtml("Acessar Minha Conta", dashboardUrl)}
+    
+    <p style="color: ${colors.textMuted}; font-size: 14px; text-align: center; margin-top: 32px;">
+      ${texts.helpText}
+    </p>
+  `;
+  
+  return getBaseTemplate(content);
+};
+
+// 4b. Plan Upgrade - PREMIUM
+const getPremiumUpgradeEmailHtml = (username: string, dashboardUrl: string) => {
+  const { colors, texts } = EMAIL_CONFIG;
+  const goldColor = "#f59e0b";
+  
+  const premiumFeatures = [
+    'Tudo do Plano PRO',
+    'Cadastro dos ativos por nossa equipe (opcional)',
+    'Suporte Prioritário',
+    'Acesso antecipado a novidades',
+    'Download em PDF do Patrimônio',
+    'Recompensas físicas com desconto',
+  ];
+  
+  const content = `
+    <div style="text-align: center; margin: 16px 0;">
+      <span style="font-size: 64px;">👑</span>
+    </div>
+    
+    <h1 style="color: ${colors.textPrimary}; font-size: 32px; font-weight: bold; text-align: center; margin: 0 0 24px;">
+      Bem-vindo ao Plano Premium!
+    </h1>
+    
+    <p style="color: ${colors.textSecondary}; font-size: 16px; line-height: 26px; text-align: center;">
+      Olá, ${username}! Você acaba de desbloquear a experiência completa do My Invest. Obrigado por confiar em nós para gerenciar seus investimentos.
+    </p>
+    
+    <div style="text-align: center; margin: 32px 0;">
+      <span style="display: inline-block; background-color: ${goldColor}; color: #000000; font-size: 20px; font-weight: bold; padding: 12px 32px; border-radius: 50px;">
+        👑 Plano Premium
+      </span>
+      <p style="color: ${colors.textMuted}; font-size: 14px; margin-top: 12px;">Seu novo plano está ativo</p>
+    </div>
+    
+    <div style="background-color: ${colors.cardBg}; border: 1px solid ${goldColor}; border-radius: 12px; padding: 24px; margin: 32px 0;">
+      <p style="color: ${colors.textPrimary}; font-size: 18px; font-weight: bold; margin-bottom: 16px;">👑 Benefícios exclusivos:</p>
+      ${premiumFeatures.map(item => `<p style="color: ${colors.textSecondary}; font-size: 14px; line-height: 28px; margin: 0;">✅ ${item}</p>`).join('')}
+    </div>
+    
+    ${getButtonHtml("Acessar Minha Conta", dashboardUrl)}
     
     <p style="color: ${colors.textMuted}; font-size: 14px; text-align: center; margin-top: 32px;">
       ${texts.helpText}
@@ -543,20 +606,25 @@ const handler = async (req: Request): Promise<Response> => {
         break;
       }
         
-      case 'plan-upgrade':
-        subject = `Parabéns! Seu plano foi atualizado para ${data.planName} 🚀`;
-        html = getPlanUpgradeEmailHtml(
-          data.username || 'Investidor',
-          data.planName || 'Premium',
-          data.planFeatures || [
-            'Análises avançadas de portfólio',
-            'Alertas de preço personalizados',
-            'Relatórios detalhados mensais',
-            'Suporte prioritário'
-          ],
-          data.dashboardUrl || urls.dashboard
-        );
+      case 'plan-upgrade': {
+        const planName = (data.planName || '').toLowerCase();
+        const isPremiumPlan = planName.includes('premium');
+        
+        if (isPremiumPlan) {
+          subject = `Parabéns! Bem-vindo ao Plano Premium 👑`;
+          html = getPremiumUpgradeEmailHtml(
+            data.username || 'Investidor',
+            data.dashboardUrl || urls.dashboard
+          );
+        } else {
+          subject = `Parabéns! Bem-vindo ao Plano PRO ⭐`;
+          html = getProUpgradeEmailHtml(
+            data.username || 'Investidor',
+            data.dashboardUrl || urls.dashboard
+          );
+        }
         break;
+      }
         
       case 'suspicious-login':
         subject = `⚠️ Alerta de Segurança - ${brand.name}`;
