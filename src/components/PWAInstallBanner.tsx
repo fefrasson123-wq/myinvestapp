@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Download, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -10,10 +11,16 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function PWAInstallBanner() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
+    if (!user) {
+      setShowBanner(false);
+      return;
+    }
+
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
     if (isStandalone) return;
 
@@ -40,7 +47,7 @@ export function PWAInstallBanner() {
       clearTimeout(timer);
       window.removeEventListener('beforeinstallprompt', handler);
     };
-  }, []);
+  }, [user]);
 
   const handleInstall = async () => {
     // If native prompt is available, use it (Chrome, Edge, Samsung Internet, Opera)
