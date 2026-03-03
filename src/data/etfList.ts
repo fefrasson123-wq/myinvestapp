@@ -132,6 +132,43 @@ export const etfList: ETFAsset[] = [
   { ticker: 'CRPT11B', name: 'Safra Crypto', price: 15.50, change: 1.12, changePercent: 7.78, etfType: 'etf_cripto' },
   { ticker: 'BCPT11', name: 'BTG Crypto', price: 22.50, change: 1.65, changePercent: 7.92, etfType: 'etf_cripto' },
   { ticker: 'BNCI11', name: 'Nu Crypto Index', price: 18.50, change: 1.35, changePercent: 7.87, etfType: 'etf_cripto' },
+  // Expansão Extra Mar/2026
+  // Ações Brasil extras
+  { ticker: 'IFIX11', name: 'It Now IFIX', price: 85.50, change: 0.42, changePercent: 0.49, etfType: 'etf_acoes_brasil' },
+  { ticker: 'SMALL11', name: 'Trend Small Caps', price: 42.50, change: 0.22, changePercent: 0.52, etfType: 'etf_acoes_brasil' },
+  { ticker: 'BBOV11', name: 'BB Ibovespa', price: 92.50, change: 0.88, changePercent: 0.96, etfType: 'etf_acoes_brasil' },
+  { ticker: 'ABOV11', name: 'Alfa Ibovespa', price: 85.50, change: 0.78, changePercent: 0.92, etfType: 'etf_acoes_brasil' },
+  { ticker: 'QBOV11', name: 'QR Ibovespa', price: 78.50, change: 0.72, changePercent: 0.93, etfType: 'etf_acoes_brasil' },
+  // Ações Exterior extras
+  { ticker: 'SPXE11', name: 'Trend S&P 500 ESG', price: 52.50, change: 0.38, changePercent: 0.73, etfType: 'etf_acoes_exterior' },
+  { ticker: 'USAL11', name: 'Trend US All Cap', price: 42.50, change: 0.32, changePercent: 0.76, etfType: 'etf_acoes_exterior' },
+  { ticker: 'BRCO11B', name: 'BTG Pactual S&P 500 B', price: 112.50, change: 0.82, changePercent: 0.73, etfType: 'etf_acoes_exterior' },
+  { ticker: 'USDA11', name: 'Trend US Dividend', price: 38.50, change: 0.28, changePercent: 0.73, etfType: 'etf_acoes_exterior' },
+  { ticker: 'EURE11', name: 'Trend Europa ESG', price: 32.50, change: 0.18, changePercent: 0.56, etfType: 'etf_acoes_exterior' },
+  { ticker: 'LATM11', name: 'Trend LatAm', price: 18.50, change: 0.12, changePercent: 0.65, etfType: 'etf_acoes_exterior' },
+  // Renda Fixa extras
+  { ticker: 'SELL11', name: 'Trend Selic', price: 108.50, change: 0.09, changePercent: 0.08, etfType: 'etf_renda_fixa' },
+  { ticker: 'CDII11', name: 'Trend CDI', price: 102.50, change: 0.08, changePercent: 0.08, etfType: 'etf_renda_fixa' },
+  { ticker: 'NTNB11', name: 'Trend NTN-B', price: 88.50, change: 0.15, changePercent: 0.17, etfType: 'etf_renda_fixa' },
+  { ticker: 'PREF11', name: 'Trend Pré-Fixado', price: 72.50, change: 0.12, changePercent: 0.17, etfType: 'etf_renda_fixa' },
+  { ticker: 'CRDI11', name: 'Trend Crédito Privado', price: 95.50, change: 0.10, changePercent: 0.10, etfType: 'etf_renda_fixa' },
+  // Setoriais extras
+  { ticker: 'SEMI11', name: 'Trend Semicondutores', price: 28.50, change: 0.38, changePercent: 1.35, etfType: 'etf_indice' },
+  { ticker: 'CLOU11', name: 'Trend Cloud Computing', price: 32.50, change: 0.42, changePercent: 1.31, etfType: 'etf_indice' },
+  { ticker: 'AIQT11', name: 'Trend AI & Tech', price: 22.50, change: 0.35, changePercent: 1.58, etfType: 'etf_indice' },
+  { ticker: 'ESGE11', name: 'Trend ESG Global', price: 42.50, change: 0.28, changePercent: 0.66, etfType: 'etf_indice' },
+  { ticker: 'MOBI11', name: 'Trend Mobilidade', price: 18.50, change: 0.15, changePercent: 0.82, etfType: 'etf_indice' },
+  { ticker: 'BLCH11', name: 'Trend Blockchain', price: 12.50, change: 0.18, changePercent: 1.46, etfType: 'etf_indice' },
+  { ticker: 'FOOD11', name: 'Trend Alimentação', price: 38.50, change: 0.22, changePercent: 0.57, etfType: 'etf_indice' },
+  { ticker: 'LITN11', name: 'Trend Lítio & Baterias', price: 8.50, change: 0.12, changePercent: 1.43, etfType: 'etf_indice' },
+  // Cripto extras
+  { ticker: 'BXRP11', name: 'Hashdex XRP', price: 8.50, change: 0.62, changePercent: 7.87, etfType: 'etf_cripto' },
+  { ticker: 'BDOG11', name: 'BTG Dogecoin', price: 5.50, change: 0.42, changePercent: 8.26, etfType: 'etf_cripto' },
+  { ticker: 'QXRP11', name: 'QR XRP', price: 6.50, change: 0.48, changePercent: 7.97, etfType: 'etf_cripto' },
+  { ticker: 'BNFT11', name: 'Nu NFT Index', price: 3.50, change: 0.28, changePercent: 8.69, etfType: 'etf_cripto' },
+  // Ouro extras
+  { ticker: 'PRAT11', name: 'Trend Prata', price: 8.50, change: 0.12, changePercent: 1.43, etfType: 'etf_ouro' },
+  { ticker: 'MLDR11', name: 'Trend Metais', price: 12.50, change: 0.18, changePercent: 1.46, etfType: 'etf_ouro' },
 ];
 
 export const getETFByTicker = (ticker: string): ETFAsset | undefined => {
