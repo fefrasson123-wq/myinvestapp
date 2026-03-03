@@ -9,7 +9,7 @@ export interface ETFAsset {
   etfType: ETFType;
 }
 
-// Lista de ETFs brasileiros
+// Lista de ETFs brasileiros - Atualizado Mar/2026
 export const etfList: ETFAsset[] = [
   // ETF de Ações Brasil
   { ticker: 'BOVA11', name: 'iShares Ibovespa', price: 128.50, change: 1.25, changePercent: 0.98, etfType: 'etf_acoes_brasil' },
@@ -25,6 +25,13 @@ export const etfList: ETFAsset[] = [
   { ticker: 'BRAX11', name: 'iShares IBrX-100', price: 105.30, change: 0.85, changePercent: 0.81, etfType: 'etf_acoes_brasil' },
   { ticker: 'BOVX11', name: 'Trend Ibovespa', price: 118.40, change: 1.15, changePercent: 0.98, etfType: 'etf_acoes_brasil' },
   { ticker: 'IBOB11', name: 'BTG Ibovespa B3', price: 102.80, change: 0.95, changePercent: 0.93, etfType: 'etf_acoes_brasil' },
+  // Expansão
+  { ticker: 'NDIV11', name: 'Nu Dividendos', price: 88.50, change: 0.55, changePercent: 0.63, etfType: 'etf_acoes_brasil' },
+  { ticker: 'DIVD11', name: 'Itaú Dividendos', price: 72.50, change: 0.42, changePercent: 0.58, etfType: 'etf_acoes_brasil' },
+  { ticker: 'IVAL11', name: 'Trend Valor', price: 55.80, change: 0.28, changePercent: 0.50, etfType: 'etf_acoes_brasil' },
+  { ticker: 'SPXI11B', name: 'It Now S&P Brazil ESG', price: 62.50, change: 0.35, changePercent: 0.56, etfType: 'etf_acoes_brasil' },
+  { ticker: 'IBOV11', name: 'Safra Ibovespa', price: 98.50, change: 0.92, changePercent: 0.94, etfType: 'etf_acoes_brasil' },
+  { ticker: 'BOVA39', name: 'Ibovespa CDI', price: 98.50, change: 0.65, changePercent: 0.66, etfType: 'etf_acoes_brasil' },
 
   // ETF de Ações Exterior
   { ticker: 'IVVB11', name: 'iShares S&P 500', price: 285.40, change: 2.15, changePercent: 0.76, etfType: 'etf_acoes_exterior' },
@@ -40,6 +47,14 @@ export const etfList: ETFAsset[] = [
   { ticker: 'USTK11', name: 'Trend NYSE FANG+', price: 32.45, change: 0.55, changePercent: 1.72, etfType: 'etf_acoes_exterior' },
   { ticker: 'JAPA11', name: 'Trend Japão MSCI', price: 9.85, change: 0.08, changePercent: 0.82, etfType: 'etf_acoes_exterior' },
   { ticker: 'BNDX11', name: 'Nu International Bonds', price: 95.20, change: 0.15, changePercent: 0.16, etfType: 'etf_acoes_exterior' },
+  // Expansão
+  { ticker: 'BXPO11', name: 'BTG Pactual S&P 500', price: 118.50, change: 0.88, changePercent: 0.75, etfType: 'etf_acoes_exterior' },
+  { ticker: 'QQQI11', name: 'Nasdaq 100 Investo', price: 38.50, change: 0.52, changePercent: 1.37, etfType: 'etf_acoes_exterior' },
+  { ticker: 'REVE11', name: 'Trend Revolução Digital', price: 22.50, change: 0.32, changePercent: 1.44, etfType: 'etf_acoes_exterior' },
+  { ticker: 'DIEM11', name: 'Trend Mercados Emergentes', price: 5.80, change: -0.05, changePercent: -0.85, etfType: 'etf_acoes_exterior' },
+  { ticker: 'INDIA11', name: 'Trend MSCI Índia', price: 12.50, change: 0.15, changePercent: 1.21, etfType: 'etf_acoes_exterior' },
+  { ticker: 'MEUG11', name: 'Trend MSCI Europa Growth', price: 42.50, change: 0.28, changePercent: 0.66, etfType: 'etf_acoes_exterior' },
+  { ticker: 'MSCI11', name: 'Trend MSCI All Country', price: 48.50, change: 0.32, changePercent: 0.66, etfType: 'etf_acoes_exterior' },
 
   // ETF de Renda Fixa
   { ticker: 'IMAB11', name: 'It Now IMA-B', price: 82.45, change: 0.18, changePercent: 0.22, etfType: 'etf_renda_fixa' },
@@ -52,6 +67,13 @@ export const etfList: ETFAsset[] = [
   { ticker: 'LFTS11', name: 'Investo Selic', price: 112.40, change: 0.09, changePercent: 0.08, etfType: 'etf_renda_fixa' },
   { ticker: 'PACB11', name: 'BTG Títulos Públicos', price: 88.60, change: 0.12, changePercent: 0.14, etfType: 'etf_renda_fixa' },
   { ticker: 'KDIF11', name: 'Kinea Infra RF', price: 102.30, change: 0.18, changePercent: 0.18, etfType: 'etf_renda_fixa' },
+  // Expansão
+  { ticker: 'LFTB11', name: 'Investo Selic Longo', price: 108.50, change: 0.10, changePercent: 0.09, etfType: 'etf_renda_fixa' },
+  { ticker: 'NDIV11B', name: 'Nu Renda Fixa', price: 98.50, change: 0.08, changePercent: 0.08, etfType: 'etf_renda_fixa' },
+  { ticker: 'CPTI11', name: 'Capitânia Inflação', price: 82.50, change: 0.15, changePercent: 0.18, etfType: 'etf_renda_fixa' },
+  { ticker: 'BGOV11', name: 'BTG Governo', price: 92.50, change: 0.12, changePercent: 0.13, etfType: 'etf_renda_fixa' },
+  { ticker: 'BFIX11', name: 'BTG Fix', price: 85.50, change: 0.10, changePercent: 0.12, etfType: 'etf_renda_fixa' },
+  { ticker: 'IPCA11', name: 'Trend IPCA', price: 78.50, change: 0.14, changePercent: 0.18, etfType: 'etf_renda_fixa' },
 
   // ETF de Índice / Setoriais
   { ticker: 'FIND11', name: 'It Now IFNC', price: 85.60, change: 0.72, changePercent: 0.85, etfType: 'etf_indice' },
@@ -65,19 +87,31 @@ export const etfList: ETFAsset[] = [
   { ticker: 'OGIN11', name: 'Trend Energia Limpa', price: 35.60, change: 0.18, changePercent: 0.51, etfType: 'etf_indice' },
   { ticker: 'CORN11', name: 'It Now Milho', price: 12.85, change: 0.15, changePercent: 1.18, etfType: 'etf_indice' },
   { ticker: 'SOJA11', name: 'It Now Soja', price: 10.20, change: 0.08, changePercent: 0.79, etfType: 'etf_indice' },
-  { ticker: 'BOVA39', name: 'Ibovespa CDI', price: 98.50, change: 0.65, changePercent: 0.66, etfType: 'etf_indice' },
   { ticker: 'PETR11', name: 'It Now Petróleo', price: 18.90, change: 0.35, changePercent: 1.89, etfType: 'etf_indice' },
   { ticker: 'CMDB11', name: 'Trend Commodities', price: 22.45, change: 0.28, changePercent: 1.26, etfType: 'etf_indice' },
   { ticker: 'BDOM11', name: 'BTG Consumo', price: 68.40, change: 0.42, changePercent: 0.62, etfType: 'etf_indice' },
   { ticker: 'SAET11', name: 'Trend Saúde', price: 45.80, change: 0.32, changePercent: 0.70, etfType: 'etf_indice' },
   { ticker: 'IMOB11', name: 'It Now IMOB', price: 52.30, change: 0.28, changePercent: 0.54, etfType: 'etf_indice' },
   { ticker: 'ALUG11', name: 'Investo Aluguéis', price: 38.60, change: 0.15, changePercent: 0.39, etfType: 'etf_indice' },
+  // Expansão
+  { ticker: 'GENB11', name: 'It Now Genial', price: 42.50, change: 0.28, changePercent: 0.66, etfType: 'etf_indice' },
+  { ticker: 'BANK11', name: 'Trend Bancos', price: 58.50, change: 0.45, changePercent: 0.78, etfType: 'etf_indice' },
+  { ticker: 'VARE11', name: 'Trend Varejo', price: 32.50, change: 0.22, changePercent: 0.68, etfType: 'etf_indice' },
+  { ticker: 'INFR11', name: 'Trend Infraestrutura', price: 48.50, change: 0.32, changePercent: 0.66, etfType: 'etf_indice' },
+  { ticker: 'CAFI11', name: 'Trend Café', price: 15.50, change: 0.18, changePercent: 1.18, etfType: 'etf_indice' },
+  { ticker: 'BSGS11', name: 'BTG ESG', price: 52.50, change: 0.35, changePercent: 0.67, etfType: 'etf_indice' },
+  { ticker: 'DNAI11', name: 'It Now DNA', price: 18.50, change: 0.15, changePercent: 0.82, etfType: 'etf_indice' },
+  { ticker: 'GURU11', name: 'Trend Smart Beta', price: 42.50, change: 0.28, changePercent: 0.66, etfType: 'etf_indice' },
+  { ticker: 'CRPT11', name: 'Trend Crypto Economy', price: 8.50, change: 0.12, changePercent: 1.43, etfType: 'etf_indice' },
 
   // ETF de Ouro
   { ticker: 'GOLD11', name: 'Trend Ouro', price: 15.45, change: 0.22, changePercent: 1.44, etfType: 'etf_ouro' },
   { ticker: 'GLDX11', name: 'XP Gold', price: 12.80, change: 0.18, changePercent: 1.43, etfType: 'etf_ouro' },
   { ticker: 'AURU11', name: 'Itaú Ouro', price: 9.25, change: 0.12, changePercent: 1.31, etfType: 'etf_ouro' },
   { ticker: 'GLDB11', name: 'BTG Pactual Ouro', price: 11.50, change: 0.15, changePercent: 1.32, etfType: 'etf_ouro' },
+  // Expansão
+  { ticker: 'DOUR11', name: 'Safra Ouro', price: 10.50, change: 0.14, changePercent: 1.35, etfType: 'etf_ouro' },
+  { ticker: 'BIAU11', name: 'Bradesco Ouro', price: 8.50, change: 0.10, changePercent: 1.19, etfType: 'etf_ouro' },
 
   // ETF de Criptomoedas
   { ticker: 'HASH11', name: 'Hashdex Nasdaq Crypto', price: 28.50, change: 1.85, changePercent: 6.94, etfType: 'etf_cripto' },
@@ -92,6 +126,12 @@ export const etfList: ETFAsset[] = [
   { ticker: 'QDFI11', name: 'QR DeFi', price: 5.80, change: 0.42, changePercent: 7.80, etfType: 'etf_cripto' },
   { ticker: 'NFTS11', name: 'Investo NFT', price: 4.25, change: 0.35, changePercent: 8.98, etfType: 'etf_cripto' },
   { ticker: 'BLOK11', name: 'Investo Blockchain', price: 8.60, change: 0.58, changePercent: 7.23, etfType: 'etf_cripto' },
+  // Expansão
+  { ticker: 'BSOL11', name: 'Hashdex Solana', price: 12.50, change: 0.92, changePercent: 7.95, etfType: 'etf_cripto' },
+  { ticker: 'QSOL11', name: 'QR Solana', price: 8.50, change: 0.62, changePercent: 7.87, etfType: 'etf_cripto' },
+  { ticker: 'CRPT11B', name: 'Safra Crypto', price: 15.50, change: 1.12, changePercent: 7.78, etfType: 'etf_cripto' },
+  { ticker: 'BCPT11', name: 'BTG Crypto', price: 22.50, change: 1.65, changePercent: 7.92, etfType: 'etf_cripto' },
+  { ticker: 'BNCI11', name: 'Nu Crypto Index', price: 18.50, change: 1.35, changePercent: 7.87, etfType: 'etf_cripto' },
 ];
 
 export const getETFByTicker = (ticker: string): ETFAsset | undefined => {
