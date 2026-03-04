@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { TrendingUp, Plus, Eye, EyeOff, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/UserMenu';
@@ -19,6 +20,22 @@ export function Header({ onAddClick, currentPortfolioValue = 0, totalInvestedAmo
   const navigate = useNavigate();
   const { showValues, toggleValuesVisibility } = useValuesVisibility();
   const { user } = useAuth();
+
+  const [showInstallBtn, setShowInstallBtn] = useState(true);
+
+  useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+    const alreadyClicked = localStorage.getItem('install-btn-clicked') === 'true';
+    if (isStandalone || alreadyClicked) {
+      setShowInstallBtn(false);
+    }
+  }, []);
+
+  const handleInstallClick = () => {
+    localStorage.setItem('install-btn-clicked', 'true');
+    setShowInstallBtn(false);
+    navigate('/install');
+  };
 
   const handleLogoClick = () => {
     navigate('/');
@@ -68,15 +85,17 @@ export function Header({ onAddClick, currentPortfolioValue = 0, totalInvestedAmo
                 <span className="hidden sm:inline">Adicionar Investimento</span>
                 <span className="sm:hidden">Novo</span>
               </Button>
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/install')}
-                className="gap-1.5 sm:gap-2 text-xs sm:text-sm hidden sm:flex"
-              >
-                <Download className="w-4 h-4" />
-                Instalar
-              </Button>
+              {showInstallBtn && (
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleInstallClick}
+                  className="gap-1.5 sm:gap-2 text-xs sm:text-sm hidden sm:flex"
+                >
+                  <Download className="w-4 h-4" />
+                  Instalar
+                </Button>
+              )}
               <UserMenu />
            </div>
         </div>

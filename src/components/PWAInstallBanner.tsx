@@ -56,11 +56,13 @@ export function PWAInstallBanner() {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
         setShowBanner(false);
+        localStorage.setItem('install-btn-clicked', 'true');
       }
       setDeferredPrompt(null);
       return;
     }
     // Otherwise redirect to install page with browser-specific instructions
+    localStorage.setItem('install-btn-clicked', 'true');
     navigate('/install');
     setShowBanner(false);
   };
