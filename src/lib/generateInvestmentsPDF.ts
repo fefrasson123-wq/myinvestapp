@@ -357,12 +357,6 @@ export function generateInvestmentsPDF(
 
       ${incomeSection}
 
-      <div class="no-print" style="text-align:center;margin:24px 0;">
-        <button onclick="window.print()" style="background:#00e676;color:#1a1a2e;border:none;padding:12px 32px;font-size:14px;font-weight:700;border-radius:8px;cursor:pointer;">
-          📥 Baixar PDF
-        </button>
-      </div>
-
       <div class="footer">
         Relatório gerado pelo My Invest • ${formatDate(now)}
       </div>
@@ -370,13 +364,79 @@ export function generateInvestmentsPDF(
     </html>
   `;
 
-  // Open in new tab
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('Permita pop-ups para baixar o PDF.');
-    return;
-  }
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.focus();
+  // Render HTML off-screen, capture with html2canvas, then download as PDF
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.width = '800px';
+  container.style.background = '#fff';
+  container.style.zIndex = '-1';
+
+  // Create an iframe to render the HTML properly
+  const iframe = document.createElement('iframe');
+  iframe.style.width = '800px';
+  iframe.style.height = '1px'; // will auto-expand
+  iframe.style.border = 'none';
+  container.appendChild(iframe);
+  document.body.appendChild(container);
+
+  iframe.contentDocument?.open();
+  iframe.contentDocument?.write(html);
+  iframe.contentDocument?.close();
+
+  // Wait for content to render, then capture
+  setTimeout(async () => {
+    try {
+      const { default: html2canvas } = await import('html2canvas');
+      const { jsPDF } = await import('jspdf');
+
+      const body = iframe.contentDocument?.body;
+      if (!body) {
+        alert('Erro ao gerar o PDF.');
+        document.body.removeChild(container);
+        return;
+      }
+
+      // Adjust iframe height to content
+      iframe.style.height = body.scrollHeight + 'px';
+
+      const canvas = await html2canvas(body, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: 800,
+        windowWidth: 800,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // First page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      // Additional pages if needed
+      while (heightLeft > 0) {
+        position -= pdfHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(`relatorio-investimentos-${now.toISOString().slice(0, 10)}.pdf`);
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      alert('Erro ao gerar o PDF. Tente novamente.');
+    } finally {
+      document.body.removeChild(container);
+    }
+  }, 500);
 }
