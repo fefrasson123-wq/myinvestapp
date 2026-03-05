@@ -83,10 +83,38 @@ Deno.serve(async (req) => {
     const user = authData.users.find(u => u.email?.toLowerCase() === customerEmail.toLowerCase());
     
     if (!user) {
-      console.log(`User not found for email: ${customerEmail}`);
-      // Return success - user might register later
+      console.log(`User not found for email: ${customerEmail}. Saving as pending purchase.`);
+      
+      // Save pending purchase for when user registers
+      const productName = data.product?.name?.toLowerCase() || '';
+      const subscriptionPlan = data.subscription?.plan?.toLowerCase() || '';
+      let pendingPlanName = 'pro';
+      if (productName.includes('premium') || subscriptionPlan.includes('premium')) {
+        pendingPlanName = 'premium';
+      }
+
+      const { error: pendingError } = await supabase
+        .from('pending_purchases')
+        .insert({
+          email: customerEmail.toLowerCase(),
+          plan_name: pendingPlanName,
+          customer_name: data.customer?.name || null,
+          cakto_subscription_id: data.subscription?.id || null,
+          cakto_transaction_id: data.transaction?.id || null,
+          payload: payload as any,
+          status: 'pending',
+        });
+
+      if (pendingError) {
+        console.error('Error saving pending purchase:', pendingError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to save pending purchase' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ success: true, message: 'User not found, will be processed on registration' }),
+        JSON.stringify({ success: true, message: 'Purchase saved as pending. Will activate on user registration.' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
