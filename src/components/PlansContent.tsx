@@ -17,7 +17,7 @@ interface PlanData {
 }
 
 export function PlansContent() {
-  const { plan: currentPlan, isFree, isLoading: subLoading } = useSubscription();
+  const { plan: currentPlan, subscription, isFree, isLoading: subLoading } = useSubscription();
   const [plans, setPlans] = useState<PlanData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
