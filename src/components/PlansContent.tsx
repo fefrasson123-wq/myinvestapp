@@ -159,7 +159,7 @@ export function PlansContent() {
               className={cn(
                 "relative rounded-2xl border bg-gradient-to-br p-5 sm:p-6 transition-all duration-300 flex flex-col",
                 planColors[plan.name] || planColors.free,
-                isCurrentPlan && "ring-2 ring-success/30 shadow-lg",
+                isCurrentPlan && "ring-2 ring-success/50 shadow-lg",
                 isPopular && !isCurrentPlan && "ring-2 ring-primary/50 scale-[1.02] shadow-lg shadow-primary/10",
               )}
             >
@@ -170,7 +170,7 @@ export function PlansContent() {
               )}
 
               {isCurrentPlan && (
-                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-success/60 text-white/90 text-xs px-3 ring-4 ring-background">
+                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-success/60 text-white/90 text-xs px-3">
                   ✓ Seu Plano Atual
                 </Badge>
               )}
