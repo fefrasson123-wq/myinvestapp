@@ -27,7 +27,8 @@ Deno.serve(async (req) => {
     console.log('Received Cakto webhook:', JSON.stringify(payload, null, 2));
 
     // Extract fields from Cakto's native payload format
-    const event = payload.event;
+    // Strip leading '=' that n8n expressions may add
+    const event = (payload.event || '').replace(/^=/, '').trim();
     const data = payload.data;
 
     if (!data) {
