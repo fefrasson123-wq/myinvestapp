@@ -215,7 +215,7 @@ export function PlansContent() {
               </ul>
 
               {isCurrentPlan ? (
-                <Button disabled className="w-full bg-success/20 text-success border-success/30" variant="outline">
+                <Button disabled className="w-full bg-success/10 text-success/80 border-success/20" variant="outline">
                   ✓ Plano Atual
                 </Button>
               ) : isDowngrade ? (
