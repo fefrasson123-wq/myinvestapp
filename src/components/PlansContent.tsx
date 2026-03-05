@@ -17,7 +17,7 @@ interface PlanData {
 }
 
 export function PlansContent() {
-  const { plan: currentPlan, isFree, isLoading: subLoading } = useSubscription();
+  const { plan: currentPlan, subscription, isFree, isLoading: subLoading } = useSubscription();
   const [plans, setPlans] = useState<PlanData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -102,15 +102,56 @@ export function PlansContent() {
           Gerencie seus investimentos como um profissional
         </h2>
         <p className="text-muted-foreground text-sm sm:text-base max-w-2xl mx-auto">
-          Comece gratuitamente e faça upgrade quando precisar de mais recursos
+          {isFree
+            ? 'Comece gratuitamente e faça upgrade quando precisar de mais recursos'
+            : `Você está no plano ${currentPlan?.display_name || 'ativo'}. Aproveite todos os recursos!`}
         </p>
       </div>
+
+      {/* Active plan banner for paid users */}
+      {!isFree && currentPlan && (
+        <div className={cn(
+          "mb-6 p-4 rounded-xl border flex items-center gap-4",
+          currentPlan.name === 'premium'
+            ? 'bg-amber-500/10 border-amber-500/30'
+            : 'bg-primary/10 border-primary/30'
+        )}>
+          <div className={cn(
+            "p-3 rounded-lg",
+            currentPlan.name === 'premium' ? 'bg-amber-500/20' : 'bg-primary/20'
+          )}>
+            {currentPlan.name === 'premium'
+              ? <Crown className="w-6 h-6 text-amber-500" />
+              : <Star className="w-6 h-6 text-primary" />}
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-card-foreground">
+              Plano {currentPlan.display_name} Ativo
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {subscription?.current_period_end
+                ? `Válido até ${new Date(subscription.current_period_end).toLocaleDateString('pt-BR')}`
+                : 'Assinatura ativa'}
+            </p>
+          </div>
+          <Badge className={cn(
+            "text-xs",
+            currentPlan.name === 'premium' ? 'bg-amber-500 text-white' : 'bg-primary text-primary-foreground'
+          )}>
+            Ativo
+          </Badge>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 flex-1">
         {plans.map((plan) => {
           const Icon = planIcons[plan.name] || Star;
           const isCurrentPlan = currentPlan?.name === plan.name || (isFree && plan.name === 'free');
           const isPopular = plan.name === 'pro';
+          const isDowngrade = !isFree && currentPlan && (
+            (currentPlan.name === 'premium' && (plan.name === 'pro' || plan.name === 'free')) ||
+            (currentPlan.name === 'pro' && plan.name === 'free')
+          );
 
           return (
             <div
@@ -118,19 +159,19 @@ export function PlansContent() {
               className={cn(
                 "relative rounded-2xl border bg-gradient-to-br p-5 sm:p-6 transition-all duration-300 flex flex-col",
                 planColors[plan.name] || planColors.free,
-                isPopular && "ring-2 ring-primary/50 scale-[1.02] shadow-lg shadow-primary/10",
-                isCurrentPlan && "ring-2 ring-success/50"
+                isCurrentPlan && "ring-2 ring-success/50 shadow-lg",
+                isPopular && !isCurrentPlan && "ring-2 ring-primary/50 scale-[1.02] shadow-lg shadow-primary/10",
               )}
             >
-              {isPopular && (
+              {isPopular && !isCurrentPlan && (
                 <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs">
                   Mais Popular
                 </Badge>
               )}
 
               {isCurrentPlan && (
-                <Badge className="absolute -top-2.5 right-4 bg-success text-white text-xs">
-                  Plano Atual
+                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-success text-white text-xs px-3">
+                  ✓ Seu Plano Atual
                 </Badge>
               )}
 
@@ -174,8 +215,12 @@ export function PlansContent() {
               </ul>
 
               {isCurrentPlan ? (
+                <Button disabled className="w-full bg-success/20 text-success border-success/30" variant="outline">
+                  ✓ Plano Atual
+                </Button>
+              ) : isDowngrade ? (
                 <Button disabled className="w-full" variant="outline">
-                  Plano Atual
+                  Incluído no seu plano
                 </Button>
               ) : plan.name === 'free' ? (
                 <Button disabled className="w-full" variant="outline">
