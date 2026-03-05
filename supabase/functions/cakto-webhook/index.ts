@@ -59,9 +59,9 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Determine plan: Premium if amount >= 79 or product name contains "premium", otherwise Pro
+    // Determine plan: Premium if amount >= 45 or product name contains "premium", otherwise Pro
     let planName = 'pro';
-    if (productName.includes('premium') || amount >= 79) {
+    if (productName.includes('premium') || amount >= 45) {
       planName = 'premium';
     }
 
