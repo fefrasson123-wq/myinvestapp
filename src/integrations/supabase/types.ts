@@ -272,6 +272,45 @@ export type Database = {
           },
         ]
       }
+      pending_purchases: {
+        Row: {
+          cakto_subscription_id: string | null
+          cakto_transaction_id: string | null
+          created_at: string
+          customer_name: string | null
+          email: string
+          id: string
+          payload: Json | null
+          plan_name: string
+          processed_at: string | null
+          status: string
+        }
+        Insert: {
+          cakto_subscription_id?: string | null
+          cakto_transaction_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          email: string
+          id?: string
+          payload?: Json | null
+          plan_name?: string
+          processed_at?: string | null
+          status?: string
+        }
+        Update: {
+          cakto_subscription_id?: string | null
+          cakto_transaction_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          email?: string
+          id?: string
+          payload?: Json | null
+          plan_name?: string
+          processed_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       personal_goals: {
         Row: {
           created_at: string
