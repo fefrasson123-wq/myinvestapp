@@ -182,15 +182,18 @@ Deno.serve(async (req) => {
       case 'pagamento_recebido': {
         const { error: renewError } = await supabase
           .from('user_subscriptions')
-          .update({
+          .upsert({
+            user_id: user.id,
+            plan_id: plan.id,
             status: 'active',
+            cakto_subscription_id: subscriptionId || transactionId,
+            cakto_customer_id: customerEmail,
             current_period_start: new Date().toISOString(),
             current_period_end: periodEnd,
-          })
-          .eq('user_id', user.id);
+          }, { onConflict: 'user_id' });
 
         if (renewError) console.error('Error renewing subscription:', renewError);
-        else console.log(`Subscription renewed for user ${user.id}`);
+        else console.log(`Subscription renewed for user ${user.id} with plan ${planName}`);
         break;
       }
 
