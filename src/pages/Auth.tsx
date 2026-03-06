@@ -408,7 +408,7 @@ export default function Auth() {
               </div>
 
               {/* Right form panel */}
-              <div className="w-full md:w-1/2 p-6 sm:p-8 lg:p-10">
+              <div className="w-full md:w-1/2 p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-card-foreground mb-2">
                   {mode === 'login' && 'Bem-vindo de volta!'}
