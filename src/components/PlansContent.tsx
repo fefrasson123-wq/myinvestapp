@@ -169,6 +169,12 @@ export function PlansContent() {
                 </Badge>
               )}
 
+              {!isCurrentPlan && plan.name === 'premium' && (
+                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs px-3 flex items-center gap-1">
+                  <Crown className="w-3 h-3" /> Exclusivo
+                </Badge>
+              )}
+
               {isCurrentPlan && (
                 <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs px-3">
                   ✓ Seu Plano Atual
