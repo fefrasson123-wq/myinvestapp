@@ -377,9 +377,9 @@ export default function Auth() {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex items-center justify-center px-3 sm:px-4 py-4">
-          <div className="w-full max-w-md md:max-w-none md:mx-4 lg:mx-8 xl:mx-16">
-            <div className="bg-card border border-border rounded-xl shadow-2xl animate-scale-in flex flex-col md:flex-row overflow-hidden min-h-[500px] lg:min-h-[600px]">
+        <main className="flex-1 flex items-stretch">
+          <div className="w-full flex flex-col md:flex-row">
+            <div className="bg-card flex flex-col md:flex-row overflow-hidden flex-1">
               {/* Left branding panel - desktop only */}
               <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-primary/20 via-primary/10 to-background p-8 lg:p-10 flex-col justify-center items-center text-center border-r border-border/50">
                 <div className="p-4 rounded-2xl bg-primary/20 mb-6 glow-primary">
