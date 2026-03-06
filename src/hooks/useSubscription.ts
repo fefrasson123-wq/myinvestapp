@@ -100,7 +100,7 @@ export function useSubscription(): UseSubscriptionReturn {
           )
         `)
         .eq('user_id', user.id)
-        .eq('status', 'active')
+        .in('status', ['active'])
         .maybeSingle();
 
       if (subError) {
@@ -129,15 +129,43 @@ export function useSubscription(): UseSubscriptionReturn {
           max_categories: rawPlan.max_categories ?? -1,
           features: rawPlan.features as string[],
         };
-        setSubscription({
-          id: subData.id,
-          plan_id: subData.plan_id,
-          status: subData.status as Subscription['status'],
-          current_period_start: subData.current_period_start,
-          current_period_end: subData.current_period_end,
-          plan: planData,
-        });
-        setPlan(planData);
+
+        // Check if subscription has expired
+        const periodEnd = subData.current_period_end ? new Date(subData.current_period_end) : null;
+        const isExpired = periodEnd ? periodEnd < new Date() : false;
+
+        if (isExpired) {
+          // Subscription period ended without renewal — treat as free
+          console.log('Subscription expired, treating as free user');
+          setSubscription(null);
+          const { data: freePlan } = await supabase
+            .from('plans')
+            .select('*')
+            .eq('name', 'free')
+            .single();
+
+          if (freePlan) {
+            setPlan({
+              id: freePlan.id,
+              name: freePlan.name,
+              display_name: freePlan.display_name,
+              price: Number(freePlan.price),
+              max_assets: freePlan.max_assets,
+              max_categories: (freePlan as any).max_categories ?? 2,
+              features: freePlan.features as string[],
+            });
+          }
+        } else {
+          setSubscription({
+            id: subData.id,
+            plan_id: subData.plan_id,
+            status: subData.status as Subscription['status'],
+            current_period_start: subData.current_period_start,
+            current_period_end: subData.current_period_end,
+            plan: planData,
+          });
+          setPlan(planData);
+        }
       } else {
         const { data: freePlan } = await supabase
           .from('plans')
