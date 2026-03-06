@@ -14,9 +14,11 @@ Deno.serve(async (req) => {
     // Validate webhook secret (header or body field)
     const payload = await req.json();
     const webhookSecret = req.headers.get('x-webhook-secret') || req.headers.get('X-Webhook-Secret') || payload.secret;
-    const expectedSecret = Deno.env.get('CAKTO_WEBHOOK_SECRET');
+    const expectedSecret1 = Deno.env.get('CAKTO_WEBHOOK_SECRET');
+    const expectedSecret2 = Deno.env.get('CAKTO_WEBHOOK_SECRET_PREMIUM');
 
-    if (!expectedSecret || webhookSecret !== expectedSecret) {
+    const validSecrets = [expectedSecret1, expectedSecret2].filter(Boolean);
+    if (validSecrets.length === 0 || !validSecrets.includes(webhookSecret)) {
       console.error('Invalid webhook secret');
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
