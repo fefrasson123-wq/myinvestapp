@@ -402,7 +402,7 @@ export default function Auth() {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-primary" />
-                    <span className="text-sm text-muted-foreground">Acompanhe dividendos e rendimentos</span>
+                    <span className="text-sm text-muted-foreground">Acompanhe dividendos, rendimentos e renda passiva </span>
                   </div>
                 </div>
               </div>
