@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     // Calculate period end
     const periodEnd = nextPaymentDate
       ? new Date(nextPaymentDate).toISOString()
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      : new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString();
 
     // Handle events
     switch (event) {

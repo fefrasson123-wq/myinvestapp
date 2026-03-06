@@ -100,7 +100,7 @@ export function useSubscription(): UseSubscriptionReturn {
           )
         `)
         .eq('user_id', user.id)
-        .eq('status', 'active')
+        .in('status', ['active'])
         .maybeSingle();
 
       if (subError) {
