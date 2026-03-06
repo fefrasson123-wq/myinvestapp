@@ -378,8 +378,37 @@ export default function Auth() {
 
         {/* Main Content */}
         <main className="flex-1 flex items-center justify-center p-4">
-          <div className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl">
-            <div className="bg-card border border-border rounded-xl shadow-2xl p-6 sm:p-8 lg:p-10 animate-scale-in">
+          <div className="w-full max-w-md lg:max-w-5xl">
+            <div className="bg-card border border-border rounded-xl shadow-2xl animate-scale-in flex flex-col lg:flex-row overflow-hidden">
+              {/* Left branding panel - desktop only */}
+              <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary/20 via-primary/10 to-background p-10 flex-col justify-center items-center text-center border-r border-border/50">
+                <div className="p-4 rounded-2xl bg-primary/20 mb-6 glow-primary">
+                  <TrendingUp className="w-16 h-16 text-primary" />
+                </div>
+                <h2 className="text-3xl font-bold text-primary text-glow mb-3">My Invest</h2>
+                <p className="text-muted-foreground text-lg mb-8">Gerencie seus investimentos de forma inteligente</p>
+                <div className="space-y-4 text-left w-full max-w-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-primary" />
+                    <span className="text-sm text-muted-foreground">Controle total do seu portfólio</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-primary" />
+                    <span className="text-sm text-muted-foreground">Cotações atualizadas em tempo real</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-primary" />
+                    <span className="text-sm text-muted-foreground">Relatórios e gráficos detalhados</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-primary" />
+                    <span className="text-sm text-muted-foreground">Acompanhe dividendos e rendimentos</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right form panel */}
+              <div className="w-full lg:w-1/2 p-6 sm:p-8 lg:p-10">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-card-foreground mb-2">
                   {mode === 'login' && 'Bem-vindo de volta!'}
@@ -727,6 +756,7 @@ export default function Auth() {
                   </p>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </main>
