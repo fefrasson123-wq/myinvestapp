@@ -230,7 +230,11 @@ export function PlansContent() {
                 <Button
                   className={cn("w-full", planButtonColors[plan.name])}
                   onClick={() => {
-                    window.open('https://myinvestapp.com.br', '_blank');
+                    const checkoutUrls: Record<string, string> = {
+                      pro: 'https://pay.cakto.com.br/36eu3ny_764960',
+                      premium: 'https://pay.cakto.com.br/ghnzezh_795263',
+                    };
+                    window.open(checkoutUrls[plan.name] || 'https://myinvestapp.com.br', '_blank');
                   }}
                 >
                   Assinar {plan.display_name}
