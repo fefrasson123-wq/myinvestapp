@@ -170,7 +170,7 @@ export function PlansContent() {
               )}
 
               {isCurrentPlan && (
-                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-success/60 text-white/90 text-xs px-3">
+                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs px-3">
                   ✓ Seu Plano Atual
                 </Badge>
               )}
