@@ -59,7 +59,7 @@ export function PersonalGoal({ currentPortfolioValue, totalInvestedAmount, trans
   const [goalName, setGoalName] = useState('');
   const [goalType, setGoalType] = useState<GoalType>('value_goal');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounce targetAmount changes to prevent heavy recalculations on every keystroke
   useEffect(() => {
